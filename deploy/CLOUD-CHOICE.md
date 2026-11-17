@@ -13,7 +13,7 @@ SQLite 文件，所以 GitHub Pages / Gitee Pages / 纯静态 CDN **直接放不
 | 方案 | 是否真免费 | 适合度 | 代价 |
 | --- | --- | --- | --- |
 | **Oracle Cloud Always Free**（4C24G ARM，日/韩/新地域） | 长期免费 | ★★★★ | 注册要信用卡验证、有空闲回收规则；境外节点，国内访问延迟 60–200ms；无需 ICP，但走海外线路 |
-| **GitHub Student Pack**（你是大学生可申请） | 送 $200 DigitalOcean / $100 Azure / 免费域名 | ★★★★ | 需学生认证；DigitalOcean 新加坡节点国内可用，$200 能用很久 |
+| **GitHub Student Pack**（你是大学生可申请） | Azure $100 + 免费域名（.me/.TECH） | ★★★★ | 你已通过学生认证；Azure 香港/日本节点无需信用卡，$100 约够 B1s 跑 10 个月；详见 [AZURE-STUDENT.md](AZURE-STUDENT.md) |
 | **阿里云/腾讯云新用户免费试用** | 1–3 个月免费，之后付费 | ★★★★★（国内体验最好） | 到期转 ¥60–120/年；学生机约 ¥10/月 |
 | 家用电脑 + Cloudflare Tunnel | 免费 | ★★ | 电脑必须常开、家宽上传不稳、cloudflared 国内线路一般，只适合自己测试 |
 | Render / Koyeb / Railway 免费层 | 名义免费 | ★ | 免费实例会休眠，**本地磁盘重启即丢**，SQLite 数据会没；要用得换成免费 Postgres/Turso，需要改代码 |
@@ -21,8 +21,8 @@ SQLite 文件，所以 GitHub Pages / Gitee Pages / 纯静态 CDN **直接放不
 
 **建议**：
 - 想**国内粉丝体验最好** → 学生机/新用户试用（阿里云或腾讯云），之后一年几十块。
-- 想**一分钱不花长期跑** → Oracle Always Free（韩国/日本/新加坡），配 Caddy 自动 HTTPS；但国内访问会慢一些。
-- 有学生身份 → 先领 GitHub Student Pack 的 DigitalOcean $200，再开新加坡机器，体验和免费兼得。
+- 想**一分钱不花长期跑** → GitHub Student Pack 的 Azure $100（香港/日本节点，无需信用卡），步骤见 [AZURE-STUDENT.md](AZURE-STUDENT.md)；或 Oracle Always Free。
+- 已经有学生认证的 GitHub 账号 → 直接领 Azure for Students，$100 约够 B1s 跑 10 个月，到期前可再申请。
 
 > 「免费」通常省的是服务器钱，域名和备案仍要花一点：域名首年 ¥1–30，ICP 备案免费但要时间。
 

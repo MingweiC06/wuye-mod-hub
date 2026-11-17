@@ -271,7 +271,8 @@ npm run backup
 完整的 Ubuntu 24.04 部署手册（Node 24 安装、用户与权限、systemd 加固、Nginx +
 Let's Encrypt、ufw 与云安全组、备份 cron、升级回滚、日志与排障）见
 **[deploy/README.md](deploy/README.md)**。云服务器怎么选、备案流程与首年成本估算见
-**[deploy/CLOUD-CHOICE.md](deploy/CLOUD-CHOICE.md)**。
+**[deploy/CLOUD-CHOICE.md](deploy/CLOUD-CHOICE.md)**；用 GitHub 学生包免费上线见
+**[deploy/AZURE-STUDENT.md](deploy/AZURE-STUDENT.md)**。
 
 最短路径：
 

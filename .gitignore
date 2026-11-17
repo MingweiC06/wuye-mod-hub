@@ -1,0 +1,20 @@
+# runtime data — never commit (contains the admin code hash, sessions and votes)
+data/
+backups/
+*.db
+*.db-wal
+*.db-shm
+admin-code.txt
+
+# local overrides
+.env
+.env.local
+config.local.json
+
+# tooling noise
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+_coverage/
+tmp/

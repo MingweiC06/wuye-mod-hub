@@ -1,0 +1,62 @@
+[Unit]
+Description=乌叶MC · 模组许愿池 (wuye-mod-hub)
+Documentation=file:///srv/wuye-mod-hub/deploy/README.md
+# 只依赖本机网络：站点由 Nginx 反代，不需要等外网。
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+# 专用低权限用户，不要用 root 跑 Node。
+User=wuye
+Group=wuye
+WorkingDirectory=/srv/wuye-mod-hub
+
+# 环境变量文件由 root 持有、权限 600，见 deploy/README.md。
+EnvironmentFile=/etc/wuye-mod-hub/wuye.env
+
+# 与 package.json 的 npm start 等价。
+ExecStart=/usr/bin/node server.js
+
+Restart=always
+RestartSec=3
+# 给 SIGTERM 留出关闭数据库连接的时间（server.js 会优雅退出）。
+TimeoutStopSec=20
+KillSignal=SIGTERM
+
+# 新建文件默认不带其他用户写权限（data/、备份都受益）。
+UMask=0027
+
+# ----- 安全加固 -----
+# 禁止提权、禁止访问真实 /tmp、保护系统和家目录，只放开数据目录可写。
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/wuye-mod-hub/data
+
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# 注意：不要启用 MemoryDenyWriteExecute=true。
+# Node.js 的 V8 JIT 需要可执行内存，开启后进程可能直接启动失败。
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

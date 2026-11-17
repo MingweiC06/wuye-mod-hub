@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>乌叶MC · 模组许愿池 | 下一位星神，由你点名</title>
+  <meta name="description" content="乌叶MC 的粉丝模组许愿池。写下你想在《我的世界》里看到的星铁星神、动漫角色或机制玩法，投票让下期复刻成真。">
+  <meta name="theme-color" content="#05070d">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="乌叶MC · 模组许愿池">
+  <meta property="og:description" content="你提灵感，我搓模组。星神复刻、整活玩法、恐怖模组，投票决定下期做什么。">
+  <meta property="og:image" content="/assets/cover-yaoshi.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css?v=20261117c">
+  <link rel="preload" as="image" href="/assets/cover-amber.jpg">
+  <script src="/app.js?v=20261117c" defer></script>
+  <script src="/home.js?v=20261117c" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/" aria-label="乌叶MC 模组许愿池首页">
+        <span class="brand-avatar"><img src="/assets/avatar.jpg" alt="" width="42" height="42"></span>
+        <span class="brand-text"><strong>乌叶MC</strong><small>MOD WISH POOL</small></span>
+      </a>
+      <nav class="nav" id="site-nav" aria-label="主导航">
+        <a href="/" data-nav="home">首页</a>
+        <a href="/ideas" data-nav="ideas">许愿池</a>
+        <a href="/polls" data-nav="polls">投票</a>
+        <a href="/rules" data-nav="rules">规则</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn btn-ghost btn-sm" href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener" data-douyin-link>抖音主页</a>
+        <a class="btn btn-primary btn-sm" href="/ideas#submit">我要许愿</a>
+      </div>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="展开导航" aria-expanded="false" aria-controls="site-nav"><span></span></button>
+    </div>
+  </header>
+
+  <div class="ticker" aria-label="站点公告">
+    <div class="container ticker-inner">
+      <span class="ticker-label"><span class="dot"></span>公告</span>
+      <div class="ticker-track"><span data-announcement>本站是乌叶MC 的粉丝许愿池：写下你想看的模组，投票让它成真。</span></div>
+    </div>
+  </div>
+
+  <main id="main">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="dot"></span>崩坏：星穹铁道 × 我的世界</p>
+          <h1>
+            <span class="line">下一位星神，</span>
+            <span class="line"><em>由你点名</em></span>
+          </h1>
+          <p class="hero-lead">
+            天弓、药王、帝弓、琥珀王之后，下一位该是谁？<strong>把你想看的技能、角色、整活玩法写进许愿池</strong>，
+            大家投票，票数最高的灵感会被我认真翻牌——说不定就是下一期《技能独特 我来复刻！》。
+          </p>
+          <div class="hero-cta">
+            <a class="btn btn-primary btn-lg" href="/ideas#submit">写下我的灵感</a>
+            <a class="btn btn-ghost btn-lg" href="/polls">看下期投票</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat"><b data-fans>1.8万</b><span>抖音粉丝</span></div>
+            <div class="stat"><b data-likes>33.6万</b><span>累计获赞</span></div>
+            <div class="stat"><b data-idea-count>—</b><span>收到许愿</span></div>
+            <div class="stat"><b data-vote-count>—</b><span>许愿票数</span></div>
+          </div>
+        </div>
+
+        <div class="hero-showcase" aria-label="最新作品">
+          <a class="showcase-card" id="showcase" href="#" target="_blank" rel="noopener">
+            <div class="showcase-cover">
+              <img id="showcase-cover" src="/assets/cover-amber.jpg" alt="最新作品封面" width="168" height="224">
+            </div>
+            <div class="showcase-body">
+              <span class="tag" id="showcase-tag">存护 · 琥珀王</span>
+              <h3 id="showcase-title">一切献给——琥珀王！！<span id="showcase-series">《琥珀王大锤 x 我的世界》</span></h3>
+              <div class="showcase-meta">
+                <span>播放 <b id="showcase-plays">7.0万</b></span>
+                <span>点赞 <b id="showcase-likes">5680</b></span>
+                <span id="showcase-date">11-16</span>
+              </div>
+            </div>
+            <span class="showcase-stamp" id="showcase-stamp">LATEST · 01</span>
+          </a>
+          <div class="showcase-thumbs" id="showcase-thumbs" role="tablist" aria-label="切换最新作品"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="comment-band" aria-labelledby="comment-picks-title">
+      <div class="container">
+        <div class="comment-band-head">
+          <h2 class="comment-band-title" id="comment-picks-title"><span class="dot"></span>评论区在点名</h2>
+          <p>最近四期视频里被反复点名的角色和整活，已经全部搬进许愿池。点一个去看看，或者直接投它一票。</p>
+        </div>
+        <div class="chips" id="comment-picks"></div>
+      </div>
+    </section>
+
+    <section class="section" id="latest">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <h2>最新作品</h2>
+            <p class="sub">“技能独特 我来复刻！”系列，用 Minecraft 还原星铁星神的招牌技能。点封面直达抖音原片。</p>
+          </div>
+          <div class="head-aside">
+            <a class="link-arrow" href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener" data-douyin-link>去抖音看全部</a>
+          </div>
+        </div>
+        <div class="video-grid" id="video-grid" aria-live="polite">
+          <div class="skeleton skeleton-tall"></div>
+          <div class="skeleton skeleton-tall"></div>
+          <div class="skeleton skeleton-tall"></div>
+          <div class="skeleton skeleton-tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tight" id="series">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <h2>这个系列怎么玩</h2>
+            <p class="sub">不是许愿池里扔硬币那种许愿。你的点子会被真的看到、被投票、被做成模组。</p>
+          </div>
+        </div>
+        <div class="steps">
+          <article class="step reveal">
+            <span class="step-icon">✦</span>
+            <h3>写下灵感</h3>
+            <p>想要哪位星神、哪个动漫角色、什么离谱机制？标题一句话，描述讲清楚技能表现和平衡想法。</p>
+          </article>
+          <article class="step reveal">
+            <span class="step-icon">♥</span>
+            <h3>拉人来投票</h3>
+            <p>每个设备每天都能投，票数越高越靠前。禁止刷票，被系统判定异常的票会被清理。</p>
+          </article>
+          <article class="step reveal">
+            <span class="step-icon">⚒</span>
+            <h3>等待复刻</h3>
+            <p>我会定期看许愿池和投票页，把可做的点子标成「已采纳 / 制作中」，做完就在视频里见。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="hot-ideas">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <h2>正在被点名</h2>
+            <p class="sub">许愿池里票数最高的灵感。看到喜欢的就投一票，别让它沉底。</p>
+          </div>
+          <div class="head-aside"><a class="link-arrow" href="/ideas">进入许愿池</a></div>
+        </div>
+        <div class="idea-list" id="hot-idea-list" aria-live="polite">
+          <div class="skeleton skeleton-row"></div>
+          <div class="skeleton skeleton-row"></div>
+          <div class="skeleton skeleton-row"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tight" id="poll-preview">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <h2>下期复刻投票</h2>
+            <p class="sub">这一票真的会影响下期视频做什么。投票页还有往期结果和限定整活投票。</p>
+          </div>
+          <div class="head-aside"><a class="link-arrow" href="/polls">全部投票</a></div>
+        </div>
+        <div id="poll-preview-slot" aria-live="polite">
+          <div class="skeleton skeleton-poll"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tight" id="past">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <h2>往期也能看</h2>
+            <p class="sub">从超兽武装到七宗罪 BGM，再到恐怖模组，都是许愿池的灵感来源。</p>
+          </div>
+        </div>
+        <div class="rail" id="past-rail"></div>
+      </div>
+    </section>
+
+    <section class="section section-tight">
+      <div class="container">
+        <div class="cta-band reveal">
+          <div class="cta-band-copy">
+            <img src="/assets/avatar.jpg" alt="乌叶MC 的黑猫头像" width="62" height="62">
+            <div>
+              <h3>你提灵感，我搓模组</h3>
+              <p>建议、吐槽、整活都欢迎。被采纳的灵感会出现在视频简介里。</p>
+            </div>
+          </div>
+          <div class="cta-band-actions">
+            <a class="btn btn-primary" href="/ideas#submit">去许愿</a>
+            <a class="btn btn-ghost" href="/rules">先看规则</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="/assets/avatar.jpg" alt="" width="46" height="46">
+          <div>
+            <strong>乌叶MC · 模组许愿池</strong>
+            <p>粉丝自发许愿与投票站，用爱发电，与官方无关。站内建议会由乌叶MC 本人定期查看。</p>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>逛逛</h4>
+          <a href="/ideas">许愿池</a>
+          <a href="/polls">投票中心</a>
+          <a href="/rules">许愿规则</a>
+          <a href="/admin">站长入口</a>
+        </div>
+        <div class="footer-col">
+          <h4>找到我</h4>
+          <a href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener" data-douyin-link>抖音 @乌叶MC</a>
+          <a href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener">抖音号 27276177171</a>
+          <span class="muted-2 small">合作 / 问题请走抖音私信</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span data-year>2026</span> 乌叶MC · 模组许愿池</span>
+        <span class="mono">MADE WITH BLOCKS &amp; STARLIGHT · 非官方粉丝站</span>
+      </div>
+    </div>
+  </footer>
+
+  <noscript>
+    <div class="container noscript-note">这个站点需要 JavaScript 才能加载许愿池和投票，请开启后再访问。</div>
+  </noscript>
+</body>
+</html>

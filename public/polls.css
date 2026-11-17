@@ -1,0 +1,339 @@
+/* Polls page (body.page-polls). Page-specific only; shared components live in styles.css. */
+
+/* ---------------- page head stats ---------------- */
+
+body.page-polls .page-head {
+  padding-bottom: 26px;
+}
+
+body.page-polls .polls-stats {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 520px;
+  margin-top: 26px;
+}
+
+body.page-polls .polls-stat {
+  position: relative;
+  padding: 15px 18px 13px;
+  background: linear-gradient(160deg, rgba(88, 230, 230, 0.09), rgba(8, 13, 22, 0.62) 60%);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+body.page-polls .polls-stat::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--cyan), rgba(88, 230, 230, 0));
+}
+
+body.page-polls .polls-stat::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(225deg, rgba(88, 230, 230, 0.4), transparent 62%);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  pointer-events: none;
+}
+
+body.page-polls .polls-stat b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+}
+
+body.page-polls .polls-stat:nth-child(2) b {
+  color: var(--gold);
+}
+
+body.page-polls .polls-stat:nth-child(2)::before {
+  background: linear-gradient(180deg, var(--gold), rgba(255, 209, 102, 0));
+}
+
+body.page-polls .polls-stat:nth-child(2)::after {
+  background: linear-gradient(225deg, rgba(255, 209, 102, 0.4), transparent 62%);
+}
+
+body.page-polls .polls-stat span {
+  display: block;
+  margin-top: 5px;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* ---------------- error / list layout ---------------- */
+
+body.page-polls [hidden] {
+  display: none !important;
+}
+
+body.page-polls .polls-error {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+body.page-polls .polls-error .empty-icon {
+  color: var(--gold);
+}
+
+body.page-polls .polls-error-message {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+body.page-polls .poll-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  align-items: start;
+  gap: 18px;
+}
+
+body.page-polls #closed-list {
+  grid-template-columns: 1fr;
+  max-width: 780px;
+}
+
+body.page-polls .poll-list > .empty {
+  grid-column: 1 / -1;
+}
+
+/* ---------------- poll cards ---------------- */
+
+body.page-polls .poll {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 22px 48px -40px rgba(0, 0, 0, 0.95);
+}
+
+body.page-polls .poll::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(225deg, rgba(88, 230, 230, 0.38), transparent 62%);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  pointer-events: none;
+}
+
+body.page-polls .poll.is-closed::after {
+  background: linear-gradient(225deg, rgba(143, 166, 182, 0.24), transparent 62%);
+}
+
+body.page-polls .poll-head h3 {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+body.page-polls .poll-head > .badge {
+  flex: none;
+}
+
+body.page-polls .poll-meta {
+  margin: 12px 0 16px;
+}
+
+body.page-polls .poll-meta > .badge {
+  height: 22px;
+  padding: 0 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+}
+
+body.page-polls .poll-form {
+  margin: 0;
+}
+
+body.page-polls .poll-option {
+  font: inherit;
+  border-radius: 2px;
+}
+
+body.page-polls .poll-option:focus-within {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+body.page-polls .poll-option.is-multi .poll-check {
+  border-radius: 4px;
+}
+
+body.page-polls .poll-option.is-disabled:not(.is-selected):hover {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+body.page-polls .poll-option.is-disabled.is-selected:hover {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+/* Result rows: the shared .bar gradient is too faint on the dark poll card,
+   and result rows are not interactive, so give the fill more presence and
+   swap the round control hint for a small square. */
+body.page-polls .poll-option.is-disabled .bar {
+  background: linear-gradient(90deg, rgba(88, 230, 230, 0.3), rgba(88, 230, 230, 0.08));
+}
+
+body.page-polls .poll-option.is-disabled.is-selected .bar {
+  background: linear-gradient(90deg, rgba(255, 209, 102, 0.34), rgba(255, 209, 102, 0.09));
+}
+
+body.page-polls .poll-option.is-disabled .poll-check {
+  border-radius: 3px;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+body.page-polls .poll-label {
+  overflow-wrap: anywhere;
+}
+
+body.page-polls .poll-pct {
+  min-width: 42px;
+  text-align: right;
+}
+
+body.page-polls .poll-note {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+body.page-polls .poll-note.is-warn {
+  color: var(--gold);
+}
+
+body.page-polls .poll-note b {
+  color: var(--cyan);
+}
+
+body.page-polls .poll-foot .btn {
+  flex: none;
+}
+
+body.page-polls .poll-result-total {
+  margin-top: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+body.page-polls .poll-result-total b {
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+}
+
+body.page-polls .poll.is-closed .poll-head h3 {
+  color: var(--muted);
+}
+
+body.page-polls .poll h3:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 6px;
+}
+
+/* ---------------- responsive ---------------- */
+
+@media (max-width: 820px) {
+  body.page-polls .poll-list {
+    grid-template-columns: 1fr;
+  }
+
+  body.page-polls #closed-list {
+    max-width: none;
+  }
+}
+
+@media (max-width: 560px) {
+  body.page-polls .page-head {
+    padding: 38px 0 22px;
+  }
+
+  body.page-polls .polls-stats {
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  body.page-polls .polls-stat {
+    padding: 13px 14px 11px;
+  }
+
+  body.page-polls .polls-stat b {
+    font-size: 24px;
+  }
+
+  body.page-polls .polls-stat span {
+    margin-top: 3px;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+  }
+
+  body.page-polls .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  body.page-polls .section-head .head-aside {
+    padding-bottom: 0;
+  }
+
+  body.page-polls .poll {
+    padding: 17px 15px;
+  }
+
+  body.page-polls .poll::after {
+    width: 18px;
+    height: 18px;
+  }
+
+  body.page-polls .poll-head {
+    gap: 10px;
+  }
+
+  body.page-polls .poll-head h3 {
+    font-size: 17px;
+  }
+
+  body.page-polls .poll-meta {
+    gap: 8px 10px;
+    margin: 12px 0 14px;
+  }
+
+  body.page-polls .poll-option {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 12px 11px;
+  }
+
+  body.page-polls .poll-pct {
+    min-width: 36px;
+    font-size: 11px;
+  }
+
+  body.page-polls .poll-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  body.page-polls .poll-foot .btn {
+    width: 100%;
+  }
+}

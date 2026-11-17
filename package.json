@@ -1,0 +1,16 @@
+{
+  "name": "wuye-mod-hub",
+  "version": "1.0.0",
+  "description": "乌叶MC · 模组许愿池 —— 粉丝模组灵感投稿、投票与官方投票站",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test tests/api.test.js",
+    "backup": "node scripts/backup.js"
+  }
+}

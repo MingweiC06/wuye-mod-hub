@@ -1,0 +1,455 @@
+/* ==========================================================================
+   乌叶MC · 模组许愿池 — shared front-end helpers (window.WY)
+   No frameworks, no external requests. All DOM text is escaped before render.
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  const WY = (window.WY = {});
+  const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+  /* ---------------- storage ---------------- */
+
+  const memoryStore = new Map();
+  const storage = {
+    get(key) {
+      try {
+        return window.localStorage.getItem(key);
+      } catch {
+        return memoryStore.get(key) ?? null;
+      }
+    },
+    set(key, value) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch {
+        memoryStore.set(key, value);
+      }
+    },
+  };
+
+  function randomHex(bytes) {
+    const buffer = new Uint8Array(bytes);
+    if (window.crypto && window.crypto.getRandomValues) {
+      window.crypto.getRandomValues(buffer);
+    } else {
+      for (let i = 0; i < bytes; i += 1) buffer[i] = Math.floor(Math.random() * 256);
+    }
+    return Array.from(buffer, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  /* One device = one vote bucket. Short random id, survives reloads. */
+  let deviceId = storage.get('wy:device');
+  if (!/^[a-z0-9-]{10,64}$/.test(deviceId || '')) {
+    deviceId = `d-${randomHex(12)}`;
+    storage.set('wy:device', deviceId);
+  }
+  WY.deviceId = deviceId;
+
+  /* ---------------- text / number helpers ---------------- */
+
+  WY.esc = function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ESCAPES[char]);
+  };
+
+  WY.fmtNumber = function fmtNumber(value) {
+    const number = Number(value) || 0;
+    if (Math.abs(number) < 10000) return number.toLocaleString('zh-CN');
+    const tenThousands = number / 10000;
+    return `${tenThousands >= 100 ? Math.round(tenThousands) : tenThousands.toFixed(1).replace(/\.0$/, '')}万`;
+  };
+
+  WY.formatDateTime = function formatDateTime(timestamp) {
+    const date = new Date(Number(timestamp) + 8 * 3600_000);
+    return date.toISOString().slice(0, 16).replace('T', ' ');
+  };
+
+  WY.timeAgo = function timeAgo(timestamp) {
+    const seconds = Math.max(0, (Date.now() - Number(timestamp)) / 1000);
+    if (seconds < 60) return '刚刚';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} 小时前`;
+    if (seconds < 86400 * 30) return `${Math.floor(seconds / 86400)} 天前`;
+    return WY.formatDateTime(timestamp).slice(0, 10);
+  };
+
+  WY.remaining = function remaining(endTimestamp) {
+    if (!endTimestamp) return { ended: false, text: '长期开放' };
+    const diff = Number(endTimestamp) - Date.now();
+    if (diff <= 0) return { ended: true, text: '已结束' };
+    const days = Math.floor(diff / 86400_000);
+    const hours = Math.floor((diff % 86400_000) / 3600_000);
+    const minutes = Math.floor((diff % 3600_000) / 60_000);
+    if (days > 0) return { ended: false, text: `还剩 ${days} 天 ${hours} 小时` };
+    if (hours > 0) return { ended: false, text: `还剩 ${hours} 小时 ${minutes} 分` };
+    return { ended: false, text: `还剩 ${minutes} 分钟` };
+  };
+
+  const countdownTimers = new Map();
+  WY.countdown = function countdown(element, endTimestamp, options = {}) {
+    if (!element) return;
+    const previous = countdownTimers.get(element);
+    if (previous) clearInterval(previous);
+    function tick() {
+      if (!element.isConnected) {
+        clearInterval(countdownTimers.get(element));
+        countdownTimers.delete(element);
+        return;
+      }
+      const info = WY.remaining(endTimestamp);
+      element.textContent = info.ended ? options.endedText || '已结束' : info.text;
+    }
+    tick();
+    const timer = setInterval(tick, 30_000);
+    countdownTimers.set(element, timer);
+  };
+
+  WY.debounce = function debounce(fn, wait = 250) {
+    let timer = null;
+    return function debounced(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), wait);
+    };
+  };
+
+  /* ---------------- API ---------------- */
+
+  WY.api = async function api(pathname, options = {}) {
+    const method = options.method || 'GET';
+    const headers = {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-Device-Id': WY.deviceId,
+      ...(options.headers || {}),
+    };
+    let body;
+    if (options.body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(options.body);
+    }
+    let response;
+    try {
+      response = await fetch(pathname, {
+        method,
+        headers,
+        body,
+        credentials: 'same-origin',
+        signal: options.signal,
+      });
+    } catch (error) {
+      if (error.name === 'AbortError') throw error;
+      const networkError = new Error('网络好像开小差了，请检查网络后重试');
+      networkError.cause = error;
+      throw networkError;
+    }
+    const text = await response.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    if (!response.ok) {
+      const error = new Error(data?.error?.message || `请求失败（${response.status}）`);
+      error.status = response.status;
+      error.code = data?.error?.code || 'http_error';
+      throw error;
+    }
+    return data;
+  };
+
+  let sitePromise = null;
+  WY.site = function site() {
+    if (!sitePromise) {
+      sitePromise = WY.api('/api/site').catch((error) => {
+        sitePromise = null;
+        throw error;
+      });
+    }
+    return sitePromise;
+  };
+
+  WY.categoryMeta = function categoryMeta(key) {
+    const categories = (WY._site && WY._site.categories) || [];
+    return categories.find((category) => category.key === key) || { key, label: key, icon: '✧' };
+  };
+
+  WY.statusMeta = function statusMeta(key) {
+    const statuses = (WY._site && WY._site.statuses) || [];
+    return statuses.find((status) => status.key === key) || { key, label: key, icon: '•' };
+  };
+
+  WY.statusBadgeClass = function statusBadgeClass(key) {
+    switch (key) {
+      case 'building':
+        return 'badge-cyan';
+      case 'planned':
+        return 'badge-green';
+      case 'released':
+        return 'badge-gold';
+      case 'shelved':
+        return 'badge-muted';
+      default:
+        return 'badge-muted';
+    }
+  };
+
+  WY.videoUrl = function videoUrl(id) {
+    return `https://www.douyin.com/video/${encodeURIComponent(String(id).replace(/\D/g, ''))}`;
+  };
+
+  WY.pollPercent = function pollPercent(poll, option) {
+    const total = Number(poll?.totalBallots) || 0;
+    if (!total) return 0;
+    return Math.round((Number(option.votes) / total) * 100);
+  };
+
+  /* ---------------- toast ---------------- */
+
+  let toastStack = null;
+  WY.toast = function toast(message, type = '', timeout = 3400) {
+    if (!toastStack) {
+      toastStack = document.createElement('div');
+      toastStack.className = 'toast-stack';
+      toastStack.setAttribute('role', 'status');
+      toastStack.setAttribute('aria-live', 'polite');
+      document.body.appendChild(toastStack);
+    }
+    const node = document.createElement('div');
+    node.className = `toast${type ? ` is-${type}` : ''}`;
+    node.textContent = message;
+    toastStack.appendChild(node);
+    const remove = () => {
+      node.classList.add('leaving');
+      setTimeout(() => node.remove(), 240);
+    };
+    const timer = setTimeout(remove, timeout);
+    node.addEventListener('click', () => {
+      clearTimeout(timer);
+      remove();
+    });
+  };
+
+  /* ---------------- modal ---------------- */
+
+  WY.dialog = function dialog(options = {}) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    const modal = document.createElement('div');
+    modal.className = `modal${options.wide ? ' modal-wide' : ''}`;
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', options.title || '对话框');
+    modal.innerHTML = `
+      <div class="modal-head">
+        <div>
+          <h3>${WY.esc(options.title || '')}</h3>
+          ${options.subtitle ? `<p class="sub">${WY.esc(options.subtitle)}</p>` : ''}
+        </div>
+        <button class="modal-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">${options.body || ''}</div>
+      ${options.footer ? `<div class="modal-foot">${options.footer}</div>` : ''}
+    `;
+    backdrop.appendChild(modal);
+    const previousFocus = document.activeElement;
+
+    function close(result) {
+      backdrop.remove();
+      document.removeEventListener('keydown', onKey);
+      if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+      if (typeof options.onClose === 'function') options.onClose(result);
+    }
+
+    function onKey(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close(undefined);
+      }
+    }
+
+    modal.querySelector('.modal-close').addEventListener('click', () => close(undefined));
+    backdrop.addEventListener('mousedown', (event) => {
+      if (event.target === backdrop) close(undefined);
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(backdrop);
+    const focusTarget = modal.querySelector('input, textarea, select, button:not(.modal-close), [tabindex]');
+    if (focusTarget) setTimeout(() => focusTarget.focus(), 40);
+
+    return {
+      el: modal,
+      backdrop,
+      body: modal.querySelector('.modal-body'),
+      footer: modal.querySelector('.modal-foot'),
+      close,
+    };
+  };
+
+  WY.confirm = function confirm(options = {}) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const dialog = WY.dialog({
+        title: options.title || '确认操作',
+        subtitle: options.subtitle || '',
+        body: `<p class="muted dialog-text">${WY.esc(options.message || '')}</p>`,
+        footer: `<button class="btn btn-ghost" type="button" data-cancel>${WY.esc(
+          options.cancelText || '取消',
+        )}</button><button class="btn ${options.danger ? 'btn-danger' : 'btn-primary'}" type="button" data-ok>${WY.esc(
+          options.okText || '确定',
+        )}</button>`,
+        onClose: () => {
+          if (!settled) {
+            settled = true;
+            resolve(false);
+          }
+        },
+      });
+      dialog.footer.querySelector('[data-cancel]').addEventListener('click', () => {
+        settled = true;
+        dialog.close();
+        resolve(false);
+      });
+      dialog.footer.querySelector('[data-ok]').addEventListener('click', () => {
+        settled = true;
+        dialog.close();
+        resolve(true);
+      });
+    });
+  };
+
+  /* ---------------- copy ---------------- */
+
+  WY.copy = async function copy(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+      WY.toast('已复制到剪贴板', 'success');
+      return true;
+    } catch {
+      WY.toast('复制失败，请手动选中复制', 'error');
+      return false;
+    }
+  };
+
+  /* ---------------- page chrome ---------------- */
+
+  function markActiveNav() {
+    const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+    let active = 'home';
+    if (pathname.startsWith('/ideas')) active = 'ideas';
+    else if (pathname.startsWith('/polls')) active = 'polls';
+    else if (pathname.startsWith('/rules')) active = 'rules';
+    else if (pathname.startsWith('/admin')) active = 'admin';
+    document.querySelectorAll('[data-nav]').forEach((link) => {
+      const isActive = link.dataset.nav === active;
+      link.classList.toggle('is-active', isActive);
+      if (isActive) link.setAttribute('aria-current', 'page');
+    });
+  }
+
+  function initNavToggle() {
+    const toggle = document.getElementById('nav-toggle');
+    const nav = document.getElementById('site-nav');
+    if (!toggle || !nav) return;
+    toggle.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', String(open));
+    });
+    nav.addEventListener('click', (event) => {
+      if (event.target.closest('a')) {
+        nav.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  function initReveal() {
+    const nodes = document.querySelectorAll('.reveal');
+    if (!nodes.length) return;
+    if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      nodes.forEach((node) => node.classList.add('in'));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -40px' },
+    );
+    nodes.forEach((node) => observer.observe(node));
+    // Safety net: never leave content invisible (screenshots, odd viewports).
+    setTimeout(() => nodes.forEach((node) => node.classList.add('in')), 1600);
+  }
+
+  async function fillSiteChrome() {
+    const yearNodes = document.querySelectorAll('[data-year]');
+    yearNodes.forEach((node) => {
+      node.textContent = String(new Date().getFullYear());
+    });
+    try {
+      const data = await WY.site();
+      WY._site = data;
+      document.querySelectorAll('[data-site-name]').forEach((node) => {
+        node.textContent = data.site.name;
+      });
+      document.querySelectorAll('[data-announcement]').forEach((node) => {
+        node.textContent = data.site.announcement || '暂无公告，先去看看大家的许愿吧。';
+      });
+      document.querySelectorAll('[data-fans]').forEach((node) => {
+        node.textContent = data.site.fans;
+      });
+      document.querySelectorAll('[data-likes]').forEach((node) => {
+        node.textContent = data.site.likes;
+      });
+      document.querySelectorAll('[data-works]').forEach((node) => {
+        node.textContent = String(data.site.works);
+      });
+      document.querySelectorAll('[data-idea-count]').forEach((node) => {
+        node.textContent = WY.fmtNumber(data.stats.ideas);
+      });
+      document.querySelectorAll('[data-vote-count]').forEach((node) => {
+        node.textContent = WY.fmtNumber(data.stats.votes);
+      });
+      document.querySelectorAll('[data-open-polls]').forEach((node) => {
+        node.textContent = String(data.stats.openPolls);
+      });
+      document.querySelectorAll('[data-douyin-link]').forEach((node) => {
+        node.href = data.site.douyinUrl;
+      });
+      document.dispatchEvent(new CustomEvent('wy:site', { detail: data }));
+    } catch (error) {
+      console.warn('[WY] site payload failed:', error.message);
+    }
+  }
+
+  WY.mount = function mount() {
+    markActiveNav();
+    initNavToggle();
+    initReveal();
+    fillSiteChrome();
+  };
+
+  WY.observeReveal = initReveal;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', WY.mount, { once: true });
+  } else {
+    WY.mount();
+  }
+})();

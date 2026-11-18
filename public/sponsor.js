@@ -22,9 +22,25 @@
     ].filter((q) => q[2]);
     if (qrs.length) $('sp-qrs').innerHTML = qrs.map(([k, label, src]) => `<figure class="sp-qr sp-${k}"><img src="${WY.esc(src)}" alt="${label}收款码" loading="lazy"><figcaption>${label}</figcaption></figure>`).join('');
     if (c.note) $('sp-note').textContent = c.note;
+    showMethod();
     me = data.me;
     paintAnon();
     paintMine(data.mine);
+  }
+
+  // only show the QR code for the method the fan picked
+  function showMethod() {
+    const form = $('sp-form');
+    const pick = form && form.method.value;
+    document.querySelectorAll('#sp-qrs .sp-qr').forEach((q) => {
+      const on = q.classList.contains(`sp-${pick}`);
+      q.hidden = !on;
+      if (on) {
+        q.classList.remove('is-in');
+        void q.offsetWidth;
+        q.classList.add('is-in');
+      }
+    });
   }
 
   function paintAnon() {
@@ -47,6 +63,9 @@
   };
   document.addEventListener('wy:me', window.__wySponsorMe);
 
+  $('sp-form').addEventListener('change', (e) => {
+    if (e.target.name === 'method') showMethod();
+  });
   $('sp-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target;

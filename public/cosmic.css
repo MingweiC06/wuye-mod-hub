@@ -1599,7 +1599,14 @@ h3 {
 .sp-pay, .sp-form { padding: 22px; display: grid; gap: 10px; }
 .sp-qrs { display: flex; flex-wrap: wrap; gap: 16px; }
 .sp-qr { margin: 0; display: grid; gap: 6px; justify-items: center; }
-.sp-qr img { width: 200px; max-width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; padding: 8px; }
+.sp-qr { position: relative; padding: 14px; border-radius: 22px; border: 1px solid rgba(243, 217, 150, .55); background: linear-gradient(160deg, rgba(243, 217, 150, .12), rgba(10, 12, 20, .6) 45%, rgba(216, 181, 106, .1)); box-shadow: 0 0 0 4px rgba(216, 181, 106, .08), 0 18px 40px rgba(0, 0, 0, .45), inset 0 0 24px rgba(243, 217, 150, .08); }
+.sp-qr::before { content: ""; position: absolute; inset: 6px; border-radius: 17px; border: 1px dashed rgba(243, 217, 150, .28); pointer-events: none; }
+.sp-qr.sp-wechat { border-color: rgba(7, 193, 96, .7); box-shadow: 0 0 0 4px rgba(7, 193, 96, .1), 0 18px 40px rgba(0, 0, 0, .45), 0 0 34px rgba(7, 193, 96, .22); }
+.sp-qr.sp-alipay { border-color: rgba(22, 119, 255, .75); box-shadow: 0 0 0 4px rgba(22, 119, 255, .1), 0 18px 40px rgba(0, 0, 0, .45), 0 0 34px rgba(22, 119, 255, .25); }
+.sp-qr img { position: relative; width: 240px; max-width: 100%; height: auto; display: block; border-radius: 14px; }
+.sp-qr.is-in { animation: sp-qr-in .45s cubic-bezier(.2, .8, .2, 1); }
+@keyframes sp-qr-in { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sp-qr.is-in { animation: none; } }
 .sp-qr figcaption { color: #d8b56a; font-size: 13px; }
 .sp-methods { border: 0; padding: 0; margin: 0; display: flex; gap: 8px; flex-wrap: wrap; }
 .sp-methods .chip input { accent-color: #d8b56a; }
@@ -1642,3 +1649,4 @@ h3 {
   .header-actions .btn { padding-inline: 7px; font-size: 0.74rem; }
   .header-inner { gap: 6px; }
 }
+.sp-qr[hidden] { display: none; }

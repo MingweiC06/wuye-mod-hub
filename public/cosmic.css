@@ -1579,3 +1579,5 @@ h3 {
 #vb-accepted { display: grid; gap: 10px; }
 .vb-acc { color: #d8b56a; }
 @media (max-width: 860px) { .vb-split { grid-template-columns: 1fr; } }
+.vb-mini .vb-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vb-mn { font-weight: inherit; }

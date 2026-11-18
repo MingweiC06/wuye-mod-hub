@@ -157,7 +157,8 @@ test('fan code gate, jar upload, signed download', async () => {
 test('vote board: sections, game filter, admin card edit', async () => {
   const b = await fan('/api/board');
   assert.equal(b.status, 200);
-  assert.ok(b.data.voting.every((c) => c.status === 'planned'));
+  assert.ok(b.data.voting.every((c) => c.status === 'open'));
+  assert.ok(b.data.accepted.every((c) => c.status === 'planned'));
   assert.ok(b.data.building.every((c) => c.status === 'building'));
   assert.ok(b.data.done.every((c) => c.status === 'released'));
   const votes = b.data.voting.map((c) => c.votes);

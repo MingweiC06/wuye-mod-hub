@@ -34,8 +34,8 @@
         <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
-          <span class="vb-sub">${WY.esc(c.game || '')}${c.game ? ' · ' : ''}${c.votes} 票</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
-          ${done ? '' : accepted ? '<span class="vb-sub vb-acc">★ 已采纳</span>' : '<div class="vb-meter is-build" aria-hidden="true"><i></i></div><span class="vb-sub">制作中</span>'}
+          <span class="vb-sub">${WY.esc(c.game || '')}${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
+          ${done ? '' : accepted ? `<div class="vb-foot"><span class="vb-sub vb-acc">★ 已采纳</span><button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button></div>` : '<div class="vb-meter is-build" aria-hidden="true"><i></i></div><span class="vb-sub">制作中</span>'}
         </div>
       </article>`;
   }
@@ -80,19 +80,19 @@
 
   async function vote(btn) {
     const id = Number(btn.dataset.vote);
-    const c = state.data.voting.find((x) => x.id === id);
+    const c = [...state.data.voting, ...state.data.accepted].find((x) => x.id === id);
     if (!c || btn.disabled) return;
     btn.disabled = true;
     try {
       const r = await WY.api(`/api/ideas/${id}/vote`, { method: c.voted ? 'DELETE' : 'POST' });
       c.voted = r.voted;
       c.votes = r.votes;
-      const el = btn.closest('.vb-card');
+      const el = btn.closest('.vb-card, .vb-mini');
       el.classList.toggle('is-voted', c.voted);
       btn.className = `btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote`;
       btn.textContent = c.voted ? '已投 ✦' : '投一票';
       btn.setAttribute('aria-pressed', String(c.voted));
-      const n = el.querySelector('.vb-n b');
+      const n = el.querySelector('.vb-n b, .vb-mn');
       n.textContent = c.votes;
       n.classList.remove('bump');
       void n.offsetWidth;
@@ -124,10 +124,12 @@
       state.game = b.dataset.game;
       load(true);
     });
-    $('vb-grid').addEventListener('click', (e) => {
-      const b = e.target.closest('[data-vote]');
-      if (b) vote(b);
-    });
+    for (const id of ['vb-grid', 'vb-accepted']) {
+      $(id).addEventListener('click', (e) => {
+        const b = e.target.closest('[data-vote]');
+        if (b) vote(b);
+      });
+    }
     load(false);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });

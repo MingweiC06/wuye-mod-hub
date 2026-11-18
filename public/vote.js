@@ -34,7 +34,7 @@
         <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
-          <span class="vb-sub">${WY.esc(c.game || '')}${c.game ? ' · ' : ''}${c.votes} 票</span>
+          <span class="vb-sub">${WY.esc(c.game || '')}${c.game ? ' · ' : ''}${c.votes} 票</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
           ${done ? '' : '<div class="vb-meter is-build" aria-hidden="true"><i></i></div><span class="vb-sub">制作中</span>'}
         </div>
       </article>`;

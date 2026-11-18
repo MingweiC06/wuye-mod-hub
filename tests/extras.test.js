@@ -173,3 +173,23 @@ test('vote board: sections, game filter, admin card edit', async () => {
   assert.equal(after.id, id);
   assert.match(after.image, /^\/media\/.+\.png$/);
 });
+
+test('real site seeds only comment-derived wishes with their comments', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wuye-real-'));
+  const real = createApp({ dataDir: dir, adminCode: 'test-admin-code-1234' });
+  await new Promise((r) => real.server.listen(0, '127.0.0.1', r));
+  try {
+    const url = `http://127.0.0.1:${real.server.address().port}`;
+    const b = await (await fetch(`${url}/api/board`)).json();
+    assert.deepEqual(b.building.map((c) => c.title), ['欢愉 · 阿哈']);
+    assert.equal(b.building[0].mentions, 15);
+    assert.equal(b.voting[0].title, '毁灭 · 铁墓');
+    assert.equal(b.voting[0].mentions, 15);
+    assert.ok(b.voting.every((c) => c.votes === 0 && c.mentions >= 2));
+    assert.equal(b.done.length, 0);
+    assert.equal((await (await fetch(`${url}/api/polls`)).json()).items?.length ?? 0, 0);
+  } finally {
+    await real.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

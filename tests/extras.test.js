@@ -185,7 +185,8 @@ test('real site seeds only comment-derived wishes with their comments', async ()
     assert.equal(b.building[0].mentions, 15);
     assert.equal(b.voting[0].title, '毁灭 · 铁墓');
     assert.equal(b.voting[0].mentions, 15);
-    assert.ok(b.voting.every((c) => c.votes === 0 && c.mentions >= 2));
+    assert.equal(b.voting[0].votes, 416); // sum of likes on the 15 铁墓 comments
+    assert.ok(b.voting.every((c) => c.mentions >= 2));
     assert.equal(b.done.length, 0);
     assert.equal((await (await fetch(`${url}/api/polls`)).json()).items?.length ?? 0, 0);
   } finally {

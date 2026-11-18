@@ -12,7 +12,7 @@
 
   /* Local metadata mirrors lib/db.js, so first paint never waits on /api/site. */
   const CATEGORIES = [
-    { key: 'aeon', label: '星神复刻', icon: '✦' },
+    { key: 'aeon', label: '游戏复刻', icon: '✦' },
     { key: 'anime', label: '动漫联动', icon: '⚡' },
     { key: 'mob', label: '生物 / Boss', icon: '☠' },
     { key: 'horror', label: '恐怖惊悚', icon: '◐' },

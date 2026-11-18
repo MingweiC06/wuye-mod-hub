@@ -30,7 +30,7 @@
   };
 
   const CATEGORY_LABELS = {
-    aeon: '星神复刻',
+    aeon: '游戏复刻',
     anime: '动漫联动',
     mob: '生物 / Boss',
     horror: '恐怖惊悚',

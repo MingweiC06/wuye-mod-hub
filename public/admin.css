@@ -805,3 +805,18 @@
     flex: 1 1 auto;
   }
 }
+
+/* sponsor admin */
+.sp-admin-qr { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 12px; }
+.sp-admin-slot { display: grid; gap: 6px; justify-items: start; }
+.sp-admin-slot img { width: 140px; aspect-ratio: 1; object-fit: contain; background: #fff; padding: 4px; }
+.sp-admin-note { display: flex; gap: 8px; margin-bottom: 12px; }
+.sp-admin-note .input { flex: 1; }
+.sp-admin-total { margin: 6px 0 10px; color: #f3d996; }
+.sp-admin-list { display: grid; gap: 6px; }
+.sp-admin-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid rgba(216, 181, 106, .2); }
+.sp-admin-row.is-pending { border-color: rgba(243, 217, 150, .6); }
+.sp-admin-row .meta { font-size: 13px; opacity: .8; }
+.sp-admin-row .acts { display: flex; gap: 6px; }
+.sp-admin-key { font-family: monospace; font-size: 16px; color: #f3d996; user-select: all; }
+.admin-pending-acts { display: flex; gap: 6px; flex-wrap: wrap; }

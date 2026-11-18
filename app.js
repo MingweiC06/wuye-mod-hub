@@ -10,6 +10,7 @@ import { applySecurityHeaders, notFoundPage, sendJson, serveStatic } from './lib
 import { handleApi } from './lib/api.js';
 import { migrateExtras, seedExtras } from './lib/extras.js';
 import { migrateMods } from './lib/mods.js';
+import { migrateSponsor } from './lib/sponsor.js';
 import {
   HttpError,
   RateLimiter,
@@ -32,6 +33,8 @@ const PAGE_REWRITES = new Map([
   ['/admin', '/admin.html'],
   ['/rules', '/rules.html'],
   ['/downloads', '/downloads.html'],
+  ['/sponsor', '/sponsor.html'],
+  ['/leaderboard', '/leaderboard.html'],
 ]);
 
 export function createApp(options = {}) {
@@ -45,6 +48,7 @@ export function createApp(options = {}) {
   seedDatabase(db, options.demo);
   migrateExtras(db);
   migrateMods(db);
+  migrateSponsor(db);
   seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);

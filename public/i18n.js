@@ -30,7 +30,7 @@
 
   const DICT = {
     // ---- chrome / nav ----
-    '首页': 'Home', '许愿池': 'Wish Pool', '投票': 'Vote', '擂台': 'Arena', '规则': 'Rules', '下载': 'Downloads',
+    '首页': 'Home', '许愿池': 'Wish Pool', '投票': 'Vote', '擂台': 'Arena', '规则': 'Rules', '下载': 'Downloads', '排行榜': 'Leaderboard', '赞助': 'Sponsor', '赞助榜': 'Sponsors', '星光榜': 'Starlight', '当前身份': 'You are', '匿名': 'Anonymous', '起个名字': 'Pick a name', '我有钥匙': 'I have a key', '确定': 'OK', '找回': 'Restore', '复制': 'Copy', '在这台设备退出': 'Sign out on this device', '微信': 'WeChat', '支付宝': 'Alipay', '已上榜 ✦': 'On the board ✦', '等待乌叶确认': 'Waiting for Wuye', '未通过': 'Not approved', '署名': 'Named',
     '抖音主页': 'Douyin', '我要许愿': 'Make a wish', '主导航': 'Main navigation', '展开导航': 'Open menu',
     '跳到主要内容': 'Skip to content', '公告': 'NEWS', '站点公告': 'Site news', '乌叶MC 模组许愿池首页': 'Wuye MC Mod Wish Pool home',
     '乌叶MC': 'Wuye MC', '乌叶MC · 模组许愿池': 'Wuye MC · Mod Wish Pool',

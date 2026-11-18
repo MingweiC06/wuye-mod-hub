@@ -423,9 +423,11 @@
           '</p>' +
           '</div>' +
           '</div>' +
-          '<button class="btn btn-sm btn-ghost" type="button" data-review="' +
-          Number(idea.id) +
-          '">去审核</button>' +
+          '<div class="admin-pending-acts">' +
+          '<button class="btn btn-sm btn-primary" type="button" data-approve="' + Number(idea.id) + '">通过，开放投票</button>' +
+          '<button class="btn btn-sm btn-ghost" type="button" data-reject="' + Number(idea.id) + '">不通过</button>' +
+          '<button class="btn btn-sm btn-ghost" type="button" data-review="' + Number(idea.id) + '">编辑</button>' +
+          '</div>' +
           '</article>'
         );
       })
@@ -1852,7 +1854,23 @@
     });
     els.tabs.addEventListener('keydown', onTabKeydown);
 
-    els.pendingList.addEventListener('click', function (event) {
+    els.pendingList.addEventListener('click', async function (event) {
+      const quick = event.target.closest('[data-approve],[data-reject]');
+      if (quick) {
+        const approve = quick.hasAttribute('data-approve');
+        const qid = Number(approve ? quick.dataset.approve : quick.dataset.reject);
+        quick.disabled = true;
+        try {
+          await adminApi('/api/admin/ideas/' + qid, { method: 'PATCH', body: approve ? { status: 'open' } : { hidden: true } });
+          WY.toast(approve ? '已通过，大家现在可以投票了' : '已拒绝（已隐藏）', 'success');
+          state.ideas.loaded = false;
+          loadOverview();
+        } catch (err) {
+          quick.disabled = false;
+          WY.toast(err.message, 'error');
+        }
+        return;
+      }
       const button = event.target.closest('[data-review]');
       if (!button) return;
       const id = Number(button.dataset.review);

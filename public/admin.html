@@ -10,13 +10,14 @@
   <meta name="color-scheme" content="dark">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css?v=20261118a">
-  <link rel="stylesheet" href="/admin.css?v=1">
-  <link rel="stylesheet" href="/cosmic.css?v=20261119cb">
+  <link rel="stylesheet" href="/admin.css?v=2">
+  <link rel="stylesheet" href="/cosmic.css?v=20261120a">
   <link rel="stylesheet" href="/fx.css?v=20261119bmneq">
-  <script src="/app.js?v=20261119b" defer></script>
-  <script src="/admin.js?v=4" defer></script>
+  <script src="/app.js?v=20261120a" defer></script>
+  <script src="/admin.js?v=4x" defer></script>
   <script src="/admin-files.js?v=2" defer></script>
   <script src="/admin-channel.js?v=9" defer></script>
+  <script src="/admin-sponsor.js?v=1" defer></script>
   <script src="/fx.js?v=20261120b"></script>
 </head>
 <body class="page-admin">
@@ -33,6 +34,8 @@
         <a href="/ideas" data-nav="ideas">许愿池</a>
         <a href="/polls" data-nav="polls">投票</a>
         <a href="/downloads" data-nav="downloads">下载</a>
+        <a href="/leaderboard" data-nav="leaderboard">排行榜</a>
+        <a href="/sponsor" data-nav="sponsor">赞助</a>
         <a href="/rules" data-nav="rules">规则</a>
       </nav>
       <div class="header-actions">
@@ -260,6 +263,20 @@
           <section class="panel admin-block">
             <div class="admin-block-head"><h2>投票卡片</h2><span class="hint">给每个候选设置游戏和图片（自动压缩到 1200px）。状态在「灵感审核」里改：已采纳＝投票中，制作中＝置顶，已发布＝已完成。</span></div>
             <div id="cards-admin" class="cards-admin"></div>
+          </section>
+          <section class="panel admin-block">
+            <div class="admin-block-head"><h2>赞助</h2><span class="hint">金额只在这里显示。确认后才会出现在公开的赞助榜（只显示名字和排名）。</span></div>
+            <div class="sp-admin-qr" id="sp-admin-qr">
+              <label class="sp-admin-slot"><span>微信收款码</span><img id="sp-admin-wechat" alt="" hidden><input type="file" accept="image/png,image/jpeg,image/webp" data-qr="wechat"><button class="btn btn-ghost btn-sm" type="button" data-qr-clear="wechat">去掉</button></label>
+              <label class="sp-admin-slot"><span>支付宝收款码</span><img id="sp-admin-alipay" alt="" hidden><input type="file" accept="image/png,image/jpeg,image/webp" data-qr="alipay"><button class="btn btn-ghost btn-sm" type="button" data-qr-clear="alipay">去掉</button></label>
+            </div>
+            <form class="sp-admin-note" id="sp-admin-note"><input class="input" name="note" maxlength="200" placeholder="赞助页说明（可选），例如：备注写你的名字，方便我核对"><button class="btn btn-primary btn-sm" type="submit">保存说明</button></form>
+            <div class="sp-admin-total" id="sp-admin-total"></div>
+            <div id="sp-admin-list" class="sp-admin-list"></div>
+          </section>
+          <section class="panel admin-block">
+            <div class="admin-block-head"><h2>名字与钥匙</h2><span class="hint">粉丝丢了钥匙时，在这里重置，把新钥匙私信给他。旧钥匙会失效。</span></div>
+            <div id="profiles-admin" class="sp-admin-list"></div>
           </section>
         </section>
 

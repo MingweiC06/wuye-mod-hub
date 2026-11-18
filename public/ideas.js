@@ -22,6 +22,7 @@
   ];
   const STATUSES = [
     { key: 'pending', label: '待审核', icon: '◷' },
+    { key: 'open', label: '投票中', icon: '☆' },
     { key: 'planned', label: '已采纳', icon: '★' },
     { key: 'building', label: '制作中', icon: '⚒' },
     { key: 'released', label: '已发布', icon: '✓' },
@@ -30,7 +31,7 @@
   const CATEGORY_MAP = new Map(CATEGORIES.map((category) => [category.key, category]));
   const STATUS_MAP = new Map(STATUSES.map((status) => [status.key, status]));
   /* pending stays in STATUS_MAP for freshly submitted cards, but public lists never expose it. */
-  const FILTER_STATUSES = new Set(['planned', 'building', 'released', 'shelved']);
+  const FILTER_STATUSES = new Set(['open', 'planned', 'building', 'released', 'shelved']);
 
   const SKELETON_CARD = [
     '<div class="idea-card idea-skeleton" aria-hidden="true">',

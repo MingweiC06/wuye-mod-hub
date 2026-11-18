@@ -12,6 +12,7 @@
 
   const STATUSES = [
     { key: 'pending', label: '待审核' },
+    { key: 'open', label: '投票中' },
     { key: 'planned', label: '已采纳' },
     { key: 'building', label: '制作中' },
     { key: 'released', label: '已发布' },
@@ -20,6 +21,7 @@
 
   const STATUS_LABELS = {
     pending: '待审核',
+    open: '投票中',
     planned: '已采纳',
     building: '制作中',
     released: '已发布',

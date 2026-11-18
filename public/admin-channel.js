@@ -7,7 +7,7 @@
   let categories = [];
   let booted = false;
 
-  const STATUS_LABEL = { planned: '已采纳', building: '制作中', released: '已发布' };
+  const STATUS_LABEL = { open: '投票中', planned: '已采纳', building: '制作中', released: '已发布' };
 
   async function setupCollector() {
     const link = $('collector-link');

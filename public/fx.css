@@ -711,3 +711,28 @@ a:not(.btn):not(.cx-work-cover):not(.brand):not(.chip):hover {
 [hidden] { display: none !important; }
 .nav a, .header-actions .btn { white-space: nowrap; }
 @media (max-width: 1100px) and (min-width: 821px) { .nav { gap: 4px; } .nav a { padding-inline: 8px; } }
+
+/* ---------- page transitions: native cross-document morph ---------- */
+@view-transition { navigation: auto; }
+.site-header { view-transition-name: wy-header; }
+.wy-progress { view-transition-name: wy-progress; }
+::view-transition-group(wy-header),
+::view-transition-old(wy-header),
+::view-transition-new(wy-header) { animation: none; }
+::view-transition-old(wy-progress) { display: none; }
+::view-transition-old(root) { animation: wy-vt-out 0.42s cubic-bezier(0.4, 0, 1, 1) both; }
+::view-transition-new(root) { animation: wy-vt-in 0.85s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes wy-vt-out {
+  to { opacity: 0; transform: translate3d(0, -14px, 0) scale(0.985); }
+}
+@keyframes wy-vt-in {
+  from { opacity: 0; transform: translate3d(0, 22px, 0) scale(1.01); }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}
+
+/* fallback veil for browsers without cross-document view transitions */
+.wy-veil { position: fixed; inset: 0; z-index: 9998; pointer-events: none; background: #07060b; opacity: 0; transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+.wy-veil.on { opacity: 1; pointer-events: auto; transition-duration: 0.22s; }
+.wy-veil.instant { transition: none; }

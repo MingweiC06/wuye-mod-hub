@@ -475,15 +475,23 @@
   /* ======================================================================
      Page shutters between internal pages
      ====================================================================== */
+  // Modern browsers: native cross-document View Transitions (fx.css
+  // `@view-transition`), so navigation starts instantly and the browser
+  // morphs old → new with the header held still. Others: a short ink fade.
   function setupTransitions() {
-    const tr = document.createElement('div');
-    tr.className = 'wy-trans';
-    tr.innerHTML = '<i></i><i></i>';
-    document.body.appendChild(tr);
-    if (store.sget('wy:trans') === '1' && !RM) {
+    const native = 'onpagereveal' in window;
+    const veil = document.createElement('div');
+    veil.className = 'wy-veil';
+    document.body.appendChild(veil);
+    if (!native && store.sget('wy:trans') === '1' && !RM) {
       store.sset('wy:trans', '');
-      tr.classList.add('shut');
-      requestAnimationFrame(() => requestAnimationFrame(() => tr.classList.remove('shut')));
+      veil.classList.add('on', 'instant');
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          veil.classList.remove('instant');
+          veil.classList.remove('on');
+        }),
+      );
     }
     document.addEventListener('click', (e) => {
       const a = e.target.closest('a[href]');
@@ -491,17 +499,17 @@
       const url = new URL(a.href, location.href);
       if (url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
       if (url.pathname === location.pathname && url.hash) return;
-      if (RM) return;
+      SFX.play('whoosh');
+      if (native || RM) return; // let the browser navigate + morph
       e.preventDefault();
-      SFX.play('shut');
-      tr.classList.add('shut');
+      veil.classList.add('on');
       store.sset('wy:trans', '1');
       setTimeout(() => {
         location.href = url.href;
-      }, 520);
+      }, 220);
     });
     window.addEventListener('pageshow', (e) => {
-      if (e.persisted) tr.classList.remove('shut');
+      if (e.persisted) veil.classList.remove('on');
     });
   }
 

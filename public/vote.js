@@ -10,12 +10,15 @@
       ? `<img src="${WY.esc(c.image)}" alt="" loading="lazy">`
       : `<span class="vb-ph" aria-hidden="true"><i>${WY.esc((c.game || c.title).slice(0, 1))}</i></span>`;
 
-  function card(c, i, top) {
-    const pct = top ? Math.round((c.votes / top) * 100) : 0;
-    const rank = state.sort === 'votes' && !state.game && i < 3 ? `<span class="vb-rank r${i + 1}">${['I', 'II', 'III'][i]}</span>` : '';
+  const RANK = ['I', 'II', 'III'];
+  const cards = new Map();
+  const EASE = 'cubic-bezier(.16, 1, .3, 1)';
+  const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function card(c) {
     return `
-      <article class="vb-card${c.voted ? ' is-voted' : ''}" data-id="${c.id}" data-pct="${pct}">
-        <div class="vb-art">${art(c)}${rank}${c.game ? `<span class="vb-game">${WY.esc(c.game)}</span>` : ''}</div>
+      <article class="vb-card${c.voted ? ' is-voted' : ''}" data-id="${c.id}">
+        <div class="vb-art">${art(c)}${c.game ? `<span class="vb-game">${WY.esc(c.game)}</span>` : ''}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           ${c.description ? `<p data-raw>${WY.esc(c.description)}</p>` : ''}
@@ -26,6 +29,108 @@
           </div>
         </div>
       </article>`;
+  }
+
+  function cardEl(c) {
+    let el = cards.get(c.id);
+    if (!el) {
+      const t = document.createElement('template');
+      t.innerHTML = card(c).trim();
+      el = t.content.firstElementChild;
+      cards.set(c.id, el);
+    }
+    return el;
+  }
+
+  function view() {
+    const list = state.data.voting.filter((c) => !state.game || c.game === state.game);
+    const by = {
+      votes: (a, b) => b.votes - a.votes || b.mentions - a.mentions || b.createdAt - a.createdAt,
+      mentions: (a, b) => b.mentions - a.mentions || b.votes - a.votes,
+      new: (a, b) => b.createdAt - a.createdAt,
+      game: (a, b) => (a.game === '') - (b.game === '') || a.game.localeCompare(b.game, 'zh') || b.votes - a.votes,
+    }[state.sort];
+    return list.sort(by);
+  }
+
+  function setRank(el, i) {
+    const box = el.querySelector('.vb-art');
+    const want = state.sort === 'votes' && !state.game && i < 3 ? i : -1;
+    let r = box.querySelector('.vb-rank');
+    if (want < 0) {
+      if (r) r.remove();
+      return;
+    }
+    if (!r) {
+      r = document.createElement('span');
+      box.appendChild(r);
+    }
+    r.className = `vb-rank r${want + 1}`;
+    r.textContent = RANK[want];
+  }
+
+  function meters() {
+    const list = state.data.voting;
+    const top = Math.max(1, ...list.map((c) => c.votes));
+    for (const c of list) {
+      const el = cards.get(c.id);
+      if (el) el.querySelector('.vb-meter i').style.transform = `scaleX(${c.votes / top})`;
+    }
+  }
+
+  /* FLIP: keep the same card nodes (no image reloads), move them to their new
+     slots, then animate from where they were. Leaving cards fade as ghosts. */
+  function paintGrid(animate) {
+    const grid = $('vb-grid');
+    const list = view();
+    const move = animate && !calm();
+    const gridBox = grid.getBoundingClientRect();
+    const before = new Map();
+    if (move) for (const el of grid.querySelectorAll('.vb-card:not(.vb-ghost)')) before.set(el, el.getBoundingClientRect());
+    grid.querySelectorAll('.vb-ghost').forEach((g) => g.remove());
+    const keep = new Set(list.map(cardEl));
+    for (const el of [...grid.children]) {
+      if (keep.has(el)) continue;
+      const box = before.get(el);
+      if (box) {
+        const ghost = el.cloneNode(true);
+        ghost.classList.add('vb-ghost');
+        ghost.style.width = `${box.width}px`;
+        ghost.style.height = `${box.height}px`;
+        ghost.style.left = `${box.left - gridBox.left}px`;
+        ghost.style.top = `${box.top - gridBox.top}px`;
+        grid.appendChild(ghost);
+        ghost.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.92)' }], { duration: 260, easing: 'ease-in', fill: 'forwards' }).onfinish = () => ghost.remove();
+      }
+      if (!el.classList.contains('vb-ghost')) el.remove();
+    }
+    const anchor = grid.querySelector('.vb-ghost');
+    list.forEach((c, i) => {
+      const el = cardEl(c);
+      grid.insertBefore(el, anchor);
+      setRank(el, i);
+    });
+    const empty = grid.querySelector('.empty');
+    if (!list.length && !empty) grid.insertAdjacentHTML('afterbegin', '<div class="empty">这个游戏下暂时没有候选。</div>');
+    if (list.length && empty) empty.remove();
+    meters();
+    if (!move) return;
+    let fresh = 0;
+    list.forEach((c) => {
+      const el = cards.get(c.id);
+      const a = before.get(el);
+      const b = el.getBoundingClientRect();
+      if (a) {
+        const dx = a.left - b.left;
+        const dy = a.top - b.top;
+        if (dx || dy) el.animate([{ transform: `translate3d(${dx}px, ${dy}px, 0)` }, { transform: 'none' }], { duration: 620, easing: EASE });
+      } else {
+        el.animate(
+          [{ opacity: 0, transform: 'translate3d(0, 18px, 0) scale(.94)' }, { opacity: 1, transform: 'none' }],
+          { duration: 520, delay: 120 + fresh++ * 35, easing: EASE, fill: 'backwards' },
+        );
+      }
+    });
   }
 
   function mini(c, done, accepted) {
@@ -42,37 +147,30 @@
 
   function paint() {
     const d = state.data;
-    const top = Math.max(1, ...d.voting.map((c) => c.votes));
-    $('vb-grid').innerHTML = d.voting.length
-      ? d.voting.map((c, i) => card(c, i, top)).join('')
-      : '<div class="empty">这个游戏下暂时没有候选。</div>';
-    $('vb-grid').querySelectorAll('.vb-card').forEach((el) => {
-      el.style.viewTransitionName = `vb-${el.dataset.id}`;
-      el.querySelector('.vb-meter i').style.transform = `scaleX(${Number(el.dataset.pct) / 100})`;
-    });
+    paintGrid(false);
     $('vb-building-wrap').hidden = !d.building.length && !d.accepted.length;
     $('vb-accepted-wrap').hidden = !d.accepted.length;
     $('vb-accepted').innerHTML = d.accepted.map((c) => mini(c, false, true)).join('');
     $('vb-building').innerHTML = d.building.map((c) => mini(c, false)).join('');
     $('vb-done-wrap').hidden = !d.done.length;
     $('vb-done').innerHTML = d.done.map((c) => mini(c, true)).join('');
-    $('vb-games').innerHTML = [{ name: '', count: 0 }, ...d.games]
-      .map((g) => `<button class="chip${state.game === g.name ? ' is-active' : ''}" type="button" data-game="${WY.esc(g.name)}">${g.name ? `${WY.esc(g.name)} <small>${g.count}</small>` : '全部游戏'}</button>`)
-      .join('');
+    paintGames();
     $('vb-count').textContent = d.voting.length;
     $('vb-votes').textContent = d.voting.reduce((n, c) => n + c.votes, 0);
     $('vb-voters').textContent = d.voters;
   }
 
-  async function load(animate) {
-    const qs = new URLSearchParams({ sort: state.sort });
-    if (state.game) qs.set('game', state.game);
+  function paintGames() {
+    const d = state.data;
+    $('vb-games').innerHTML = [{ name: '', count: 0 }, ...d.games]
+      .map((g) => `<button class="chip${state.game === g.name ? ' is-active' : ''}" type="button" data-game="${WY.esc(g.name)}">${g.name ? `${WY.esc(g.name)} <small>${g.count}</small>` : '全部游戏'}</button>`)
+      .join('');
+  }
+
+  async function load() {
     try {
-      const data = await WY.api(`/api/board?${qs}`);
-      state.data = data;
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (animate && document.startViewTransition && !reduce) document.startViewTransition(paint);
-      else paint();
+      state.data = await WY.api('/api/board');
+      paint();
     } catch (error) {
       $('vb-grid').innerHTML = `<div class="empty">${WY.esc(error.message)}</div>`;
     }
@@ -97,11 +195,7 @@
       n.classList.remove('bump');
       void n.offsetWidth;
       n.classList.add('bump');
-      const top = Math.max(1, ...state.data.voting.map((x) => x.votes));
-      document.querySelectorAll('.vb-card').forEach((cardEl) => {
-        const it = state.data.voting.find((x) => x.id === Number(cardEl.dataset.id));
-        if (it) cardEl.querySelector('.vb-meter i').style.transform = `scaleX(${it.votes / top})`;
-      });
+      meters();
       $('vb-votes').textContent = state.data.voting.reduce((s, x) => s + x.votes, 0);
     } catch (error) {
       WY.toast(error.message, 'error');
@@ -116,13 +210,14 @@
       if (!b || b.dataset.sort === state.sort) return;
       state.sort = b.dataset.sort;
       document.querySelectorAll('.vb-sort .chip').forEach((x) => x.classList.toggle('is-active', x === b));
-      load(true);
+      paintGrid(true);
     });
     $('vb-games').addEventListener('click', (e) => {
       const b = e.target.closest('[data-game]');
       if (!b || b.dataset.game === state.game) return;
       state.game = b.dataset.game;
-      load(true);
+      $('vb-games').querySelectorAll('.chip').forEach((x) => x.classList.toggle('is-active', x === b));
+      paintGrid(true);
     });
     for (const id of ['vb-grid', 'vb-accepted']) {
       $(id).addEventListener('click', (e) => {
@@ -130,7 +225,7 @@
         if (b) vote(b);
       });
     }
-    load(false);
+    load();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();

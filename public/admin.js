@@ -52,7 +52,7 @@
     'admin.export': '导出 CSV',
   };
 
-  const TAB_NAMES = ['overview', 'ideas', 'polls', 'settings', 'channel'];
+  const TAB_NAMES = ['overview', 'ideas', 'polls', 'settings', 'channel', 'files'];
   const PAGE_SIZE = 50;
   const DEFAULT_ANNOUNCEMENT = '暂无公告，先去看看大家的许愿吧。';
 
@@ -321,8 +321,8 @@
       if (!state.polls.loaded || opts.force) loadPolls();
       return;
     }
-    if (name === 'channel') {
-      document.dispatchEvent(new CustomEvent('wy:channel'));
+    if (name === 'channel' || name === 'files') {
+      document.dispatchEvent(new CustomEvent('wy:' + name));
       return;
     }
     renderSettings();

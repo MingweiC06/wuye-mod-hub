@@ -12,9 +12,12 @@
   <link rel="stylesheet" href="/styles.css?v=20261118a">
   <link rel="stylesheet" href="/admin.css?v=1">
   <link rel="stylesheet" href="/cosmic.css?v=20261118a">
+  <link rel="stylesheet" href="/fx.css?v=4">
   <script src="/app.js?v=20261118a" defer></script>
-  <script src="/admin.js?v=2" defer></script>
+  <script src="/admin.js?v=3" defer></script>
+  <script src="/admin-files.js?v=2" defer></script>
   <script src="/admin-channel.js?v=1" defer></script>
+  <script src="/fx.js?v=3"></script>
 </head>
 <body class="page-admin">
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -30,6 +33,7 @@
         <a href="/ideas" data-nav="ideas">许愿池</a>
         <a href="/polls" data-nav="polls">投票</a>
         <a href="/arena" data-nav="arena">擂台</a>
+        <a href="/downloads" data-nav="downloads">下载</a>
         <a href="/rules" data-nav="rules">规则</a>
       </nav>
       <div class="header-actions">
@@ -95,6 +99,7 @@
             <button class="tab" id="tab-polls" type="button" role="tab" aria-selected="false" aria-controls="panel-polls" data-tab="polls" tabindex="-1">投票管理</button>
             <button class="tab" id="tab-settings" type="button" role="tab" aria-selected="false" aria-controls="panel-settings" data-tab="settings" tabindex="-1">站点设置</button>
             <button class="tab" id="tab-channel" type="button" role="tab" aria-selected="false" aria-controls="panel-channel" data-tab="channel" tabindex="-1">频道与互动</button>
+            <button class="tab" id="tab-files" type="button" role="tab" aria-selected="false" aria-controls="panel-files" data-tab="files" tabindex="-1">模组文件</button>
           </div>
         </div>
       </section>
@@ -261,6 +266,49 @@
               <div id="roadmap-admin"></div>
             </section>
           </div>
+        </section>
+
+        <section class="admin-panel" id="panel-files" data-panel="files" role="tabpanel" aria-labelledby="tab-files" tabindex="0" hidden>
+          <div class="page-head admin-panel-head">
+            <div>
+              <p class="eyebrow"><span class="dot"></span>FORGE</p>
+              <h2>模组文件</h2>
+              <p class="lead">上传 .jar 模组或 .zip / .mrpack 整合包。粉丝在下载页输入粉丝口令后才能下载。</p>
+            </div>
+          </div>
+          <div class="admin-settings-grid">
+            <section class="panel admin-block">
+              <div class="admin-block-head"><h2>粉丝口令</h2><span class="badge badge-gold" id="fan-count">—</span></div>
+              <p class="hint">把口令放在抖音主页简介、粉丝群或视频里——只有关注你的人才看得到。更换口令后，已验证的粉丝仍然有效。</p>
+              <form id="fan-form" class="admin-inline" novalidate>
+                <input class="input" id="fan-code" maxlength="32" placeholder="例如：星穹列车2026">
+                <button class="btn btn-primary btn-sm" type="submit">保存口令</button>
+              </form>
+            </section>
+            <section class="panel admin-block">
+              <div class="admin-block-head"><h2>锻造新文件</h2><span class="badge badge-cyan">≤ 300MB</span></div>
+              <form id="mod-form" class="admin-mod-form" novalidate>
+                <label class="admin-drop" id="mod-drop">
+                  <input type="file" id="mod-file" accept=".jar,.zip,.mrpack" hidden>
+                  <span class="admin-drop-cube" aria-hidden="true"></span>
+                  <strong id="mod-file-name">拖入 .jar / .zip，或点击选择</strong>
+                </label>
+                <select class="select" id="mod-kind" aria-label="类型"><option value="mod">模组 .jar</option><option value="modpack">整合包 .zip / .mrpack</option></select>
+                <input class="input" id="mod-name" maxlength="60" placeholder="名称，如 帝弓司命 · 巡猎之弓">
+                <div class="admin-inline">
+                  <input class="input" id="mod-version" maxlength="30" placeholder="版本 1.0.0">
+                  <input class="input" id="mod-mc" maxlength="30" placeholder="MC 1.21.1">
+                  <input class="input" id="mod-loader" maxlength="30" placeholder="NeoForge / Fabric">
+                </div>
+                <textarea class="textarea" id="mod-desc" rows="3" maxlength="400" placeholder="一句话介绍（可选）"></textarea>
+                <button class="btn btn-gold btn-lg" type="submit">开始锻造上传</button>
+              </form>
+            </section>
+          </div>
+          <section class="panel admin-block">
+            <div class="admin-block-head"><h2>已上传</h2></div>
+            <div id="mod-admin-list"></div>
+          </section>
         </section>
 
         <section class="admin-panel" id="panel-settings" data-panel="settings" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" hidden>

@@ -392,3 +392,18 @@ A：路径本身不是秘密，安全性依赖强管理码 + HTTPS + 限流。�
 - **Talent Map 侧边按钮**：在合作站点页面末尾加
   `<script src="https://许愿池域名/widget.js" data-hub="https://许愿池域名" defer></script>`，
   并给许愿池设置环境变量 `WIDGET_ORIGINS=https://uniquetalentmap.com`（多个用逗号分隔）。
+
+## 粉丝下载区 / Fan downloads
+
+- `/downloads` lists mods (`.jar`) and modpacks (`.zip`/`.mrpack`). Downloads need a **fan code**: Douyin has no follower API, so set a code in 后台 → 模组文件 and post it only on Douyin (profile, fan group, latest video). Fans enter nickname + code once; their device is remembered. Change the code any time — verified fans stay verified.
+- Uploads (admin only) stream to `DATA_DIR/files`, max 300 MB, ZIP magic checked, SHA-256 shown. Behind nginx set `client_max_body_size 300m;`.
+- Downloads use short-lived signed links.
+
+## 动效与双语 / Motion & languages
+
+- `fx.js`/`fx.css`: once-per-session intro (skip with Esc or `?noboot`), page shutters, text reveals, button ripples, WebAudio sound effects (no audio files; starts after the first click; mute toggle in the header).
+- `i18n.js`: Chinese source with an English overlay; header EN/中 toggle or `?lang=en|zh`. The admin pages stay Chinese.
+
+## Talent Map embed
+
+The side tab now opens the whole hub full screen in an iframe, following the host page's `<html lang>`. Set `WIDGET_ORIGINS` to the talent-map origin(s) so the hub allows being framed. Hosting the hub on a subdomain (e.g. `wish.your-domain`) is recommended.

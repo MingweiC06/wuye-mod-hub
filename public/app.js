@@ -351,6 +351,7 @@
     else if (pathname.startsWith('/polls')) active = 'polls';
     else if (pathname.startsWith('/rules')) active = 'rules';
     else if (pathname.startsWith('/arena')) active = 'arena';
+    else if (pathname.startsWith('/downloads')) active = 'downloads';
     else if (pathname.startsWith('/admin')) active = 'admin';
     document.querySelectorAll('[data-nav]').forEach((link) => {
       const isActive = link.dataset.nav === active;

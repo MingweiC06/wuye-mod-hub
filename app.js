@@ -1,6 +1,7 @@
 /**
  * app.js — creates the HTTP server: security middleware, static files, API.
  */
+import { createShield } from './lib/shield.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -53,6 +54,13 @@ export function createApp(options = {}) {
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
   const limiter = new RateLimiter();
+  const shield = createShield({
+    token: options.cfApiToken,
+    zoneId: options.cfZoneId,
+    dataDir,
+    rpm: Number(options.shieldRpm) || 1500,
+    calmMinutes: Number(options.shieldCalmMinutes) || 30,
+  });
 
   const server = http.createServer((req, res) => {
     handleRequest(req, res).catch((error) => {
@@ -71,6 +79,7 @@ export function createApp(options = {}) {
   });
 
   async function handleRequest(req, res) {
+    if (req.headers['cf-connecting-ip']) shield.hit();
     applySecurityHeaders(req, res);
     const url = new URL(req.url || '/', 'http://localhost');
     const pathname = url.pathname;
@@ -192,6 +201,7 @@ export function createApp(options = {}) {
   }
 
   function close() {
+    shield.stop();
     return new Promise((resolve) => {
       server.close(() => {
         try {
@@ -211,6 +221,7 @@ export function createApp(options = {}) {
     publicDir,
     adminCode: admin.code,
     adminCodeCreated: admin.created,
+    shield,
     close,
   };
 }

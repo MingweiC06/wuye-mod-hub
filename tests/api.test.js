@@ -4,9 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApp } from '../app.js';
+import { DEMO_BRACKET, SEED_IDEAS, SEED_POLLS } from './fixtures/demo.js';
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wuye-test-'));
-const app = createApp({ dataDir, adminCode: 'test-admin-code-1234' });
+const app = createApp({ dataDir, adminCode: 'test-admin-code-1234', demo: { ideas: SEED_IDEAS, polls: SEED_POLLS, bracket: DEMO_BRACKET } });
 
 await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${app.server.address().port}`;

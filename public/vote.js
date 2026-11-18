@@ -21,7 +21,7 @@
           ${c.description ? `<p data-raw>${WY.esc(c.description)}</p>` : ''}
           <div class="vb-meter" aria-hidden="true"><i></i></div>
           <div class="vb-foot">
-            <span class="vb-n"><b>${c.votes}</b> 票</span>
+            <span class="vb-n"><b>${c.votes}</b> 票${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}</span>
             <button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button>
           </div>
         </div>

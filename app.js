@@ -42,10 +42,10 @@ export function createApp(options = {}) {
 
   fs.mkdirSync(dataDir, { recursive: true });
   const db = openDatabase(path.join(dataDir, 'wuye.db'));
-  seedDatabase(db);
+  seedDatabase(db, options.demo);
   migrateExtras(db);
   migrateMods(db);
-  seedExtras(db);
+  seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
   const limiter = new RateLimiter();

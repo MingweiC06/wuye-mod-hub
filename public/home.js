@@ -76,7 +76,7 @@
   function renderCommentPicks(picks) {
     const row = $('#comment-picks');
     if (!row || !picks || !picks.length) return;
-    const html = picks.map((pick) => `<a href="/ideas?q=${encodeURIComponent(pick.q)}">${WY.esc(pick.label)}</a>`).join('');
+    const html = picks.map((pick) => `<a href="/polls">${WY.esc(pick.label)}${pick.count ? ` <small>×${pick.count}</small>` : ''}</a>`).join('');
     row.innerHTML = html + html.replace(/<a /g, '<a aria-hidden="true" tabindex="-1" ');
   }
 

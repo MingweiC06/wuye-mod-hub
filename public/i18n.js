@@ -117,7 +117,7 @@
     // ---- vote board ----
     '下一个做什么，': 'What should be next?', '每张卡片都是一个候选。投给你最想看的，票数最高的会优先进入制作；开始制作后会移到「制作中」，做完就进「已完成」。': 'Every card is a candidate. Vote for what you most want — the top ones get built first; once work starts they move to “Building”, and when finished to “Done”.',
     '候选': 'candidates', '总票数': 'total votes', '人参与': 'voters', '排序': 'Sort', '游戏筛选': 'Filter by game',
-    '票数最高': 'Most votes', '最新加入': 'Newest', '按游戏': 'By game', '全部游戏': 'All games',
+    '票数最高': 'Most votes', '评论区呼声': 'Most requested', '最新加入': 'Newest', '按游戏': 'By game', '全部游戏': 'All games',
     '已经在做了，敬请期待。': 'Already in the works — stay tuned.', '已完成': 'Done', '投票选出来、已经做好的作品。': 'Voted in by you, and finished.',
     '投一票': 'Vote', '已投 ✦': 'Voted ✦', '这个游戏下暂时没有候选。': 'No candidates for this game yet.',
     '没看到想要的？': 'Don’t see yours?', '去许愿池提一个 →': 'Suggest one in the wish pool →', '去投票': 'Go vote', '去投票 →': 'Go vote →',
@@ -238,6 +238,7 @@
     [/^加载更多（还有 (\d+) 条）$/, (m, a) => `Load more (${a} left)`],
     [/^已显示 (\d+) \/ (\d+) 条$/, (m, a, b) => `Showing ${a} / ${b}`],
     [/^请求失败（(\d+)）$/, (m, a) => `Request failed (${a})`],
+    [/^评论区 (\d+) 次$/, (m, a) => `${a} comment requests`],
     [/^(\d+) 次下载$/, (m, a) => `${a} downloads`],
     [/^(.+) · (\d+) 票$/, (m, a, b) => `${translateText(a) ?? a} · ${b} votes`],
     [/^(.+) ✦$/, (m, a) => `${a} ✦`],

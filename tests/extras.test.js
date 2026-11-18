@@ -28,6 +28,8 @@ function client(deviceId) {
 const fan = client('fan-device-0001');
 const fan2 = client('fan-device-0002');
 const admin = client('admin-device-0001');
+const login = await fetch(`${base}/api/admin/login`, { method: 'POST', headers: { 'x-requested-with': 'XMLHttpRequest', 'content-type': 'application/json', 'x-device-id': 'admin-device-0001' }, body: JSON.stringify({ code: 'test-admin-code-1234' }) });
+const adminCookie = login.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
 await admin('/api/admin/login', { method: 'POST', body: { code: 'test-admin-code-1234' } });
 
 test('parsers', () => {
@@ -114,4 +116,39 @@ test('collector paste adds the video and its comments together', async () => {
   assert.equal(site.data.videos[0].title, '纯美复刻');
   const again = await admin('/api/admin/comments/import', { method: 'POST', body: { raw } });
   assert.equal(again.data.videoAdded, false);
+});
+
+test('fan code gate, jar upload, signed download', async () => {
+  const fanX = client('fan-device-gate-01');
+  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: 'x', code: 'abc' } })).status, 503);
+  assert.equal((await admin('/api/admin/fan', { method: 'PATCH', body: { code: '星穹 列车' } })).status, 200);
+  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: '小星', code: 'wrong' } })).status, 403);
+
+  // A tiny valid zip header is enough for the magic-byte check.
+  const jar = Buffer.concat([Buffer.from('504b0304', 'hex'), Buffer.alloc(64, 1)]);
+  const up = (qs, bytes) => fetch(`${base}/api/admin/mods/upload?${qs}`, {
+    method: 'POST',
+    headers: { 'x-requested-with': 'XMLHttpRequest', 'x-device-id': 'admin-device-0001', 'content-type': 'application/octet-stream', cookie: adminCookie },
+    body: bytes,
+  });
+  const qs = new URLSearchParams({ kind: 'mod', file: '帝弓司命-1.0.jar', name: '帝弓司命', version: '1.0', mc: '1.21.1', loader: 'NeoForge' }).toString();
+  assert.equal((await up(qs, Buffer.from('not a jar at all'))).status, 400);
+  assert.equal((await up(qs.replace('.jar', '.exe'), jar)).status, 400);
+  const ok = await up(qs, jar);
+  assert.equal(ok.status, 200);
+  const mod = (await ok.json()).mod;
+  assert.equal(mod.size, jar.length);
+
+  const list = await fanX('/api/mods');
+  assert.equal(list.data.mods.length, 1);
+  assert.equal(list.data.modpacks.length, 0);
+  assert.equal((await fanX(`/api/mods/${mod.id}/token`, { method: 'POST' })).status, 403);
+  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: '小星', code: '星穹列车' } })).status, 200);
+  const t = await fanX(`/api/mods/${mod.id}/token`, { method: 'POST' });
+  const file = await fetch(base + t.data.url);
+  assert.equal(file.status, 200);
+  assert.equal(Buffer.from(await file.arrayBuffer()).length, jar.length);
+  assert.match(file.headers.get('content-disposition'), /filename\*=UTF-8''/);
+  assert.equal((await fetch(`${base}/api/mods/${mod.id}/download?t=1.bad`)).status, 403);
+  assert.equal((await fanX('/api/mods')).data.mods[0].downloads, 1);
 });

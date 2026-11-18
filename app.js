@@ -9,6 +9,7 @@ import { ensureAdminCode, getSecret, openDatabase, seedDatabase } from './lib/db
 import { applySecurityHeaders, notFoundPage, sendJson, serveStatic } from './lib/http.js';
 import { handleApi } from './lib/api.js';
 import { migrateExtras, seedExtras } from './lib/extras.js';
+import { migrateMods } from './lib/mods.js';
 import {
   HttpError,
   RateLimiter,
@@ -31,6 +32,7 @@ const PAGE_REWRITES = new Map([
   ['/admin', '/admin.html'],
   ['/rules', '/rules.html'],
   ['/arena', '/arena.html'],
+  ['/downloads', '/downloads.html'],
 ]);
 
 export function createApp(options = {}) {
@@ -43,6 +45,7 @@ export function createApp(options = {}) {
   const db = openDatabase(path.join(dataDir, 'wuye.db'));
   seedDatabase(db);
   migrateExtras(db);
+  migrateMods(db);
   seedExtras(db);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
@@ -105,7 +108,9 @@ export function createApp(options = {}) {
       }
       const deviceHeader = String(req.headers['x-device-id'] || '');
       const device = /^[A-Za-z0-9_-]{8,64}$/.test(deviceHeader) ? deviceHeader : '';
-      const voterKey = hmacHex(secret, `v1:${vid}:${device || '-'}`);
+      // Device id (localStorage) is the primary identity so the site also works inside the
+      // partner-site iframe, where third-party cookies are often blocked.
+      const voterKey = device ? hmacHex(secret, `v2:d:${device}`) : hmacHex(secret, `v1:${vid}:-`);
       const ipHash = sha256(`${secret}:${ip}`).slice(0, 16);
 
       const ctx = {
@@ -150,6 +155,14 @@ export function createApp(options = {}) {
     // The side widget is embedded on the talent-map site (another origin).
     if (pathname === '/widget.js' || pathname.startsWith('/assets/')) {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+
+    // Let partner sites (WIDGET_ORIGINS) show public pages full-screen in an iframe. Admin stays unframeable.
+    const frameOrigins = String(process.env.WIDGET_ORIGINS || '').split(',').map((o) => o.trim()).filter((o) => /^https?:\/\/[\w.-]+(:\d+)?$/.test(o));
+    if (frameOrigins.length && !pathname.startsWith('/admin')) {
+      res.removeHeader('X-Frame-Options');
+      const csp = String(res.getHeader('Content-Security-Policy') || '');
+      res.setHeader('Content-Security-Policy', csp.replace("frame-ancestors 'none'", `frame-ancestors 'self' ${frameOrigins.join(' ')}`));
     }
 
     let target = pathname;

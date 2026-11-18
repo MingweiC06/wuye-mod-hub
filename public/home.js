@@ -4,91 +4,26 @@
 
   const $ = (selector, root = document) => root.querySelector(selector);
 
-  let showcaseTimer = null;
-  let showcaseIndex = 0;
-  let showcaseVideos = [];
-  let showcasePaused = false;
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
 
-  /* ---------------- showcase ---------------- */
+  /* ---------------- hero poster ---------------- */
 
-  function paintShowcase(index) {
-    const video = showcaseVideos[index];
+  function setupShowcase(videos) {
+    const video = videos[0];
     if (!video) return;
-    showcaseIndex = index;
-    const card = $('#showcase');
     const cover = $('#showcase-cover');
     if (cover) {
       cover.src = video.cover;
       cover.alt = `${video.title} 封面`;
     }
+    const bg = $('#hero-bg');
+    if (bg) bg.src = video.cover;
+    const card = $('#showcase');
     if (card) card.href = WY.videoUrl(video.id);
-    const tag = $('#showcase-tag');
-    if (tag) tag.textContent = video.tag;
     const title = $('#showcase-title');
-    if (title) {
-      title.textContent = video.title;
-      const series = document.createElement('span');
-      series.textContent = video.series;
-      series.id = 'showcase-series';
-      title.appendChild(series);
-    }
-    $('#showcase-plays').textContent = video.plays;
-    $('#showcase-likes').textContent = video.likes;
-    $('#showcase-date').textContent = video.date;
-    $('#showcase-stamp').textContent = `LATEST · 0${index + 1}`;
-    document.querySelectorAll('#showcase-thumbs button').forEach((button, buttonIndex) => {
-      const active = buttonIndex === index;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-selected', String(active));
-    });
-  }
-
-  function scheduleShowcase() {
-    if (showcaseTimer) clearInterval(showcaseTimer);
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    showcaseTimer = setInterval(() => {
-      if (showcasePaused || document.hidden) return;
-      paintShowcase((showcaseIndex + 1) % showcaseVideos.length);
-    }, 6500);
-  }
-
-  function setupShowcase(videos) {
-    showcaseVideos = videos;
-    const thumbs = $('#showcase-thumbs');
-    if (!thumbs || !videos.length) return;
-    thumbs.innerHTML = videos
-      .map(
-        (video, index) => `
-        <button type="button" role="tab" aria-selected="false" aria-label="${WY.esc(
-          `第 ${index + 1} 条：${video.title}`,
-        )}" data-index="${index}">
-          <img src="${WY.esc(video.cover)}" alt="" loading="lazy" width="52" height="66">
-        </button>`,
-      )
-      .join('');
-    thumbs.addEventListener('click', (event) => {
-      const button = event.target.closest('button[data-index]');
-      if (!button) return;
-      paintShowcase(Number(button.dataset.index));
-      scheduleShowcase();
-    });
-    const shape = $('#showcase');
-    if (shape) {
-      shape.addEventListener('mouseenter', () => {
-        showcasePaused = true;
-      });
-      shape.addEventListener('mouseleave', () => {
-        showcasePaused = false;
-      });
-      shape.addEventListener('focusin', () => {
-        showcasePaused = true;
-      });
-      shape.addEventListener('focusout', () => {
-        showcasePaused = false;
-      });
-    }
-    paintShowcase(0);
-    scheduleShowcase();
+    if (title) title.textContent = video.title;
+    const meta = $('#showcase-meta');
+    if (meta) meta.textContent = [video.series, video.plays && `${video.plays} 播放`, video.date].filter(Boolean).join(' · ');
   }
 
   /* ---------------- latest video cards ---------------- */
@@ -102,34 +37,117 @@
     }
     grid.innerHTML = videos
       .map((video, index) => {
-        const episode = `EP.${String(videos.length - index).padStart(2, '0')}`;
+        const url = WY.esc(WY.videoUrl(video.id));
         return `
-        <article class="video-card">
-          <a class="video-cover" href="${WY.esc(WY.videoUrl(video.id))}" target="_blank" rel="noopener" aria-label="${WY.esc(
-            `${video.title}，在抖音观看`,
-          )}">
-            <img src="${WY.esc(video.cover)}" alt="${WY.esc(video.title)} 封面" loading="${index < 2 ? 'eager' : 'lazy'}" width="323" height="430">
-            <span class="ep">${episode}</span>
-            <span class="play">${WY.esc(video.plays)} 播放</span>
+        <article class="cx-work reveal">
+          <a class="cx-work-cover" href="${url}" target="_blank" rel="noopener" aria-label="${WY.esc(`${video.title}，在抖音观看`)}">
+            <img src="${WY.esc(video.cover)}" alt="" loading="${index < 2 ? 'eager' : 'lazy'}" width="323" height="430">
+            <span class="cx-work-num">${ROMAN[index] || index + 1}</span>
+            ${video.plays ? `<span class="cx-work-plays">${WY.esc(video.plays)} 播放</span>` : ''}
           </a>
-          <div class="video-body">
-            <span class="tag">${WY.esc(video.tag)}</span>
-            <h3><a href="${WY.esc(WY.videoUrl(video.id))}" target="_blank" rel="noopener">${WY.esc(video.title)}</a></h3>
-            <div class="video-meta"><span>${WY.esc(video.series)}</span><span>${WY.esc(video.date)}</span></div>
+          ${video.tag ? `<span class="tag">${WY.esc(video.tag)}</span>` : ''}
+          <h3><a href="${url}" target="_blank" rel="noopener">${WY.esc(video.title)}</a></h3>
+          <div class="cx-work-foot">
+            <span>${WY.esc(video.date || '')}</span>
+            <button class="cx-like${video.liked ? ' is-on' : ''}" type="button" data-like="${video.key}" aria-pressed="${video.liked ? 'true' : 'false'}" aria-label="给这期点星">✦ <b>${WY.fmtNumber(video.fanLikes || 0)}</b></button>
           </div>
         </article>`;
       })
       .join('');
+    grid.addEventListener('click', onLikeClick);
+  }
+
+  async function onLikeClick(event) {
+    const button = event.target.closest('[data-like]');
+    if (!button || button.disabled) return;
+    button.disabled = true;
+    try {
+      const data = await WY.api(`/api/videos/${button.dataset.like}/like`, { method: 'POST' });
+      button.classList.toggle('is-on', data.liked);
+      button.setAttribute('aria-pressed', String(data.liked));
+      button.querySelector('b').textContent = WY.fmtNumber(data.fanLikes);
+    } catch (error) {
+      WY.toast(error.message, 'error');
+    } finally {
+      button.disabled = false;
+    }
   }
 
   function renderCommentPicks(picks) {
     const row = $('#comment-picks');
-    if (!row) return;
-    row.innerHTML = (picks || [])
-      .map(
-        (pick) => `<a class="chip" href="/ideas?q=${encodeURIComponent(pick.q)}">${WY.esc(pick.label)}</a>`,
-      )
-      .join('');
+    if (!row || !picks || !picks.length) return;
+    const html = picks.map((pick) => `<a href="/ideas?q=${encodeURIComponent(pick.q)}">${WY.esc(pick.label)}</a>`).join('');
+    row.innerHTML = html + html.replace(/<a /g, '<a aria-hidden="true" tabindex="-1" ');
+  }
+
+  /* ---------------- roadmap ---------------- */
+
+  const STAGE = { planned: 'PLANNED · 已采纳', building: 'BUILDING · 制作中', released: 'RELEASED · 已发布' };
+
+  async function loadRoadmap() {
+    const track = $('#roadmap-track');
+    if (!track) return;
+    try {
+      const { items } = await WY.api('/api/roadmap');
+      if (!items.length) {
+        track.innerHTML = '<div class="empty">站长还没有公布制作进度，先去许愿池投票吧。</div>';
+        return;
+      }
+      track.innerHTML = items
+        .map(
+          (item) => `
+          <div class="cx-node" data-status="${WY.esc(item.status)}">
+            <small>${STAGE[item.status] || ''}</small>
+            <h3>${WY.esc(item.title)}</h3>
+            <div class="cx-node-bar"><i data-w="${item.progress}"></i></div>
+            <p>${item.note ? WY.esc(item.note) + ' · ' : ''}${item.progress}%</p>
+          </div>`,
+        )
+        .join('');
+      track.querySelectorAll('[data-w]').forEach((bar) => {
+        bar.style.width = `${bar.dataset.w}%`;
+      });
+    } catch (error) {
+      track.innerHTML = `<div class="empty">${WY.esc(error.message)}</div>`;
+    }
+  }
+
+  /* ---------------- bracket duel ---------------- */
+
+  async function loadDuel() {
+    const slot = $('#duel-slot');
+    if (!slot) return;
+    try {
+      const { bracket } = await WY.api('/api/bracket');
+      if (!bracket) {
+        slot.innerHTML = '<div class="empty">擂台休赛中。</div>';
+        return;
+      }
+      if (bracket.status === 'finished') {
+        slot.innerHTML = `<div class="cx-champion"><small class="eyebrow">CHAMPION</small><strong>${WY.esc(bracket.champion)}</strong>${WY.esc(bracket.title)} 冠军</div>`;
+        return;
+      }
+      const live = bracket.matches.filter((m) => m.round === bracket.round && !m.winner);
+      const match = live.find((m) => !m.myPick) || live[0];
+      if (!match) {
+        slot.innerHTML = '<div class="empty">本轮投票已结束，等待晋级。</div>';
+        return;
+      }
+      slot.innerHTML = WY.duelHtml(match, `第 ${bracket.round} 轮 / 共 ${bracket.totalRounds} 轮`);
+      WY.paintDuel(slot);
+      slot.onclick = async (event) => {
+        const side = event.target.closest('[data-pick]');
+        if (!side || side.disabled) return;
+        try {
+          await WY.api(`/api/bracket/matches/${side.dataset.match}/vote`, { method: 'POST', body: { pick: side.dataset.pick } });
+          loadDuel();
+        } catch (error) {
+          WY.toast(error.message, 'error');
+        }
+      };
+    } catch (error) {
+      slot.innerHTML = `<div class="empty">${WY.esc(error.message)}</div>`;
+    }
   }
 
   function renderPast(videos) {
@@ -282,6 +300,8 @@
     try {
       const data = await WY.site();
       renderVideos(data.videos || []);
+      const fans = document.querySelector('[data-fans]');
+      if (fans && data.site && data.site.fans) fans.textContent = data.site.fans;
       renderCommentPicks(data.commentPicks || []);
       renderPast(data.pastVideos || []);
       setupShowcase(data.videos || []);
@@ -292,6 +312,9 @@
     }
     loadHotIdeas();
     loadPollPreview();
+    loadRoadmap();
+    loadDuel();
+    if (WY.mountBoard) WY.mountBoard($('#board'), $('#nick-form'));
   }
 
   if (document.readyState === 'loading') {

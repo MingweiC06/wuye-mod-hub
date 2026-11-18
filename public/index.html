@@ -13,10 +13,11 @@
   <meta property="og:image" content="/assets/cover-yaoshi.jpg">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20261117c">
+  <link rel="stylesheet" href="/styles.css?v=20261118a">
+  <link rel="stylesheet" href="/cosmic.css?v=20261118a">
   <link rel="preload" as="image" href="/assets/cover-amber.jpg">
-  <script src="/app.js?v=20261117c" defer></script>
-  <script src="/home.js?v=20261117c" defer></script>
+  <script src="/app.js?v=20261118a" defer></script>
+  <script src="/home.js?v=20261118a" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -31,6 +32,7 @@
         <a href="/" data-nav="home">首页</a>
         <a href="/ideas" data-nav="ideas">许愿池</a>
         <a href="/polls" data-nav="polls">投票</a>
+        <a href="/arena" data-nav="arena">擂台</a>
         <a href="/rules" data-nav="rules">规则</a>
       </nav>
       <div class="header-actions">
@@ -49,168 +51,134 @@
   </div>
 
   <main id="main">
-    <section class="hero">
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="dot"></span>崩坏：星穹铁道 × 我的世界</p>
-          <h1>
-            <span class="line">下一位星神，</span>
-            <span class="line"><em>由你点名</em></span>
-          </h1>
-          <p class="hero-lead">
-            天弓、药王、帝弓、琥珀王之后，下一位该是谁？<strong>把你想看的技能、角色、整活玩法写进许愿池</strong>，
+    <section class="cx-hero">
+      <div class="cx-hero-bg" aria-hidden="true"><img id="hero-bg" src="/assets/cover-amber.jpg" alt=""></div>
+      <div class="container cx-hero-grid">
+        <div>
+          <p class="eyebrow">HONKAI · STAR RAIL × MINECRAFT</p>
+          <h1>下一位星神，<span class="l2">由你点名</span></h1>
+          <p class="cx-hero-lead">
+            天弓、药王、帝弓、琥珀王之后，下一位该是谁？<strong>把想看的技能、角色、整活玩法写进许愿池</strong>，
             大家投票，票数最高的灵感会被我认真翻牌——说不定就是下一期《技能独特 我来复刻！》。
           </p>
-          <div class="hero-cta">
+          <div class="cx-hero-cta">
             <a class="btn btn-primary btn-lg" href="/ideas#submit">写下我的灵感</a>
-            <a class="btn btn-ghost btn-lg" href="/polls">看下期投票</a>
+            <a class="btn btn-ghost btn-lg" href="/arena">进入星神擂台</a>
           </div>
-          <div class="hero-stats">
-            <div class="stat"><b data-fans>1.8万</b><span>抖音粉丝</span></div>
-            <div class="stat"><b data-likes>33.6万</b><span>累计获赞</span></div>
-            <div class="stat"><b data-idea-count>—</b><span>收到许愿</span></div>
-            <div class="stat"><b data-vote-count>—</b><span>许愿票数</span></div>
+          <div class="cx-stats">
+            <span><b data-fans>1.8万</b>粉丝</span>
+            <span><b data-likes>33.6万</b>获赞</span>
+            <span><b data-idea-count>—</b>许愿</span>
+            <span><b data-vote-count>—</b>票</span>
           </div>
         </div>
-
-        <div class="hero-showcase" aria-label="最新作品">
-          <a class="showcase-card" id="showcase" href="#" target="_blank" rel="noopener">
-            <div class="showcase-cover">
-              <img id="showcase-cover" src="/assets/cover-amber.jpg" alt="最新作品封面" width="168" height="224">
-            </div>
-            <div class="showcase-body">
-              <span class="tag" id="showcase-tag">存护 · 琥珀王</span>
-              <h3 id="showcase-title">一切献给——琥珀王！！<span id="showcase-series">《琥珀王大锤 x 我的世界》</span></h3>
-              <div class="showcase-meta">
-                <span>播放 <b id="showcase-plays">7.0万</b></span>
-                <span>点赞 <b id="showcase-likes">5680</b></span>
-                <span id="showcase-date">11-16</span>
-              </div>
-            </div>
-            <span class="showcase-stamp" id="showcase-stamp">LATEST · 01</span>
+        <figure class="cx-poster" aria-label="最新作品">
+          <span class="cx-poster-ring" aria-hidden="true"></span>
+          <a id="showcase" href="#" target="_blank" rel="noopener">
+            <div class="cx-poster-img cx-frame"><img id="showcase-cover" src="/assets/cover-amber.jpg" alt="最新作品封面" width="360" height="480"></div>
+            <figcaption class="cx-poster-cap">
+              <small>LATEST · 最新复刻</small>
+              <strong id="showcase-title">一切献给——琥珀王！！</strong>
+              <em id="showcase-meta">点击在抖音观看</em>
+            </figcaption>
           </a>
-          <div class="showcase-thumbs" id="showcase-thumbs" role="tablist" aria-label="切换最新作品"></div>
-        </div>
+        </figure>
       </div>
     </section>
 
-    <section class="comment-band" aria-labelledby="comment-picks-title">
-      <div class="container">
-        <div class="comment-band-head">
-          <h2 class="comment-band-title" id="comment-picks-title"><span class="dot"></span>评论区在点名</h2>
-          <p>最近四期视频里被反复点名的角色和整活，已经全部搬进许愿池。点一个去看看，或者直接投它一票。</p>
-        </div>
-        <div class="chips" id="comment-picks"></div>
-      </div>
-    </section>
+    <div class="cx-voices" aria-label="评论区在点名">
+      <div class="cx-voices-track" id="comment-picks"></div>
+    </div>
 
     <section class="section" id="latest">
       <div class="container">
         <div class="section-head reveal">
           <div>
-            <h2>最新作品</h2>
-            <p class="sub">“技能独特 我来复刻！”系列，用 Minecraft 还原星铁星神的招牌技能。点封面直达抖音原片。</p>
+            <h2 data-mark="I · LATEST WORKS">最新复刻</h2>
+            <p class="sub">“技能独特 我来复刻！”系列。点封面去抖音看原片，觉得好就在这里点一颗星。</p>
           </div>
-          <div class="head-aside">
-            <a class="link-arrow" href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener" data-douyin-link>去抖音看全部</a>
-          </div>
+          <div class="head-aside"><a class="link-arrow" href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener" data-douyin-link>抖音全部作品 →</a></div>
         </div>
-        <div class="video-grid" id="video-grid" aria-live="polite">
-          <div class="skeleton skeleton-tall"></div>
-          <div class="skeleton skeleton-tall"></div>
-          <div class="skeleton skeleton-tall"></div>
-          <div class="skeleton skeleton-tall"></div>
+        <div class="cx-strip" id="video-grid" aria-live="polite">
+          <div class="skeleton skeleton-tall"></div><div class="skeleton skeleton-tall"></div><div class="skeleton skeleton-tall"></div><div class="skeleton skeleton-tall"></div>
         </div>
       </div>
     </section>
 
-    <section class="section section-tight" id="series">
+    <section class="section section-tight" id="roadmap">
       <div class="container">
         <div class="section-head reveal">
           <div>
-            <h2>这个系列怎么玩</h2>
-            <p class="sub">不是许愿池里扔硬币那种许愿。你的点子会被真的看到、被投票、被做成模组。</p>
+            <h2 data-mark="II · ROADMAP">制作航线</h2>
+            <p class="sub">被采纳的灵感走到哪一步了，这里实时更新。</p>
           </div>
         </div>
-        <div class="steps">
-          <article class="step reveal">
-            <span class="step-icon">✦</span>
-            <h3>写下灵感</h3>
-            <p>想要哪位星神、哪个动漫角色、什么离谱机制？标题一句话，描述讲清楚技能表现和平衡想法。</p>
-          </article>
-          <article class="step reveal">
-            <span class="step-icon">♥</span>
-            <h3>拉人来投票</h3>
-            <p>每个设备每天都能投，票数越高越靠前。禁止刷票，被系统判定异常的票会被清理。</p>
-          </article>
-          <article class="step reveal">
-            <span class="step-icon">⚒</span>
-            <h3>等待复刻</h3>
-            <p>我会定期看许愿池和投票页，把可做的点子标成「已采纳 / 制作中」，做完就在视频里见。</p>
-          </article>
-        </div>
+        <div class="cx-road" id="roadmap-track" aria-live="polite"><div class="skeleton skeleton-row"></div></div>
       </div>
     </section>
 
     <section class="section" id="hot-ideas">
-      <div class="container">
-        <div class="section-head reveal">
-          <div>
-            <h2>正在被点名</h2>
-            <p class="sub">许愿池里票数最高的灵感。看到喜欢的就投一票，别让它沉底。</p>
+      <div class="container cx-split">
+        <div>
+          <div class="section-head reveal">
+            <div>
+              <h2 data-mark="III · WISH LEDGER">正在被点名</h2>
+              <p class="sub">许愿池里票数最高的灵感。看到喜欢的就投一票。</p>
+            </div>
+            <div class="head-aside"><a class="link-arrow" href="/ideas">进入许愿池 →</a></div>
           </div>
-          <div class="head-aside"><a class="link-arrow" href="/ideas">进入许愿池</a></div>
+          <div class="idea-list" id="hot-idea-list" aria-live="polite">
+            <div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div>
+          </div>
         </div>
-        <div class="idea-list" id="hot-idea-list" aria-live="polite">
-          <div class="skeleton skeleton-row"></div>
-          <div class="skeleton skeleton-row"></div>
-          <div class="skeleton skeleton-row"></div>
-        </div>
+        <aside>
+          <div class="section-head reveal">
+            <div><h2 data-mark="IV · ARENA">星神擂台</h2><p class="sub">两两对决，赢家晋级，冠军就是下期主角。</p></div>
+          </div>
+          <div id="duel-slot" aria-live="polite"><div class="skeleton skeleton-poll"></div></div>
+          <p class="cx-note"><a class="link-arrow" href="/arena">看完整对阵表 →</a></p>
+        </aside>
       </div>
     </section>
 
     <section class="section section-tight" id="poll-preview">
-      <div class="container">
-        <div class="section-head reveal">
-          <div>
-            <h2>下期复刻投票</h2>
-            <p class="sub">这一票真的会影响下期视频做什么。投票页还有往期结果和限定整活投票。</p>
+      <div class="container cx-split">
+        <div>
+          <div class="section-head reveal">
+            <div><h2 data-mark="V · OFFICIAL POLL">下期复刻投票</h2><p class="sub">这一票真的会影响下期视频做什么。</p></div>
+            <div class="head-aside"><a class="link-arrow" href="/polls">全部投票 →</a></div>
           </div>
-          <div class="head-aside"><a class="link-arrow" href="/polls">全部投票</a></div>
+          <div id="poll-preview-slot" aria-live="polite"><div class="skeleton skeleton-poll"></div></div>
         </div>
-        <div id="poll-preview-slot" aria-live="polite">
-          <div class="skeleton skeleton-poll"></div>
-        </div>
+        <aside>
+          <div class="section-head reveal">
+            <div><h2 data-mark="VI · TRAILBLAZERS">开拓者名录</h2><p class="sub">投票、点星、打擂台都会累积星光。</p></div>
+          </div>
+          <ol class="cx-board" id="board"></ol>
+          <form class="cx-nick" id="nick-form">
+            <input class="input" name="nickname" maxlength="16" placeholder="留下昵称上榜" aria-label="昵称">
+            <button class="btn btn-ghost btn-sm" type="submit">上榜</button>
+          </form>
+          <p class="cx-note">许愿票 1 星 · 官方投票 3 星 · 擂台 1 星 · 作品点星 1 星</p>
+        </aside>
       </div>
     </section>
 
     <section class="section section-tight" id="past">
       <div class="container">
         <div class="section-head reveal">
-          <div>
-            <h2>往期也能看</h2>
-            <p class="sub">从超兽武装到七宗罪 BGM，再到恐怖模组，都是许愿池的灵感来源。</p>
-          </div>
+          <div><h2 data-mark="VII · ARCHIVE">往期也能看</h2><p class="sub">从超兽武装到七宗罪 BGM，再到恐怖模组。</p></div>
         </div>
         <div class="rail" id="past-rail"></div>
       </div>
     </section>
 
-    <section class="section section-tight">
+    <section class="cx-close">
       <div class="container">
-        <div class="cta-band reveal">
-          <div class="cta-band-copy">
-            <img src="/assets/avatar.jpg" alt="乌叶MC 的黑猫头像" width="62" height="62">
-            <div>
-              <h3>你提灵感，我搓模组</h3>
-              <p>建议、吐槽、整活都欢迎。被采纳的灵感会出现在视频简介里。</p>
-            </div>
-          </div>
-          <div class="cta-band-actions">
-            <a class="btn btn-primary" href="/ideas#submit">去许愿</a>
-            <a class="btn btn-ghost" href="/rules">先看规则</a>
-          </div>
-        </div>
+        <p class="cx-rule">TRAILBLAZE</p>
+        <h2>你提灵感，我搓模组</h2>
+        <p>建议、吐槽、整活都欢迎。被采纳的灵感会出现在视频简介里。</p>
+        <a class="btn btn-primary btn-lg" href="/ideas#submit">去许愿</a>
       </div>
     </section>
   </main>

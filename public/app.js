@@ -350,6 +350,7 @@
     if (pathname.startsWith('/ideas')) active = 'ideas';
     else if (pathname.startsWith('/polls')) active = 'polls';
     else if (pathname.startsWith('/rules')) active = 'rules';
+    else if (pathname.startsWith('/arena')) active = 'arena';
     else if (pathname.startsWith('/admin')) active = 'admin';
     document.querySelectorAll('[data-nav]').forEach((link) => {
       const isActive = link.dataset.nav === active;
@@ -446,6 +447,65 @@
   };
 
   WY.observeReveal = initReveal;
+
+  /* ---------------- arena duel + supporter board (home & arena) ---------------- */
+
+  WY.duelHtml = function duelHtml(match, caption) {
+    const total = match.votesA + match.votesB;
+    const closed = Boolean(match.winner);
+    const side = (key, label, votes) => {
+      const pct = total ? Math.round((votes / total) * 100) : 0;
+      const cls = [
+        'cx-side',
+        match.myPick === key ? 'is-picked' : '',
+        closed && match.winner === label ? 'is-winner' : '',
+      ].join(' ');
+      return `<button class="${cls}" type="button" data-match="${match.id}" data-pick="${key}" data-pct="${pct}"${
+        closed ? ' disabled' : ''
+      } aria-label="支持 ${WY.esc(label)}"><strong>${WY.esc(label)}</strong><span>${
+        match.myPick || closed ? `${pct}% · ${votes} 票` : '点击支持'
+      }</span><i class="cx-fill"></i></button>`;
+    };
+    return `${caption ? `<p class="cx-rule">${WY.esc(caption)}</p>` : ''}<div class="cx-duel">${side('a', match.a, match.votesA)}<span class="cx-vs">VS</span>${side('b', match.b, match.votesB)}</div>`;
+  };
+
+  WY.paintDuel = function paintDuel(root) {
+    root.querySelectorAll('.cx-side').forEach((node) => {
+      const fill = node.querySelector('.cx-fill');
+      const show = node.classList.contains('is-picked') || node.disabled || root.querySelector('.is-picked');
+      if (fill) fill.style.transform = `scaleX(${show ? Number(node.dataset.pct) / 100 : 0})`;
+    });
+  };
+
+  WY.mountBoard = async function mountBoard(list, form) {
+    if (!list) return;
+    const paint = (data) => {
+      list.innerHTML = data.items.length
+        ? data.items.map((row) => `<li><span>${WY.esc(row.nickname)}</span><b>${row.points} ✦</b></li>`).join('')
+        : '<li class="is-empty"><span>还没有人上榜，留下昵称做第一个开拓者</span><b></b></li>';
+      if (form && data.me) form.nickname.value = data.me;
+    };
+    try {
+      paint(await WY.api('/api/supporters'));
+    } catch {
+      list.innerHTML = '';
+    }
+    if (form && !form.dataset.bound) {
+      form.dataset.bound = '1';
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const nickname = form.nickname.value.trim();
+        if (!nickname) return;
+        try {
+          await WY.api('/api/me/nickname', { method: 'POST', body: { nickname } });
+          WY.toast('已登记，继续投票攒星光吧', 'success');
+          paint(await WY.api('/api/supporters'));
+        } catch (error) {
+          WY.toast(error.message, 'error');
+        }
+      });
+    }
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', WY.mount, { once: true });

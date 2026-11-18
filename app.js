@@ -143,11 +143,12 @@ export function createApp(options = {}) {
 
     // Uploaded covers live in DATA_DIR/media so they survive redeploys.
     if (pathname.startsWith('/media/')) {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       if (!/^\/media\/[\w-]+\.(jpg|png|webp)$/.test(pathname) || !serveStatic(req, res, dataDir, pathname)) notFoundPage(res, publicDir);
       return;
     }
     // The side widget is embedded on the talent-map site (another origin).
-    if (pathname === '/widget.js' || pathname === '/widget.css') {
+    if (pathname === '/widget.js' || pathname.startsWith('/assets/')) {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     }
 

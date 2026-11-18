@@ -9,10 +9,12 @@
   <meta name="theme-color" content="#05070d">
   <meta name="color-scheme" content="dark">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20261117c">
+  <link rel="stylesheet" href="/styles.css?v=20261118a">
   <link rel="stylesheet" href="/admin.css?v=1">
-  <script src="/app.js?v=20261117c" defer></script>
-  <script src="/admin.js?v=1" defer></script>
+  <link rel="stylesheet" href="/cosmic.css?v=20261118a">
+  <script src="/app.js?v=20261118a" defer></script>
+  <script src="/admin.js?v=2" defer></script>
+  <script src="/admin-channel.js?v=1" defer></script>
 </head>
 <body class="page-admin">
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -27,6 +29,7 @@
         <a href="/" data-nav="home">首页</a>
         <a href="/ideas" data-nav="ideas">许愿池</a>
         <a href="/polls" data-nav="polls">投票</a>
+        <a href="/arena" data-nav="arena">擂台</a>
         <a href="/rules" data-nav="rules">规则</a>
       </nav>
       <div class="header-actions">
@@ -91,6 +94,7 @@
             <button class="tab" id="tab-ideas" type="button" role="tab" aria-selected="false" aria-controls="panel-ideas" data-tab="ideas" tabindex="-1">灵感审核</button>
             <button class="tab" id="tab-polls" type="button" role="tab" aria-selected="false" aria-controls="panel-polls" data-tab="polls" tabindex="-1">投票管理</button>
             <button class="tab" id="tab-settings" type="button" role="tab" aria-selected="false" aria-controls="panel-settings" data-tab="settings" tabindex="-1">站点设置</button>
+            <button class="tab" id="tab-channel" type="button" role="tab" aria-selected="false" aria-controls="panel-channel" data-tab="channel" tabindex="-1">频道与互动</button>
           </div>
         </div>
       </section>
@@ -191,6 +195,71 @@
           <div class="admin-poll-list" id="poll-list">
             <div class="skeleton skeleton-poll"></div>
             <div class="skeleton skeleton-poll"></div>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="panel-channel" data-panel="channel" role="tabpanel" aria-labelledby="tab-channel" tabindex="0" hidden>
+          <div class="page-head admin-panel-head">
+            <div>
+              <p class="eyebrow"><span class="dot"></span>CHANNEL</p>
+              <h2>频道与互动</h2>
+              <p class="lead">发新视频后：在抖音视频页点一下「评论收集器」书签 → 复制 → 粘贴到下面，视频和评论会一起进来。</p>
+            </div>
+          </div>
+          <div class="admin-settings-grid">
+            <section class="panel admin-block">
+              <div class="admin-block-head"><h2>① 评论收集器（书签）</h2><span class="badge badge-gold">一次设置</span></div>
+              <p class="hint">把下面的金色按钮<b>拖到浏览器书签栏</b>。以后在 douyin.com 的视频页（已登录）点它，会自动滚动加载评论并弹出「复制」框。它只在你的浏览器里读取页面，不会发送任何数据。</p>
+              <p><a class="btn btn-gold" id="collector-link" href="#">乌叶 · 评论收集器</a>
+              <button class="btn btn-ghost btn-sm" id="collector-copy" type="button">复制书签代码</button></p>
+            </section>
+            <section class="panel admin-block">
+              <div class="admin-block-head"><h2>② 粘贴收集结果</h2><span class="badge badge-cyan">视频 + 评论</span></div>
+              <form id="import-form" novalidate>
+                <div class="field"><label for="import-raw">收集器复制的内容，或手动粘贴评论（一行一条，可写「昵称：内容」）</label>
+                <textarea class="textarea" id="import-raw" rows="6" placeholder='{"wuye":1,"video":{...},"comments":[...]}'></textarea></div>
+                <div class="field"><label for="import-url">视频链接（手动粘贴评论时可选）</label><input class="input" id="import-url" placeholder="https://www.douyin.com/video/7xxxx"></div>
+                <div class="admin-form-actions"><button class="btn btn-primary" type="submit">导入</button><span class="hint" id="import-result"></span></div>
+              </form>
+            </section>
+          </div>
+
+          <section class="panel admin-block">
+            <div class="admin-block-head"><h2>评论收件箱</h2>
+              <select class="select" id="inbox-status" aria-label="筛选"><option value="new">待处理</option><option value="promoted">已转为许愿</option><option value="dismissed">已忽略</option></select>
+            </div>
+            <p class="hint">点「转为许愿」会用这条评论创建一条已采纳的许愿（作者署名为评论昵称）；也可以填编号把它并入已有许愿。</p>
+            <div id="inbox-list"></div>
+          </section>
+
+          <section class="panel admin-block">
+            <div class="admin-block-head"><h2>视频列表</h2><span class="hint">最新 4 条展示在首页，其余进入往期</span></div>
+            <form id="video-form" class="admin-video-form" novalidate>
+              <input class="input" name="url" placeholder="抖音视频链接" required>
+              <input class="input" name="title" placeholder="标题" required>
+              <input class="input" name="tag" placeholder="标签，如 巡猎 · 帝弓司命">
+              <input class="input" name="plays" placeholder="播放量，如 12.5万">
+              <input class="input" name="published" placeholder="日期，如 11-18">
+              <label class="hint">封面 <input type="file" name="cover" accept="image/jpeg,image/png,image/webp"></label>
+              <button class="btn btn-primary btn-sm" type="submit">手动添加</button>
+            </form>
+            <div id="video-list"></div>
+          </section>
+
+          <div class="admin-settings-grid">
+            <section class="panel admin-block">
+              <div class="admin-block-head"><h2>星神擂台</h2><span class="badge badge-gold" id="bracket-state">—</span></div>
+              <div id="bracket-admin"></div>
+              <form id="bracket-form" novalidate>
+                <div class="field"><label for="bracket-title">新一季标题</label><input class="input" id="bracket-title" placeholder="星神擂台 · 第二季"></div>
+                <div class="field"><label for="bracket-entrants">参赛者（每行一个，4 / 8 / 16 个，按对阵顺序）</label><textarea class="textarea" id="bracket-entrants" rows="6"></textarea></div>
+                <div class="admin-form-actions"><button class="btn btn-ghost" type="submit">开启新一季（旧的会归档）</button></div>
+              </form>
+            </section>
+            <section class="panel admin-block">
+              <div class="admin-block-head"><h2>制作航线</h2><span class="hint">状态为「制作中/已发布」或填了进度的会公开</span></div>
+              <div id="roadmap-admin"></div>
+            </section>
           </div>
         </section>
 

@@ -797,3 +797,15 @@ html.wy-lang-swap::view-transition-new(wy-header) {
 .wy-bgm-tool[aria-pressed="true"] .wy-eq i { animation: wy-eq 0.9s ease-in-out infinite; height: auto; }
 .wy-bgm-tool[aria-pressed="false"] { color: #8a8170; }
 .wy-bgm-tool[aria-pressed="false"] .wy-eq i { animation: none; height: 2px; }
+/* music bars: each bar has its own rhythm so it looks like a real equalizer */
+.wy-eq-music { gap: 2px; height: 13px; }
+.wy-eq-music i { height: 2px; transform-origin: bottom; }
+.wy-bgm-tool[aria-pressed="true"] .wy-eq-music i { height: 13px; animation: none; }
+.wy-bgm-tool[aria-pressed="true"] .wy-eq-music i:nth-child(1) { animation: wy-eq-a 0.83s ease-in-out infinite; }
+.wy-bgm-tool[aria-pressed="true"] .wy-eq-music i:nth-child(2) { animation: wy-eq-b 1.17s ease-in-out infinite -0.4s; }
+.wy-bgm-tool[aria-pressed="true"] .wy-eq-music i:nth-child(3) { animation: wy-eq-c 0.67s ease-in-out infinite -0.2s; }
+.wy-bgm-tool[aria-pressed="true"] .wy-eq-music i:nth-child(4) { animation: wy-eq-b 0.94s ease-in-out infinite -0.7s; }
+@keyframes wy-eq-a { 0% { transform: scaleY(.3); } 20% { transform: scaleY(1); } 45% { transform: scaleY(.45); } 70% { transform: scaleY(.85); } 100% { transform: scaleY(.3); } }
+@keyframes wy-eq-b { 0% { transform: scaleY(.8); } 30% { transform: scaleY(.25); } 55% { transform: scaleY(.65); } 80% { transform: scaleY(1); } 100% { transform: scaleY(.8); } }
+@keyframes wy-eq-c { 0% { transform: scaleY(.5); } 35% { transform: scaleY(.9); } 60% { transform: scaleY(.2); } 85% { transform: scaleY(.7); } 100% { transform: scaleY(.5); } }
+@media (prefers-reduced-motion: reduce) { .wy-bgm-tool[aria-pressed="true"] .wy-eq-music i { animation: none !important; transform: scaleY(.6); } }

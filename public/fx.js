@@ -897,7 +897,7 @@
     btn.type = 'button';
     const tools = document.querySelector('.wy-tools');
     btn.className = tools ? 'wy-tool wy-bgm-tool' : 'wy-bgm';
-    btn.innerHTML = '<span class="wy-eq" aria-hidden="true"><i></i><i></i><i></i></span>';
+    btn.innerHTML = '<span class="wy-eq wy-eq-music" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
     const langBtn = tools && tools.querySelector('[data-wy-lang]');
     if (langBtn) langBtn.after(btn);
     else if (tools) tools.prepend(btn);

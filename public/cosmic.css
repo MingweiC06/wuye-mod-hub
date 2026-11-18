@@ -1574,3 +1574,8 @@ h3 {
 @media (max-width: 560px) { .vb-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .vb-body { padding: 10px; } .vb-body p { display: none; } .vb-foot { flex-direction: column; align-items: stretch; } }
 .vb-cm { display: block; font-style: normal; font-size: 11px; color: #c9b8f0; margin-top: 2px; }
 .cx-voices small { opacity: .6; }
+
+.vb-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+#vb-accepted { display: grid; gap: 10px; }
+.vb-acc { color: #d8b56a; }
+@media (max-width: 860px) { .vb-split { grid-template-columns: 1fr; } }

@@ -28,14 +28,14 @@
       </article>`;
   }
 
-  function mini(c, done) {
+  function mini(c, done, accepted) {
     return `
       <article class="vb-mini${done ? ' is-done' : ''}">
         <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           <span class="vb-sub">${WY.esc(c.game || '')}${c.game ? ' · ' : ''}${c.votes} 票</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
-          ${done ? '' : '<div class="vb-meter is-build" aria-hidden="true"><i></i></div><span class="vb-sub">制作中</span>'}
+          ${done ? '' : accepted ? '<span class="vb-sub vb-acc">★ 已采纳</span>' : '<div class="vb-meter is-build" aria-hidden="true"><i></i></div><span class="vb-sub">制作中</span>'}
         </div>
       </article>`;
   }
@@ -50,7 +50,9 @@
       el.style.viewTransitionName = `vb-${el.dataset.id}`;
       el.querySelector('.vb-meter i').style.transform = `scaleX(${Number(el.dataset.pct) / 100})`;
     });
-    $('vb-building-wrap').hidden = !d.building.length;
+    $('vb-building-wrap').hidden = !d.building.length && !d.accepted.length;
+    $('vb-accepted-wrap').hidden = !d.accepted.length;
+    $('vb-accepted').innerHTML = d.accepted.map((c) => mini(c, false, true)).join('');
     $('vb-building').innerHTML = d.building.map((c) => mini(c, false)).join('');
     $('vb-done-wrap').hidden = !d.done.length;
     $('vb-done').innerHTML = d.done.map((c) => mini(c, true)).join('');

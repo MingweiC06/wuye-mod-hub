@@ -79,7 +79,7 @@
     '星神复刻': 'Aeon rebuild', '动漫联动': 'Anime crossover', '生物 / Boss': 'Mobs / Boss', '恐怖惊悚': 'Horror', '机制玩法': 'Mechanics',
     '音乐音效': 'Music & SFX', '其他灵感': 'Other', '✦ 星神复刻': '✦ Aeon rebuild', '⚡ 动漫联动': '⚡ Anime crossover', '☠ 生物 / Boss': '☠ Mobs / Boss',
     '◐ 恐怖惊悚': '◐ Horror', '⚙ 机制玩法': '⚙ Mechanics', '♫ 音乐音效': '♫ Music & SFX', '✧ 其他灵感': '✧ Other',
-    '待审核': 'Pending', '已采纳': 'Accepted', '投票中': 'Voting', '制作中': 'Building', '已发布': 'Released', '暂搁置': 'Shelved',
+    '待审核': 'Pending', '已采纳': 'Accepted', '备选区': 'Shortlist', '已采纳，排队等待制作。': 'Accepted — queued up for production.', '★ 已采纳': '★ Accepted', '投票中': 'Voting', '制作中': 'Building', '已发布': 'Released', '暂搁置': 'Shelved',
     'PLANNED · 已采纳': 'PLANNED', 'BUILDING · 制作中': 'BUILDING', 'RELEASED · 已发布': 'RELEASED', '置顶': 'Pinned', '刚刚提交': 'Just sent',
 
     // ---- ideas page ----

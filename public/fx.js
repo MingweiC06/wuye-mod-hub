@@ -609,10 +609,10 @@
       if (!n.animate) return;
       n.animate(
         [
-          { opacity: 0, transform: 'translateY(16px)', filter: 'blur(4px)' },
-          { opacity: 1, transform: 'none', filter: 'blur(0)' },
+          { opacity: 0, transform: 'translate3d(0,18px,0)' },
+          { opacity: 1, transform: 'translate3d(0,0,0)' },
         ],
-        { duration: 700, delay: Math.min(i, 10) * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' },
+        { duration: 900, delay: Math.min(i, 10) * 55, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' },
       );
     });
   }
@@ -683,39 +683,74 @@
         SFX.play('click');
       }
     });
-    // magnetic pull on primary buttons
+    // magnet (buttons) + 3D tilt (covers): one spring-eased rAF loop, rects
+    // measured once on enter, so pointermove never forces layout.
     if (!RM && window.matchMedia('(pointer: fine)').matches) {
-      document.addEventListener('pointermove', (e) => {
-        const t = e.target.closest('.btn-primary, .btn-gold, .btn-lg, .wyb-enter');
-        document.querySelectorAll('[data-fx-mag]').forEach((m) => {
-          if (m !== t) {
-            m.style.transform = '';
-            delete m.dataset.fxMag;
-          }
-        });
-        if (!t) return;
-        const r = t.getBoundingClientRect();
-        const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
-        const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
-        t.dataset.fxMag = '1';
-        t.style.transform = `translate(${dx * 8}px, ${dy * 6}px)`;
+      const MAG = '.btn-primary, .btn-gold, .btn-lg, .wyb-enter';
+      const TILT = '.cx-poster, .cx-work-cover, .rail-card';
+      const live = new Map(); // el -> {kind, rect, tx, ty, x, y}
+      let px = 0;
+      let py = 0;
+      let looping = false;
+      const track = (el, kind) => {
+        if (live.has(el)) {
+          live.get(el).hover = true;
+          live.get(el).rect = el.getBoundingClientRect();
+          return;
+        }
+        el.style.willChange = 'transform';
+        live.set(el, { kind, rect: el.getBoundingClientRect(), x: 0, y: 0, tx: 0, ty: 0, hover: true });
+      };
+      document.addEventListener('pointerover', (e) => {
+        const m = e.target.closest(MAG);
+        if (m) track(m, 'mag');
+        const c = e.target.closest(TILT);
+        if (c) track(c, 'tilt');
+        start();
       });
-      // 3D tilt on posters/covers
-      document.addEventListener('pointermove', (e) => {
-        const card = e.target.closest('.cx-poster, .cx-work-cover, .rail-card');
-        document.querySelectorAll('.fx-tilt').forEach((c) => {
-          if (c !== card) {
-            c.style.transform = '';
-            c.classList.remove('fx-tilt');
-          }
+      document.addEventListener('pointerout', (e) => {
+        live.forEach((s, el) => {
+          if (el.contains(e.target) && !el.contains(e.relatedTarget)) s.hover = false;
         });
-        if (!card) return;
-        const r = card.getBoundingClientRect();
-        const x = (e.clientX - r.left) / r.width - 0.5;
-        const y = (e.clientY - r.top) / r.height - 0.5;
-        card.classList.add('fx-tilt');
-        card.style.transform = `perspective(800px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg)`;
       });
+      document.addEventListener('pointermove', (e) => {
+        px = e.clientX;
+        py = e.clientY;
+        if (live.size) start();
+      }, { passive: true });
+      window.addEventListener('scroll', () => live.forEach((s, el) => (s.rect = el.getBoundingClientRect())), { passive: true });
+      function start() {
+        if (looping) return;
+        looping = true;
+        requestAnimationFrame(loop);
+      }
+      function loop() {
+        live.forEach((s, el) => {
+          const r = s.rect;
+          if (s.hover) {
+            s.tx = (px - (r.left + r.width / 2)) / r.width;
+            s.ty = (py - (r.top + r.height / 2)) / r.height;
+          } else {
+            s.tx = 0;
+            s.ty = 0;
+          }
+          s.x += (s.tx - s.x) * 0.14;
+          s.y += (s.ty - s.y) * 0.14;
+          const settled = !s.hover && Math.abs(s.x) < 0.002 && Math.abs(s.y) < 0.002;
+          if (settled) {
+            el.style.transform = '';
+            el.style.willChange = '';
+            live.delete(el);
+            return;
+          }
+          el.style.transform =
+            s.kind === 'mag'
+              ? `translate3d(${(s.x * 10).toFixed(2)}px, ${(s.y * 8).toFixed(2)}px, 0)`
+              : `perspective(900px) rotateY(${(s.x * 9).toFixed(2)}deg) rotateX(${(-s.y * 9).toFixed(2)}deg) translateZ(0)`;
+        });
+        if (live.size) requestAnimationFrame(loop);
+        else looping = false;
+      }
       starTrail();
     }
   }
@@ -724,8 +759,8 @@
     const c = document.createElement('canvas');
     c.className = 'wy-stars';
     document.body.appendChild(c);
-    const g = c.getContext('2d');
-    const DPR = Math.min(2, window.devicePixelRatio || 1);
+    const g = c.getContext('2d', { alpha: true, desynchronized: true });
+    const DPR = 1; // full-screen overlay: 1x is plenty for tiny sparks
     const size = () => {
       c.width = innerWidth * DPR;
       c.height = innerHeight * DPR;

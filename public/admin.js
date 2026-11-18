@@ -282,8 +282,7 @@
     setButtonBusy(els.logoutBtn, true, '退出中…');
     try {
       await adminApi('/api/admin/logout', { method: 'POST' });
-      showAuth('已退出登录。', 'info');
-      WY.toast('已退出登录', 'success');
+      location.replace('/admin'); // back to the sign-in page; the dashboard is no longer served
     } catch (error) {
       if (!error.handled) WY.toast((error && error.message) || '退出失败，请稍后重试', 'error');
     } finally {

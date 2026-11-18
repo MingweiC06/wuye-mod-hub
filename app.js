@@ -5,7 +5,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ensureAdminCode, getSecret, openDatabase, seedDatabase } from './lib/db.js';
+import { checkAdminSession, ensureAdminCode, getSecret, openDatabase, seedDatabase } from './lib/db.js';
 import { applySecurityHeaders, notFoundPage, sendJson, serveStatic } from './lib/http.js';
 import { handleApi } from './lib/api.js';
 import { migrateExtras, seedExtras } from './lib/extras.js';
@@ -166,6 +166,15 @@ export function createApp(options = {}) {
 
     let target = pathname;
     if (PAGE_REWRITES.has(target)) target = PAGE_REWRITES.get(target);
+    // The dashboard itself is only served to a signed-in admin; everyone else gets the sign-in page.
+    if (target === '/admin.html') {
+      res.setHeader('Cache-Control', 'no-store');
+      if (!checkAdminSession(db, parseCookies(req.headers.cookie).wy_admin)) target = '/admin-login.html';
+    }
+    if (target === '/admin-login.html' && pathname !== '/admin' && pathname !== '/admin.html') {
+      notFoundPage(res, publicDir);
+      return;
+    }
     if (target === '/') target = '/index.html';
     if (target.endsWith('/')) target += 'index.html';
 

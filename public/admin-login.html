@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>站长登录 | 乌叶MC</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#05070d">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css?v=20261118a">
+  <link rel="stylesheet" href="/admin.css?v=1">
+  <link rel="stylesheet" href="/cosmic.css?v=20261119cb">
+  <script src="/app.js?v=20261119b" defer></script>
+  <script src="/admin-login.js?v=1" defer></script>
+</head>
+<body class="page-admin">
+  <main id="main" class="admin-main">
+    <section class="auth-wrap" aria-labelledby="auth-title">
+      <div class="auth-card">
+        <p class="eyebrow"><span class="dot"></span>站长专用</p>
+        <h1 id="auth-title">管理后台</h1>
+        <p class="lead">只有站长能进入。输入管理码后才会加载后台。</p>
+        <form id="login-form" novalidate>
+          <div class="field">
+            <label for="login-code">管理码</label>
+            <input class="input" id="login-code" name="code" type="password" minlength="4" maxlength="128" autocomplete="off" placeholder="请输入管理码" required>
+          </div>
+          <p class="admin-form-error" id="login-error" role="alert" aria-live="polite"></p>
+          <button class="btn btn-primary btn-block" id="login-submit" type="submit">进入后台</button>
+        </form>
+        <div class="admin-login-foot">
+          <a class="link-arrow" href="/">返回首页</a>
+          <span class="muted-2 small">仅限站长本人使用</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

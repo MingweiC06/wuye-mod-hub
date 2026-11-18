@@ -246,12 +246,16 @@
             .map(
               (m) => `
           <div class="idea-row" data-mod="${m.id}">
-            <span class="idea-rank">${m.kind === 'mod' ? 'JAR' : 'PACK'}</span>
+            <label class="mod-cover" title="点击上传封面图">
+              ${m.image ? `<img src="${WY.esc(m.image)}" alt="">` : `<span>${m.kind === 'mod' ? 'JAR' : 'PACK'}<small>+封面</small></span>`}
+              <input type="file" accept="image/png,image/jpeg,image/webp" data-cover hidden>
+            </label>
             <div class="idea-main">
               <h3>${WY.esc(m.name)} ${m.hidden ? '<span class="badge badge-muted">已隐藏</span>' : ''}</h3>
               <div class="idea-meta"><span>${WY.esc(m.fileName)}</span><span>${fmtSize(m.size)}</span><span>${m.downloads} 次下载</span><span>${WY.esc([m.version, m.mcVersion, m.loader].filter(Boolean).join(' · '))}</span></div>
             </div>
             <button class="btn btn-ghost btn-sm" data-hide="${m.hidden ? 0 : 1}" type="button">${m.hidden ? '重新上架' : '下架'}</button>
+            ${m.image ? '<button class="btn btn-ghost btn-sm" data-cover-clear type="button">去掉封面</button>' : ''}
             <button class="btn btn-danger btn-sm" data-del type="button">删除</button>
           </div>`,
             )
@@ -267,12 +271,45 @@
     if (!row) return;
     const id = row.dataset.mod;
     try {
-      if (event.target.closest('[data-hide]')) {
+      if (event.target.closest('[data-cover-clear]')) {
+        await WY.api(`/api/admin/mods/${id}`, { method: 'PATCH', body: { image: '' } });
+        WY.toast('封面已去掉', 'success');
+      } else if (event.target.closest('[data-hide]')) {
         await WY.api(`/api/admin/mods/${id}`, { method: 'PATCH', body: { hidden: event.target.closest('[data-hide]').dataset.hide === '1' } });
       } else if (event.target.closest('[data-del]')) {
         if (!window.confirm('永久删除这个文件？')) return;
         await WY.api(`/api/admin/mods/${id}`, { method: 'DELETE' });
       } else return;
+      loadList();
+    } catch (error) {
+      WY.toast(error.message, 'error');
+    }
+  }
+
+  function shrinkCover(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 1200 / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * k);
+        cv.height = Math.round(img.height * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(img.src);
+        resolve(cv.toDataURL('image/jpeg', 0.86));
+      };
+      img.onerror = () => reject(new Error('图片读取失败'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function onCoverChange(event) {
+    const input = event.target.closest('[data-cover]');
+    if (!input || !input.files[0]) return;
+    const id = input.closest('[data-mod]').dataset.mod;
+    try {
+      await WY.api(`/api/admin/mods/${id}`, { method: 'PATCH', body: { image: await shrinkCover(input.files[0]) } });
+      WY.toast('封面已更新', 'success');
       loadList();
     } catch (error) {
       WY.toast(error.message, 'error');
@@ -316,6 +353,7 @@
         pickFile(file);
       });
       $('mod-admin-list').addEventListener('click', onListClick);
+      $('mod-admin-list').addEventListener('change', onCoverChange);
       $('fan-form').addEventListener('submit', onFan);
     }
     loadList();

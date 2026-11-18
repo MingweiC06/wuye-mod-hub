@@ -13,8 +13,8 @@
   function row(mod) {
     const meta = [mod.version && `v${mod.version}`, mod.mcVersion && `MC ${mod.mcVersion}`, mod.loader].filter(Boolean);
     return `
-      <article class="dl-row" data-mod="${mod.id}">
-        <div class="dl-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <article class="dl-row${mod.image ? ' has-cover' : ''}" data-mod="${mod.id}">
+        ${mod.image ? `<div class="dl-cover"><img src="${WY.esc(mod.image)}" alt="" loading="lazy"></div>` : '<div class="dl-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></div>'}
         <div class="dl-main">
           <h3 data-raw>${WY.esc(mod.name)}</h3>
           <div class="dl-meta">${meta.map((m) => `<span>${WY.esc(m)}</span>`).join('')}<span>${fmtSize(mod.size)}</span><span>${mod.downloads} 次下载</span></div>

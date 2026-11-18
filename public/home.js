@@ -16,6 +16,8 @@
       cover.src = video.cover;
       cover.alt = `${video.title} 封面`;
     }
+    const bg = $('#hero-bg');
+    if (bg) bg.src = video.cover;
     const card = $('#showcase');
     if (card) card.href = WY.videoUrl(video.id);
     const title = $('#showcase-title');

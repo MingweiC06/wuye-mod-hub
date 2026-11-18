@@ -791,3 +791,9 @@ html.wy-lang-swap::view-transition-new(wy-header) {
 .wy-bgm-tool:not(.is-on) .wy-bgm-bars { display: none; }
 .wy-bgm-tool:not(.is-on) { opacity: 1; }
 .wy-bgm-tool { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+
+/* header music button reuses the eq bars: moving = playing, flat = off */
+.wy-bgm-tool[aria-pressed="true"] { color: #d8b56a; }
+.wy-bgm-tool[aria-pressed="true"] .wy-eq i { animation: wy-eq 0.9s ease-in-out infinite; height: auto; }
+.wy-bgm-tool[aria-pressed="false"] { color: #8a8170; }
+.wy-bgm-tool[aria-pressed="false"] .wy-eq i { animation: none; height: 2px; }

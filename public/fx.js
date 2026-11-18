@@ -50,7 +50,7 @@
      Sound — tiny WebAudio synth. Starts after the first user gesture.
      ====================================================================== */
   const SFX = (window.WYSFX = {
-    muted: store.get('wy:mute') === '1',
+    muted: false, // sound effects always on; the header button is for music
     ctx: null,
     master: null,
     lastHover: 0,
@@ -832,13 +832,8 @@
     const box = document.createElement('div');
     box.className = 'wy-tools';
     const next = lang() === 'zh' ? 'EN' : '中';
-    box.innerHTML = `${window.WYI18N ? '' : '<!--'}<button class="wy-tool" type="button" data-wy-lang aria-label="${lang() === 'zh' ? 'Switch to English' : '切换到中文'}">${next}</button>${window.WYI18N ? '' : '-->'}
-      <button class="wy-tool" type="button" data-wy-mute aria-pressed="${SFX.muted}" aria-label="${lang() === 'zh' ? '音效开关' : 'Sound on/off'}"><span class="wy-eq"><i></i><i></i><i></i></span></button>`;
+    box.innerHTML = `${window.WYI18N ? '' : '<!--'}<button class="wy-tool" type="button" data-wy-lang aria-label="${lang() === 'zh' ? 'Switch to English' : '切换到中文'}">${next}</button>${window.WYI18N ? '' : '-->'}`;
     host.prepend(box);
-    box.querySelector('[data-wy-mute]').addEventListener('click', () => {
-      SFX.setMuted(!SFX.muted);
-      if (!SFX.muted) SFX.play('toggle');
-    });
     const langBtn = box.querySelector('[data-wy-lang]');
     langBtn?.addEventListener('click', () => {
       if (window.WYI18N) window.WYI18N.set(lang() === 'zh' ? 'en' : 'zh');
@@ -902,7 +897,7 @@
     btn.type = 'button';
     const tools = document.querySelector('.wy-tools');
     btn.className = tools ? 'wy-tool wy-bgm-tool' : 'wy-bgm';
-    btn.innerHTML = '<span class="wy-bgm-note" aria-hidden="true">♪</span><span class="wy-bgm-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
+    btn.innerHTML = '<span class="wy-eq" aria-hidden="true"><i></i><i></i><i></i></span>';
     const langBtn = tools && tools.querySelector('[data-wy-lang]');
     if (langBtn) langBtn.after(btn);
     else if (tools) tools.prepend(btn);

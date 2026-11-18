@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { ensureAdminCode, getSecret, openDatabase, seedDatabase } from './lib/db.js';
 import { applySecurityHeaders, notFoundPage, sendJson, serveStatic } from './lib/http.js';
 import { handleApi } from './lib/api.js';
+import { migrateExtras, seedExtras } from './lib/extras.js';
 import {
   HttpError,
   RateLimiter,
@@ -29,6 +30,7 @@ const PAGE_REWRITES = new Map([
   ['/polls', '/polls.html'],
   ['/admin', '/admin.html'],
   ['/rules', '/rules.html'],
+  ['/arena', '/arena.html'],
 ]);
 
 export function createApp(options = {}) {
@@ -40,6 +42,8 @@ export function createApp(options = {}) {
   fs.mkdirSync(dataDir, { recursive: true });
   const db = openDatabase(path.join(dataDir, 'wuye.db'));
   seedDatabase(db);
+  migrateExtras(db);
+  seedExtras(db);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
   const limiter = new RateLimiter();
@@ -117,6 +121,7 @@ export function createApp(options = {}) {
         voterKey,
         secret,
         limiter,
+        dataDir,
         secureCookies,
         setCookie(value) {
           res.appendHeader('Set-Cookie', value);
@@ -134,6 +139,16 @@ export function createApp(options = {}) {
       res.writeHead(405, { Allow: 'GET, HEAD', 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Method Not Allowed');
       return;
+    }
+
+    // Uploaded covers live in DATA_DIR/media so they survive redeploys.
+    if (pathname.startsWith('/media/')) {
+      if (!/^\/media\/[\w-]+\.(jpg|png|webp)$/.test(pathname) || !serveStatic(req, res, dataDir, pathname)) notFoundPage(res, publicDir);
+      return;
+    }
+    // The side widget is embedded on the talent-map site (another origin).
+    if (pathname === '/widget.js' || pathname === '/widget.css') {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     }
 
     let target = pathname;

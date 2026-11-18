@@ -170,7 +170,7 @@ export function createApp(options = {}) {
     if (target.endsWith('/')) target += 'index.html';
 
     // Only allow real files inside public/, and only known asset/page extensions.
-    if (!/\.(html|css|js|mjs|json|txt|svg|png|jpe?g|webp|ico|woff2)$/i.test(target)) {
+    if (!/\.(html|css|js|mjs|json|txt|svg|png|jpe?g|webp|ico|woff2|m4a|mp3)$/i.test(target)) {
       notFoundPage(res, publicDir);
       return;
     }

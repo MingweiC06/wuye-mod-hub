@@ -877,6 +877,81 @@
     setupPointer();
     watchToasts();
     scan(document);
+    setupMusic();
+  }
+
+  /* Background music: off by default. Remembers on/off and where it was across pages. */
+  function setupMusic() {
+    if (document.getElementById('wy-bgm')) return;
+    // Only show the button once a music file has been added.
+    fetch(BGM_SRC, { method: 'HEAD' }).then((r) => { if (r.ok) mountMusic(); }, () => {});
+  }
+
+  const BGM_SRC = '/assets/audio/bgm.mp3';
+
+  function mountMusic() {
+    const KEY = 'wy-bgm';
+    const read = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+    const write = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+    const audio = new Audio(BGM_SRC);
+    audio.loop = true;
+    audio.preload = 'none';
+    audio.volume = 0;
+    const btn = document.createElement('button');
+    btn.id = 'wy-bgm';
+    btn.type = 'button';
+    const tools = document.querySelector('.wy-tools');
+    btn.className = tools ? 'wy-tool wy-bgm-tool' : 'wy-bgm';
+    btn.innerHTML = '<span class="wy-bgm-note" aria-hidden="true">♪</span><span class="wy-bgm-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
+    const langBtn = tools && tools.querySelector('[data-wy-lang]');
+    if (langBtn) langBtn.after(btn);
+    else if (tools) tools.prepend(btn);
+    else document.body.appendChild(btn);
+    const TARGET = 0.35;
+    let fadeRaf = 0;
+    const fade = (to, ms, done) => {
+      cancelAnimationFrame(fadeRaf);
+      const from = audio.volume;
+      const t0 = performance.now();
+      const step = (t) => {
+        const k = Math.min(1, (t - t0) / ms);
+        audio.volume = from + (to - from) * (1 - Math.pow(1 - k, 3));
+        if (k < 1) fadeRaf = requestAnimationFrame(step);
+        else if (done) done();
+      };
+      fadeRaf = requestAnimationFrame(step);
+    };
+    const paint = (on) => {
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', String(on));
+      btn.setAttribute('aria-label', on ? '关闭背景音乐' : '播放背景音乐');
+    };
+    const play = () => {
+      const at = Number(read(KEY + '-t')) || 0;
+      if (at && !audio.currentTime) audio.currentTime = at;
+      return audio.play().then(() => { paint(true); fade(TARGET, 1800); }, () => paint(false));
+    };
+    const stop = () => {
+      paint(false);
+      fade(0, 500, () => audio.pause());
+    };
+    btn.addEventListener('click', () => {
+      const on = !btn.classList.contains('is-on');
+      write(KEY, on ? 'on' : 'off');
+      if (on) play(); else stop();
+    });
+    addEventListener('pagehide', () => { if (!audio.paused) write(KEY + '-t', String(audio.currentTime)); });
+    paint(false);
+    if (read(KEY) === 'on') {
+      // Browsers need a gesture first; try now, otherwise start on the first tap/key.
+      play().then(() => {
+        if (audio.paused) {
+          const go = () => { if (read(KEY) === 'on') play(); };
+          addEventListener('pointerdown', go, { once: true, capture: true });
+          addEventListener('keydown', go, { once: true, capture: true });
+        }
+      });
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });

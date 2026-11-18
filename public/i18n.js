@@ -198,9 +198,9 @@
 
     // ---- downloads + fan gate ----
     '下载中心 | 乌叶MC · 模组许愿池': 'Downloads | Wuye MC', '模组下载': 'Mod downloads', '模组': 'Mods', '整合包': 'Modpacks',
-    '关注乌叶MC 的粉丝专享。输入抖音上公布的粉丝口令，解锁全部模组和整合包下载。': 'For Wuye MC followers. Enter the fan code posted on Douyin to unlock every mod and modpack.',
+    '关注乌叶MC 的粉丝专享。进抖音粉丝群拿粉丝口令，解锁全部模组和整合包下载。': 'For Wuye MC followers. Get the fan code in the Douyin fan group to unlock every mod and modpack.',
     '粉丝验证': 'FOLLOWER CHECK', '输入粉丝口令': 'Enter the fan code', '你的抖音昵称': 'Your Douyin nickname', '粉丝口令': 'Fan code', '解锁下载': 'Unlock downloads',
-    '口令在哪？关注抖音 @乌叶MC，口令会放在主页简介、粉丝群或最新视频里，会不定期更换。': 'Where’s the code? Follow @乌叶MC on Douyin — it’s in the profile bio, fan group or latest video, and changes from time to time.',
+    '口令在哪？加入乌叶MC 的抖音粉丝群，口令就在群里，会不定期更换。': 'Where’s the code? Join Wuye MC’s Douyin fan group — the code is posted there and changes from time to time.',
     '去抖音关注': 'Follow on Douyin', '已验证粉丝': 'VERIFIED FOLLOWER', '欢迎回来，': 'Welcome back, ',
     '整合包还在打包中': 'Modpacks are still being packed', '第一个整合包很快上线，先去许愿池告诉我你想要哪些模组组合。': 'The first modpack lands soon — tell me which mods to bundle in the wish pool.',
     '模组还在锻造中': 'Mods are still in the forge', '第一个模组很快上线。': 'The first mod is coming soon.',

@@ -10,12 +10,12 @@
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css?v=20261118a">
   <link rel="stylesheet" href="/polls.css?v=1">
-  <link rel="stylesheet" href="/cosmic.css?v=20261118a">
-  <link rel="stylesheet" href="/fx.css?v=6">
-  <script src="/app.js?v=20261118a" defer></script>
-  <script src="/polls.js?v=1" defer></script>
-  <script src="/i18n.js?v=1"></script>
-  <script src="/fx.js?v=5"></script>
+  <link rel="stylesheet" href="/cosmic.css?v=20261119b">
+  <link rel="stylesheet" href="/fx.css?v=20261119b">
+  <script src="/app.js?v=20261119b" defer></script>
+  <script src="/vote.js?v=20261119b" defer></script>
+  <script src="/i18n.js?v=20261119b"></script>
+  <script src="/fx.js?v=20261119b"></script>
 </head>
 <body class="page-polls">
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -30,7 +30,6 @@
         <a href="/" data-nav="home">首页</a>
         <a href="/ideas" data-nav="ideas">许愿池</a>
         <a href="/polls" data-nav="polls">投票</a>
-        <a href="/arena" data-nav="arena">擂台</a>
         <a href="/downloads" data-nav="downloads">下载</a>
         <a href="/rules" data-nav="rules">规则</a>
       </nav>
@@ -50,86 +49,43 @@
   </div>
 
   <main id="main">
-    <section class="page-head">
+    <section class="page-hero vb-hero">
       <div class="container">
-        <p class="eyebrow"><span class="dot"></span>投票中心 · VOTE FOR NEXT</p>
-        <h1>下一期做什么，<em>由你投票</em></h1>
-        <p class="lead">
-          每个设备每场只能投一次，投出后不可修改。单选投票只能选一项；多选投票最多选三项，提交后立即公布结果。
-        </p>
-        <div class="polls-stats" aria-label="投票数据概览">
-          <div class="polls-stat">
-            <b id="stats-open">—</b>
-            <span>进行中投票</span>
-          </div>
-          <div class="polls-stat">
-            <b id="stats-ballots">—</b>
-            <span>累计投票人次</span>
-          </div>
-        </div>
-        <div class="page-actions">
-          <a class="btn btn-primary" href="/ideas#submit">我要许愿</a>
-          <a class="btn btn-ghost" href="/rules">投票规则</a>
-        </div>
+        <p class="eyebrow">投票中心 · VOTE FOR NEXT</p>
+        <h1>下一个做什么，<em>由你投票</em></h1>
+        <p class="lead">每张卡片都是一个候选。投给你最想看的，票数最高的会优先进入制作；开始制作后会移到「制作中」，做完就进「已完成」。</p>
+        <div class="vb-stats"><span><b id="vb-count">—</b>候选</span><span><b id="vb-votes">—</b>总票数</span><span><b id="vb-voters">—</b>人参与</span></div>
       </div>
     </section>
 
-    <div class="container">
-      <div class="empty polls-error" id="polls-error" hidden>
-        <span class="empty-icon" aria-hidden="true">!</span>
-        <strong>投票加载失败</strong>
-        <p class="polls-error-message" id="polls-error-message">网络好像开小差了，请稍后再试。</p>
-        <button class="btn btn-primary" type="button" id="polls-retry">重新加载</button>
-      </div>
-    </div>
-
-    <section class="section section-tight" id="open-section">
+    <section class="section section-tight" id="vb-building-wrap" hidden>
       <div class="container">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow"><span class="dot"></span>OPEN · 进行中</p>
-            <h2>现在可以投</h2>
-            <p class="sub">选好你的答案再提交，同一设备每场投票只能参与一次。</p>
-          </div>
-          <p class="head-aside muted-2 small">截止时间以卡片内倒计时为准</p>
-        </div>
-        <div class="poll-list" id="open-list">
-          <div class="poll skeleton skeleton-poll" aria-hidden="true"></div>
-          <div class="poll skeleton skeleton-poll" aria-hidden="true"></div>
-        </div>
+        <div class="section-head"><div><h2 data-mark="NOW BUILDING">制作中</h2><p class="sub">已经在做了，敬请期待。</p></div></div>
+        <div class="vb-row" id="vb-building"></div>
       </div>
     </section>
 
-    <section class="section section-tight" id="closed-section">
+    <section class="section" id="vote">
       <div class="container">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow"><span class="dot"></span>CLOSED · 已结束</p>
-            <h2>往期投票结果</h2>
-            <p class="sub">已经封箱的投票，结果按参与人数计算百分比。</p>
+        <div class="vb-bar">
+          <div class="vb-sort" role="group" aria-label="排序">
+            <button class="chip is-active" type="button" data-sort="votes">票数最高</button>
+            <button class="chip" type="button" data-sort="new">最新加入</button>
+            <button class="chip" type="button" data-sort="game">按游戏</button>
           </div>
+          <div class="vb-games" id="vb-games" role="group" aria-label="游戏筛选"></div>
         </div>
-        <div class="poll-list" id="closed-list">
-          <div class="poll skeleton skeleton-poll" aria-hidden="true"></div>
+        <div class="vb-grid" id="vb-grid" aria-live="polite">
+          <div class="skeleton skeleton-tall"></div><div class="skeleton skeleton-tall"></div><div class="skeleton skeleton-tall"></div>
         </div>
+        <p class="cx-note">没看到想要的？<a class="link-arrow" href="/ideas#submit">去许愿池提一个 →</a></p>
       </div>
     </section>
 
-    <section class="section section-tight">
+    <section class="section section-tight" id="vb-done-wrap" hidden>
       <div class="container">
-        <div class="cta-band reveal">
-          <div class="cta-band-copy">
-            <img src="/assets/avatar.jpg" alt="乌叶MC 的黑猫头像" width="62" height="62">
-            <div>
-              <h3>没有想投的选项？</h3>
-              <p>把灵感写进许愿池，下一场投票的选项可能就是它。</p>
-            </div>
-          </div>
-          <div class="cta-band-actions">
-            <a class="btn btn-primary" href="/ideas#submit">去许愿</a>
-            <a class="btn btn-ghost" href="/rules">先看规则</a>
-          </div>
-        </div>
+        <div class="section-head"><div><h2 data-mark="DONE">已完成</h2><p class="sub">投票选出来、已经做好的作品。</p></div></div>
+        <div class="vb-row vb-done" id="vb-done"></div>
       </div>
     </section>
   </main>

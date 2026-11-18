@@ -26,7 +26,7 @@
   };
   const fromUrl = (location.search.match(/[?&]lang=(en|zh)/) || [])[1];
   if (fromUrl) write(fromUrl);
-  const lang = fromUrl || read() || (/^zh/i.test(navigator.language || 'zh') ? 'zh' : 'en');
+  const initial = fromUrl || read() || (/^zh/i.test(navigator.language || 'zh') ? 'zh' : 'en');
 
   const DICT = {
     // ---- chrome / nav ----
@@ -114,6 +114,15 @@
     '你已经投过这一票啦，已为你记上': 'You already voted for this one — counted',
 
     // ---- polls page ----
+    // ---- vote board ----
+    '下一个做什么，': 'What should be next?', '每张卡片都是一个候选。投给你最想看的，票数最高的会优先进入制作；开始制作后会移到「制作中」，做完就进「已完成」。': 'Every card is a candidate. Vote for what you most want — the top ones get built first; once work starts they move to “Building”, and when finished to “Done”.',
+    '候选': 'candidates', '总票数': 'total votes', '人参与': 'voters', '排序': 'Sort', '游戏筛选': 'Filter by game',
+    '票数最高': 'Most votes', '最新加入': 'Newest', '按游戏': 'By game', '全部游戏': 'All games',
+    '已经在做了，敬请期待。': 'Already in the works — stay tuned.', '已完成': 'Done', '投票选出来、已经做好的作品。': 'Voted in by you, and finished.',
+    '投一票': 'Vote', '已投 ✦': 'Voted ✦', '这个游戏下暂时没有候选。': 'No candidates for this game yet.',
+    '没看到想要的？': 'Don’t see yours?', '去许愿池提一个 →': 'Suggest one in the wish pool →', '去投票': 'Go vote', '去投票 →': 'Go vote →',
+    '投票、点星都会累积星光。': 'Voting and starring earn starlight.', '投票 1 星 · 作品点星 1 星': 'Vote 1 star · Like 1 star',
+    '崩坏：星穹铁道': 'Honkai: Star Rail', '火影忍者': 'Naruto', '超兽武装': 'Chao Shou Wu Zhuang', '我在精神病院学斩神': 'Slay the Gods', '乌叶原创': 'Wuye original', '七宗罪': 'Seven Deadly Sins',
     '投票中心 | 乌叶MC · 模组许愿池': 'Polls | Wuye MC', '投票中心 · VOTE FOR NEXT': 'VOTE FOR NEXT', '下一期做什么，': 'What’s next?', '由你投票': 'You decide',
     '每个设备每场只能投一次，投出后不可修改。单选投票只能选一项；多选投票最多选三项，提交后立即公布结果。': 'One vote per device per poll, final once cast. Single-choice polls take one option; multi-choice up to three. Results show right after.',
     '投票数据概览': 'Poll stats', '进行中投票': 'open polls', '累计投票人次': 'ballots cast', '投票规则': 'Voting rules', '现在可以投': 'Open now',
@@ -230,6 +239,7 @@
     [/^已显示 (\d+) \/ (\d+) 条$/, (m, a, b) => `Showing ${a} / ${b}`],
     [/^请求失败（(\d+)）$/, (m, a) => `Request failed (${a})`],
     [/^(\d+) 次下载$/, (m, a) => `${a} downloads`],
+    [/^(.+) · (\d+) 票$/, (m, a, b) => `${translateText(a) ?? a} · ${b} votes`],
     [/^(.+) ✦$/, (m, a) => `${a} ✦`],
   ];
 
@@ -247,90 +257,127 @@
   }
 
   const ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
-  const SKIP = 'script,style,textarea,[data-raw],#wy-boot,.idea-main h3,.idea-card h3,.official-reply,.cx-voices';
+  const SKIP = 'script,style,textarea,[data-raw],#wy-boot,.idea-main h3,.idea-card h3,.official-reply,.cx-voices,.vb-card h3,.vb-mini h3';
 
-  function translateNode(node) {
-    if (node.nodeType === 3) {
-      const p = node.parentElement;
-      if (!p || p.closest(SKIP)) return;
-      const out = translateText(node.nodeValue);
-      if (out != null) {
-        const lead = node.nodeValue.match(/^\s*/)[0];
-        const tail = node.nodeValue.match(/\s*$/)[0];
-        node.nodeValue = lead + out + tail;
-      }
+  // Originals are remembered so the switch is reversible in place (no reload).
+  const textOrig = new WeakMap(); // Text node -> original Chinese
+  const attrOrig = new WeakMap(); // Element -> { attr: original }
+  let lang = initial;
+
+  function setText(node) {
+    const p = node.parentElement;
+    if (!p || p.closest(SKIP)) return;
+    if (!textOrig.has(node)) textOrig.set(node, node.nodeValue);
+    const src = textOrig.get(node);
+    if (lang !== 'en') {
+      if (node.nodeValue !== src) node.nodeValue = src;
       return;
     }
-    if (node.nodeType !== 1 || node.closest(SKIP)) return;
-    ATTRS.forEach((a) => {
-      const v = node.getAttribute(a);
-      if (!v) return;
-      const out = translateText(v);
-      if (out != null) node.setAttribute(a, out);
+    const out = translateText(src);
+    if (out == null) return;
+    const v = src.match(/^\s*/)[0] + out + src.match(/\s*$/)[0];
+    if (node.nodeValue !== v) node.nodeValue = v;
+  }
+  function setAttrs(el) {
+    if (el.closest(SKIP)) return;
+    const isBtn = el.tagName === 'INPUT' && (el.type === 'submit' || el.type === 'button');
+    const names = isBtn ? [...ATTRS, 'value'] : ATTRS;
+    names.forEach((a) => {
+      const cur = a === 'value' ? el.value : el.getAttribute(a);
+      if (!cur) return;
+      let store = attrOrig.get(el);
+      if (!store) attrOrig.set(el, (store = {}));
+      if (!(a in store)) store[a] = cur;
+      const src = store[a];
+      const v = lang === 'en' ? translateText(src) ?? src : src;
+      if (cur === v) return;
+      if (a === 'value') el.value = v;
+      else el.setAttribute(a, v);
     });
-    if (node.tagName === 'INPUT' && (node.type === 'submit' || node.type === 'button') && node.value) {
-      const out = translateText(node.value);
-      if (out != null) node.value = out;
-    }
-    if (node.tagName === 'OPTION' || node.tagName === 'SELECT' || node.childNodes.length) {
-      const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
-      let n = walker.nextNode();
-      const list = [];
-      while (n) {
-        list.push(n);
-        n = walker.nextNode();
-      }
-      list.forEach((x) => (x.nodeType === 3 ? translateNode(x) : ATTRS.some((a) => x.hasAttribute(a)) && translateAttrs(x)));
+  }
+  function walk(root) {
+    if (root.nodeType === 3) return setText(root);
+    if (root.nodeType !== 1 || root.closest(SKIP)) return;
+    setAttrs(root);
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let n = w.nextNode();
+    while (n) {
+      if (n.nodeType === 3) setText(n);
+      else setAttrs(n);
+      n = w.nextNode();
     }
   }
-  function translateAttrs(el) {
-    if (el.closest(SKIP)) return;
-    ATTRS.forEach((a) => {
-      const v = el.getAttribute(a);
-      if (!v) return;
-      const out = translateText(v);
-      if (out != null) el.setAttribute(a, out);
+
+  const titleOrig = document.title;
+  const metaOrig = new Map();
+  function applyHead() {
+    document.title = lang === 'en' ? translateText(titleOrig) ?? titleOrig : titleOrig;
+    document.querySelectorAll('meta[name="description"]').forEach((m) => {
+      if (!metaOrig.has(m)) metaOrig.set(m, m.content);
+      const o = metaOrig.get(m);
+      m.content = lang === 'en' ? translateText(o) ?? o : o;
     });
+    document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
+  }
+
+  let observer = null;
+  function applyAll() {
+    applyHead();
+    walk(document.body);
+    if (observer) observer.takeRecords(); // drop records of our own writes
+  }
+
+  function watch() {
+    observer = new MutationObserver((muts) => {
+      muts.forEach((m) => {
+        if (m.type === 'characterData') {
+          // app code wrote new (Chinese) text: that becomes the new original
+          textOrig.set(m.target, m.target.nodeValue);
+          setText(m.target);
+        } else if (m.type === 'attributes') {
+          const st = attrOrig.get(m.target);
+          if (st) delete st[m.attributeName];
+          setAttrs(m.target);
+        } else m.addedNodes.forEach(walk);
+      });
+      observer.takeRecords();
+    });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
   }
 
   const api = (window.WYI18N = {
-    lang,
+    get lang() {
+      return lang;
+    },
     t(s) {
       return lang === 'en' ? translateText(s) ?? s : s;
     },
     set(next) {
+      if (next === lang) return;
       write(next);
       const url = new URL(location.href);
-      url.searchParams.delete('lang');
-      try {
-        sessionStorage.setItem('wy:trans', '1');
-      } catch {
-        /* ignore */
+      if (url.searchParams.has('lang')) {
+        url.searchParams.delete('lang');
+        history.replaceState(history.state, '', url.href);
       }
-      document.querySelector('.wy-trans')?.classList.add('shut');
-      window.WYSFX?.play('shut');
-      setTimeout(() => location.replace(url.href), 480);
+      const swap = () => {
+        lang = next;
+        applyAll();
+        document.dispatchEvent(new CustomEvent('wy:lang', { detail: lang }));
+      };
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!document.startViewTransition || reduce) return swap();
+      const html = document.documentElement;
+      html.classList.add('wy-lang-swap');
+      const vt = document.startViewTransition(swap);
+      vt.finished.finally(() => html.classList.remove('wy-lang-swap'));
     },
   });
 
-  document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
-  if (lang !== 'en') return;
-
+  applyHead();
   function run() {
-    const t = translateText(document.title);
-    if (t) document.title = t;
-    document.querySelectorAll('meta[name="description"]').forEach((m) => {
-      const d = translateText(m.content);
-      if (d) m.content = d;
-    });
-    translateNode(document.body);
-    new MutationObserver((muts) => {
-      muts.forEach((m) => {
-        if (m.type === 'characterData') translateNode(m.target);
-        else if (m.type === 'attributes') translateAttrs(m.target);
-        else m.addedNodes.forEach(translateNode);
-      });
-    }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+    if (lang === 'en') walk(document.body);
+    watch();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
   else run();

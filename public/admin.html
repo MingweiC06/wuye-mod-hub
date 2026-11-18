@@ -11,13 +11,13 @@
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css?v=20261118a">
   <link rel="stylesheet" href="/admin.css?v=1">
-  <link rel="stylesheet" href="/cosmic.css?v=20261118a">
-  <link rel="stylesheet" href="/fx.css?v=6">
-  <script src="/app.js?v=20261118a" defer></script>
+  <link rel="stylesheet" href="/cosmic.css?v=20261119b">
+  <link rel="stylesheet" href="/fx.css?v=20261119b">
+  <script src="/app.js?v=20261119b" defer></script>
   <script src="/admin.js?v=3" defer></script>
   <script src="/admin-files.js?v=2" defer></script>
-  <script src="/admin-channel.js?v=1" defer></script>
-  <script src="/fx.js?v=5"></script>
+  <script src="/admin-channel.js?v=9" defer></script>
+  <script src="/fx.js?v=20261119b"></script>
 </head>
 <body class="page-admin">
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -32,7 +32,6 @@
         <a href="/" data-nav="home">首页</a>
         <a href="/ideas" data-nav="ideas">许愿池</a>
         <a href="/polls" data-nav="polls">投票</a>
-        <a href="/arena" data-nav="arena">擂台</a>
         <a href="/downloads" data-nav="downloads">下载</a>
         <a href="/rules" data-nav="rules">规则</a>
       </nav>
@@ -253,19 +252,14 @@
 
           <div class="admin-settings-grid">
             <section class="panel admin-block">
-              <div class="admin-block-head"><h2>星神擂台</h2><span class="badge badge-gold" id="bracket-state">—</span></div>
-              <div id="bracket-admin"></div>
-              <form id="bracket-form" novalidate>
-                <div class="field"><label for="bracket-title">新一季标题</label><input class="input" id="bracket-title" placeholder="星神擂台 · 第二季"></div>
-                <div class="field"><label for="bracket-entrants">参赛者（每行一个，4 / 8 / 16 个，按对阵顺序）</label><textarea class="textarea" id="bracket-entrants" rows="6"></textarea></div>
-                <div class="admin-form-actions"><button class="btn btn-ghost" type="submit">开启新一季（旧的会归档）</button></div>
-              </form>
-            </section>
-            <section class="panel admin-block">
               <div class="admin-block-head"><h2>制作航线</h2><span class="hint">状态为「制作中/已发布」或填了进度的会公开</span></div>
               <div id="roadmap-admin"></div>
             </section>
           </div>
+          <section class="panel admin-block">
+            <div class="admin-block-head"><h2>投票卡片</h2><span class="hint">给每个候选设置游戏和图片（自动压缩到 1200px）。状态在「灵感审核」里改：已采纳＝投票中，制作中＝置顶，已发布＝已完成。</span></div>
+            <div id="cards-admin" class="cards-admin"></div>
+          </section>
         </section>
 
         <section class="admin-panel" id="panel-files" data-panel="files" role="tabpanel" aria-labelledby="tab-files" tabindex="0" hidden>

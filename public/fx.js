@@ -194,7 +194,7 @@
       log: [
         ['t', '接入星穹列车广域网'],
         ['', '同步抖音频道 27276177171'],
-        ['w', '载入模组索引 · 许愿池 · 擂台'],
+        ['w', '载入模组索引 · 许愿池 · 投票'],
         ['', '校准星神坐标 · 巡猎 / 丰饶 / 存护'],
         ['', '编译方块着色器'],
         ['v', '粉丝凭证 → 核验中'],
@@ -214,7 +214,7 @@
       log: [
         ['t', 'Joining the Astral Express network'],
         ['', 'Syncing Douyin channel 27276177171'],
-        ['w', 'Loading mod index · wishes · arena'],
+        ['w', 'Loading mod index · wishes · votes'],
         ['', 'Calibrating Aeon paths · Hunt / Abundance / Preservation'],
         ['', 'Compiling block shaders'],
         ['v', 'Follower credential → checking'],
@@ -341,16 +341,10 @@
     /* title glyphs */
     T(2600, () => {
       el.classList.add('wyb-reveal');
-      zh.querySelectorAll('span').forEach((s, i) => setTimeout(() => s.classList.add('on'), i * 120));
-      let i = 0;
-      const en = $('wyb-en');
-      const typer = setInterval(() => {
-        i += 1;
-        en.textContent = L.en.slice(0, i);
-        if (i % 2) SFX.play('tick');
-        if (i >= L.en.length) clearInterval(typer);
-      }, 28);
-      timers.push(typer);
+      // the whole name pops in at once (no letter-by-letter roll)
+      zh.classList.add('pop');
+      $('wyb-en').textContent = L.en;
+      SFX.play('boom');
     });
 
     /* canvases */
@@ -845,8 +839,14 @@
       SFX.setMuted(!SFX.muted);
       if (!SFX.muted) SFX.play('toggle');
     });
-    box.querySelector('[data-wy-lang]')?.addEventListener('click', () => {
+    const langBtn = box.querySelector('[data-wy-lang]');
+    langBtn?.addEventListener('click', () => {
       if (window.WYI18N) window.WYI18N.set(lang() === 'zh' ? 'en' : 'zh');
+    });
+    document.addEventListener('wy:lang', () => {
+      if (!langBtn) return;
+      langBtn.textContent = lang() === 'zh' ? 'EN' : '中';
+      langBtn.setAttribute('aria-label', lang() === 'zh' ? 'Switch to English' : '切换到中文');
     });
   }
 

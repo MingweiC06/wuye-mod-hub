@@ -152,3 +152,23 @@ test('fan code gate, jar upload, signed download', async () => {
   assert.equal((await fetch(`${base}/api/mods/${mod.id}/download?t=1.bad`)).status, 403);
   assert.equal((await fanX('/api/mods')).data.mods[0].downloads, 1);
 });
+
+test('vote board: sections, game filter, admin card edit', async () => {
+  const b = await fan('/api/board');
+  assert.equal(b.status, 200);
+  assert.ok(b.data.voting.every((c) => c.status === 'planned'));
+  assert.ok(b.data.building.every((c) => c.status === 'building'));
+  assert.ok(b.data.done.every((c) => c.status === 'released'));
+  const votes = b.data.voting.map((c) => c.votes);
+  assert.deepEqual(votes, [...votes].sort((x, y) => y - x));
+  const game = b.data.games[0].name;
+  const f = await fan(`/api/board?game=${encodeURIComponent(game)}`);
+  assert.ok(f.data.voting.length && f.data.voting.every((c) => c.game === game));
+  const id = b.data.voting[0].id;
+  assert.equal((await fan(`/api/admin/cards/${id}`, { method: 'PATCH', body: { game: 'X' } })).status, 401);
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  assert.equal((await admin(`/api/admin/cards/${id}`, { method: 'PATCH', body: { game: '测试游戏', image: png } })).status, 200);
+  const after = (await fan('/api/board?game=测试游戏')).data.voting[0];
+  assert.equal(after.id, id);
+  assert.match(after.image, /^\/media\/.+\.png$/);
+});

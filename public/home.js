@@ -112,44 +112,6 @@
     }
   }
 
-  /* ---------------- bracket duel ---------------- */
-
-  async function loadDuel() {
-    const slot = $('#duel-slot');
-    if (!slot) return;
-    try {
-      const { bracket } = await WY.api('/api/bracket');
-      if (!bracket) {
-        slot.innerHTML = '<div class="empty">擂台休赛中。</div>';
-        return;
-      }
-      if (bracket.status === 'finished') {
-        slot.innerHTML = `<div class="cx-champion"><small class="eyebrow">CHAMPION</small><strong>${WY.esc(bracket.champion)}</strong>${WY.esc(bracket.title)} 冠军</div>`;
-        return;
-      }
-      const live = bracket.matches.filter((m) => m.round === bracket.round && !m.winner);
-      const match = live.find((m) => !m.myPick) || live[0];
-      if (!match) {
-        slot.innerHTML = '<div class="empty">本轮投票已结束，等待晋级。</div>';
-        return;
-      }
-      slot.innerHTML = WY.duelHtml(match, `第 ${bracket.round} 轮 / 共 ${bracket.totalRounds} 轮`);
-      WY.paintDuel(slot);
-      slot.onclick = async (event) => {
-        const side = event.target.closest('[data-pick]');
-        if (!side || side.disabled) return;
-        try {
-          await WY.api(`/api/bracket/matches/${side.dataset.match}/vote`, { method: 'POST', body: { pick: side.dataset.pick } });
-          loadDuel();
-        } catch (error) {
-          WY.toast(error.message, 'error');
-        }
-      };
-    } catch (error) {
-      slot.innerHTML = `<div class="empty">${WY.esc(error.message)}</div>`;
-    }
-  }
-
   function renderPast(videos) {
     const rail = $('#past-rail');
     if (!rail) return;
@@ -313,7 +275,6 @@
     loadHotIdeas();
     loadPollPreview();
     loadRoadmap();
-    loadDuel();
     if (WY.mountBoard) WY.mountBoard($('#board'), $('#nick-form'));
   }
 

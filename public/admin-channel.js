@@ -1,4 +1,4 @@
-/* Admin → 频道与互动: collector bookmarklet, comment inbox, videos, bracket, roadmap. */
+/* Admin → 频道与互动: collector bookmarklet, comment inbox, videos, roadmap. */
 (function () {
   'use strict';
   const WY = window.WY;
@@ -180,50 +180,6 @@
     }
   }
 
-  /* ---------------- bracket ---------------- */
-
-  async function loadBracket() {
-    const box = $('bracket-admin');
-    const { bracket } = await WY.api('/api/admin/bracket');
-    if (!bracket) {
-      $('bracket-state').textContent = '无';
-      box.innerHTML = '';
-      return;
-    }
-    $('bracket-state').textContent = bracket.status === 'finished' ? `冠军：${bracket.champion}` : `第 ${bracket.round}/${bracket.totalRounds} 轮`;
-    const current = bracket.matches.filter((m) => m.round === bracket.round);
-    box.innerHTML = `<p class="hint">${WY.esc(bracket.title)}</p>${current
-      .map((m) => `<div class="idea-meta"><span>${WY.esc(m.a)} <b>${m.votesA}</b></span><span>vs</span><span>${WY.esc(m.b)} <b>${m.votesB}</b></span></div>`)
-      .join('')}${
-      bracket.status === 'open'
-        ? `<p><button class="btn btn-primary btn-sm" id="bracket-advance" data-id="${bracket.id}" type="button">封箱本轮并晋级</button></p>`
-        : ''
-    }`;
-  }
-
-  async function onBracketAdvance(event) {
-    const button = event.target.closest('#bracket-advance');
-    if (!button || !window.confirm('封箱后本轮不能再投票，票多者晋级（平票算左边）。继续？')) return;
-    try {
-      await WY.api(`/api/admin/bracket/${button.dataset.id}/advance`, { method: 'POST' });
-      loadBracket();
-    } catch (error) {
-      WY.toast(error.message, 'error');
-    }
-  }
-
-  async function onBracketCreate(event) {
-    event.preventDefault();
-    const entrants = $('bracket-entrants').value.split('\n').map((s) => s.trim()).filter(Boolean);
-    try {
-      await WY.api('/api/admin/bracket', { method: 'POST', body: { title: $('bracket-title').value, entrants } });
-      WY.toast('新一季已开启', 'success');
-      loadBracket();
-    } catch (error) {
-      WY.toast(error.message, 'error');
-    }
-  }
-
   /* ---------------- roadmap ---------------- */
 
   async function loadRoadmap() {
@@ -260,6 +216,82 @@
     }
   }
 
+  /* ---------------- vote cards ---------------- */
+
+  const STATE_LABEL = { planned: '投票中', building: '制作中', released: '已完成', shelved: '暂搁置' };
+
+  async function loadCards() {
+    const box = $('cards-admin');
+    const { items } = await WY.api('/api/admin/cards');
+    box.innerHTML = items
+      .map(
+        (c) => `
+      <div class="card-row" data-card="${c.id}">
+        <label class="card-img" title="点击换图">
+          ${c.image ? `<img src="${WY.esc(c.image)}" alt="">` : '<span>+ 图片</span>'}
+          <input type="file" accept="image/jpeg,image/png,image/webp" data-card-file>
+        </label>
+        <div class="card-main">
+          <strong>${WY.esc(c.title)}</strong>
+          <span class="hint">${STATE_LABEL[c.status] || c.status} · ${c.votes} 票</span>
+          <div class="card-edit">
+            <input class="input" list="game-list" value="${WY.esc(c.game)}" placeholder="游戏，如 崩坏：星穹铁道" maxlength="40" data-card-game>
+            <button class="btn btn-ghost btn-sm" type="button" data-card-save>保存</button>
+            ${c.image ? '<button class="btn btn-ghost btn-sm" type="button" data-card-clear>去掉图片</button>' : ''}
+          </div>
+        </div>
+      </div>`,
+      )
+      .join('') +
+      `<datalist id="game-list">${[...new Set(items.map((c) => c.game).filter(Boolean))].map((g) => `<option value="${WY.esc(g)}">`).join('')}</datalist>`;
+  }
+
+  // shrink to <=1200px JPEG in the browser so uploads stay small
+  function shrink(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 1200 / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * k);
+        cv.height = Math.round(img.height * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(img.src);
+        resolve(cv.toDataURL('image/jpeg', 0.86));
+      };
+      img.onerror = () => reject(new Error('图片读取失败'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function saveCard(id, body, msg) {
+    try {
+      await WY.api(`/api/admin/cards/${id}`, { method: 'PATCH', body });
+      WY.toast(msg, 'success');
+      loadCards();
+    } catch (error) {
+      WY.toast(error.message, 'error');
+    }
+  }
+
+  function onCardClick(event) {
+    const row = event.target.closest('[data-card]');
+    if (!row) return;
+    if (event.target.closest('[data-card-save]')) saveCard(row.dataset.card, { game: row.querySelector('[data-card-game]').value.trim() }, '游戏已保存');
+    if (event.target.closest('[data-card-clear]')) saveCard(row.dataset.card, { image: '' }, '图片已去掉');
+  }
+
+  async function onCardFile(event) {
+    const input = event.target.closest('[data-card-file]');
+    if (!input || !input.files[0]) return;
+    const row = input.closest('[data-card]');
+    try {
+      saveCard(row.dataset.card, { image: await shrink(input.files[0]) }, '图片已更新');
+    } catch (error) {
+      WY.toast(error.message, 'error');
+    }
+  }
+
   /* ---------------- boot ---------------- */
 
   async function open() {
@@ -277,13 +309,13 @@
       $('video-form').addEventListener('submit', onVideoAdd);
       $('video-list').addEventListener('click', onVideoList);
       $('video-list').addEventListener('change', onVideoList);
-      $('bracket-admin').addEventListener('click', onBracketAdvance);
-      $('bracket-form').addEventListener('submit', onBracketCreate);
       $('roadmap-admin').addEventListener('click', onRoadmapSave);
+      $('cards-admin').addEventListener('click', onCardClick);
+      $('cards-admin').addEventListener('change', onCardFile);
     }
     loadInbox();
     loadVideos();
-    loadBracket().catch((e) => WY.toast(e.message, 'error'));
+    loadCards().catch((e) => WY.toast(e.message, 'error'));
     loadRoadmap().catch((e) => WY.toast(e.message, 'error'));
   }
 

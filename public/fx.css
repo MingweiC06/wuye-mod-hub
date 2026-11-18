@@ -736,3 +736,35 @@ a:not(.btn):not(.cx-work-cover):not(.brand):not(.chip):hover {
 .wy-veil { position: fixed; inset: 0; z-index: 9998; pointer-events: none; background: #07060b; opacity: 0; transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
 .wy-veil.on { opacity: 1; pointer-events: auto; transition-duration: 0.22s; }
 .wy-veil.instant { transition: none; }
+
+/* ---------- language switch: in-place crossfade ---------- */
+html.wy-lang-swap::view-transition-old(root),
+html.wy-lang-swap::view-transition-old(wy-header) {
+  animation: wy-lang-out 0.32s cubic-bezier(0.4, 0, 1, 1) both;
+}
+html.wy-lang-swap::view-transition-new(root),
+html.wy-lang-swap::view-transition-new(wy-header) {
+  animation: wy-lang-in 0.6s 0.06s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes wy-lang-out { to { opacity: 0; transform: translate3d(0, -4px, 0); } }
+@keyframes wy-lang-in { from { opacity: 0; transform: translate3d(0, 6px, 0); } }
+
+/* intro title: the whole 乌叶MC pops in as one */
+.wyb-name .zh.pop span { opacity: 1; animation: none; }
+.wyb-name .zh.pop { animation: wyb-pop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes wyb-pop {
+  0% { opacity: 0; transform: scale(0.6); text-shadow: 0 0 0 rgba(243, 217, 150, 0); }
+  55% { opacity: 1; text-shadow: 0 0 40px rgba(243, 217, 150, 0.9); }
+  100% { opacity: 1; transform: scale(1); text-shadow: 0 0 18px rgba(243, 217, 150, 0.25); }
+}
+#wy-boot.wyb-reveal .wyb-name .en { animation: wy-fade 0.6s 0.25s both; }
+
+/* admin: vote cards */
+.cards-admin { display: grid; gap: 10px; }
+.card-row { display: grid; grid-template-columns: 88px 1fr; gap: 14px; align-items: center; padding: 10px; border: 1px solid rgba(216,181,106,.18); }
+.card-img { position: relative; width: 88px; aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden; cursor: pointer; border: 1px dashed rgba(216,181,106,.45); color: #d8b56a; font-size: 12px; }
+.card-img img { width: 100%; height: 100%; object-fit: cover; }
+.card-img input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.card-main { display: grid; gap: 6px; }
+.card-edit { display: flex; flex-wrap: wrap; gap: 8px; }
+.card-edit .input { flex: 1 1 200px; }

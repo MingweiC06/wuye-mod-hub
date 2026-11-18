@@ -350,7 +350,6 @@
     if (pathname.startsWith('/ideas')) active = 'ideas';
     else if (pathname.startsWith('/polls')) active = 'polls';
     else if (pathname.startsWith('/rules')) active = 'rules';
-    else if (pathname.startsWith('/arena')) active = 'arena';
     else if (pathname.startsWith('/downloads')) active = 'downloads';
     else if (pathname.startsWith('/admin')) active = 'admin';
     document.querySelectorAll('[data-nav]').forEach((link) => {
@@ -449,34 +448,7 @@
 
   WY.observeReveal = initReveal;
 
-  /* ---------------- arena duel + supporter board (home & arena) ---------------- */
-
-  WY.duelHtml = function duelHtml(match, caption) {
-    const total = match.votesA + match.votesB;
-    const closed = Boolean(match.winner);
-    const side = (key, label, votes) => {
-      const pct = total ? Math.round((votes / total) * 100) : 0;
-      const cls = [
-        'cx-side',
-        match.myPick === key ? 'is-picked' : '',
-        closed && match.winner === label ? 'is-winner' : '',
-      ].join(' ');
-      return `<button class="${cls}" type="button" data-match="${match.id}" data-pick="${key}" data-pct="${pct}"${
-        closed ? ' disabled' : ''
-      } aria-label="支持 ${WY.esc(label)}"><strong>${WY.esc(label)}</strong><span>${
-        match.myPick || closed ? `${pct}% · ${votes} 票` : '点击支持'
-      }</span><i class="cx-fill"></i></button>`;
-    };
-    return `${caption ? `<p class="cx-rule">${WY.esc(caption)}</p>` : ''}<div class="cx-duel">${side('a', match.a, match.votesA)}<span class="cx-vs">VS</span>${side('b', match.b, match.votesB)}</div>`;
-  };
-
-  WY.paintDuel = function paintDuel(root) {
-    root.querySelectorAll('.cx-side').forEach((node) => {
-      const fill = node.querySelector('.cx-fill');
-      const show = node.classList.contains('is-picked') || node.disabled || root.querySelector('.is-picked');
-      if (fill) fill.style.transform = `scaleX(${show ? Number(node.dataset.pct) / 100 : 0})`;
-    });
-  };
+  /* ---------------- supporter board (home) ---------------- */
 
   WY.mountBoard = async function mountBoard(list, form) {
     if (!list) return;

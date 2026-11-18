@@ -31,7 +31,6 @@ const PAGE_REWRITES = new Map([
   ['/polls', '/polls.html'],
   ['/admin', '/admin.html'],
   ['/rules', '/rules.html'],
-  ['/arena', '/arena.html'],
   ['/downloads', '/downloads.html'],
 ]);
 

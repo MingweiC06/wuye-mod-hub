@@ -1623,3 +1623,13 @@ h3 {
 .lb-pts { color: #f3d996; }
 .lb-foot { margin-top: 16px; }
 @media (max-width: 860px) { .sp-grid { grid-template-columns: 1fr; } }
+
+/* 9 nav links: collapse to the menu button before they overflow */
+@media (max-width: 1240px) {
+  .nav { display: none; position: absolute; top: calc(100% + 1px); left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 2px; padding: 10px 20px 16px; background: rgba(6, 10, 17, 0.98); border-bottom: 1px solid var(--line); }
+  .nav.is-open { display: flex; }
+  .nav a { padding: 12px 10px; margin: 0; }
+  .nav a::after { display: none; }
+  .nav-toggle { display: grid; margin-left: auto; }
+  .header-inner { position: relative; }
+}

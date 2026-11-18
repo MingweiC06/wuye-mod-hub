@@ -879,7 +879,11 @@
   function setupMusic() {
     if (document.getElementById('wy-bgm')) return;
     // Only show the button once a music file has been added.
-    fetch(BGM_SRC, { method: 'HEAD' }).then((r) => { if (r.ok) mountMusic(); }, () => {});
+    let on = null;
+    try { on = localStorage.getItem('wy-bgm'); } catch {}
+    // Already playing on the previous page: mount right away so the song carries on.
+    if (on === 'on') mountMusic();
+    else fetch(BGM_SRC, { method: 'HEAD' }).then((r) => { if (r.ok) mountMusic(); }, () => {});
   }
 
   const BGM_SRC = '/assets/audio/bgm.mp3';
@@ -888,9 +892,9 @@
     const KEY = 'wy-bgm';
     const read = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
     const write = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
-    const audio = new Audio(BGM_SRC);
+    const audio = (window.WYBGM = new Audio(BGM_SRC));
     audio.loop = true;
-    audio.preload = 'none';
+    audio.preload = read(KEY) === 'on' ? 'auto' : 'none';
     audio.volume = 0;
     const btn = document.createElement('button');
     btn.id = 'wy-bgm';
@@ -921,10 +925,30 @@
       btn.setAttribute('aria-pressed', String(on));
       btn.setAttribute('aria-label', on ? '关闭背景音乐' : '播放背景音乐');
     };
-    const play = () => {
-      const at = Number(read(KEY + '-t')) || 0;
-      if (at && !audio.currentTime) audio.currentTime = at;
-      return audio.play().then(() => { paint(true); fade(TARGET, 1800); }, () => paint(false));
+    // Where the song should be right now: saved spot + time spent switching pages.
+    const resumeAt = () => {
+      const t = Number(read(KEY + '-t')) || 0;
+      const at = Number(read(KEY + '-at')) || 0;
+      if (!t) return 0;
+      const gap = at ? Math.min(30, (Date.now() - at) / 1000) : 0;
+      const d = audio.duration;
+      return Number.isFinite(d) && d > 0 ? (t + gap) % d : t + gap;
+    };
+    const save = () => {
+      if (audio.paused) return;
+      write(KEY + '-t', String(audio.currentTime));
+      write(KEY + '-at', String(Date.now()));
+    };
+    const play = (resume) => {
+      if (!audio.currentTime) {
+        const at = resumeAt();
+        if (at) audio.currentTime = at;
+      }
+      if (resume) audio.volume = TARGET; // carry on at full volume, no fade between pages
+      return audio.play().then(() => {
+        paint(true);
+        if (!resume) fade(TARGET, 1800);
+      }, () => paint(false));
     };
     const stop = () => {
       paint(false);
@@ -933,15 +957,18 @@
     btn.addEventListener('click', () => {
       const on = !btn.classList.contains('is-on');
       write(KEY, on ? 'on' : 'off');
-      if (on) play(); else stop();
+      if (on) play(false); else stop();
     });
-    addEventListener('pagehide', () => { if (!audio.paused) write(KEY + '-t', String(audio.currentTime)); });
+    addEventListener('pagehide', save);
+    setInterval(save, 500);
     paint(false);
     if (read(KEY) === 'on') {
       // Browsers need a gesture first; try now, otherwise start on the first tap/key.
-      play().then(() => {
+      paint(true);
+      play(true).then(() => {
         if (audio.paused) {
-          const go = () => { if (read(KEY) === 'on') play(); };
+          paint(true);
+          const go = () => { if (read(KEY) === 'on' && audio.paused) play(true); };
           addEventListener('pointerdown', go, { once: true, capture: true });
           addEventListener('keydown', go, { once: true, capture: true });
         }

@@ -309,7 +309,7 @@
     }
   }
 
-  const titleOrig = document.title;
+  let titleOrig = document.title;
   const metaOrig = new Map();
   function applyHead() {
     document.title = lang === 'en' ? translateText(titleOrig) ?? titleOrig : titleOrig;
@@ -375,6 +375,12 @@
     },
   });
 
+  // a soft page swap brings a new title/description
+  api.refresh = (title, desc) => {
+    if (title != null) titleOrig = title;
+    if (desc != null) document.querySelectorAll('meta[name="description"]').forEach((m) => metaOrig.set(m, desc));
+    applyAll();
+  };
   applyHead();
   function run() {
     if (lang === 'en') walk(document.body);

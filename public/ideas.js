@@ -213,6 +213,8 @@
     }
     if (els.author) els.author.addEventListener('input', clearFormError);
 
+    if (window.__wyIdeasHash) window.removeEventListener('hashchange', window.__wyIdeasHash);
+    window.__wyIdeasHash = focusHash;
     window.addEventListener('hashchange', focusHash);
   }
 

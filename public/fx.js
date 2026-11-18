@@ -494,6 +494,11 @@
       if (url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
       if (url.pathname === location.pathname && url.hash) return;
       SFX.play('whoosh');
+      if (canSoft(url)) {
+        e.preventDefault();
+        softGo(url, true);
+        return;
+      }
       if (native || RM) return; // let the browser navigate + morph
       e.preventDefault();
       veil.classList.add('on');
@@ -865,6 +870,7 @@
   }
 
   function start() {
+    markPage(document.body);
     if (wantBoot) boot();
     setupTools();
     setupTransitions();
@@ -873,9 +879,143 @@
     watchToasts();
     scan(document);
     setupMusic();
+    history.replaceState({ ...(history.state || {}), wy: 1, y: scrollY }, '');
   }
 
+  /* ======================================================================
+     Soft navigation: swap the page in place so the music never stops.
+     Fetch the next page, swap its body + head bits, re-run its page script.
+     Anything odd falls back to a normal page load.
+     ====================================================================== */
+  const SHARED = new Set(['/app.js', '/i18n.js', '/fx.js']);
+  const NO_SOFT = /^\/(admin|api\/|data\/|media\/|assets\/)/;
+  let navId = 0;
+
+  function markPage(root) {
+    [...root.children].forEach((n) => {
+      n.dataset.wyPage = '';
+    });
+  }
+
+  function canSoft(url) {
+    if (!window.fetch || !window.DOMParser || !history.pushState) return false;
+    if (isAdmin || NO_SOFT.test(url.pathname) || /\.[a-z0-9]+$/i.test(url.pathname.replace(/\.html$/, ''))) return false;
+    if (url.searchParams.has('embed') !== new URLSearchParams(location.search).has('embed')) return false;
+    return true;
+  }
+
+  const pathOf = (src) => new URL(src, location.href).pathname;
+
+  function loadCss(href) {
+    return new Promise((done) => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = href;
+      l.onload = l.onerror = () => done(l);
+      document.head.appendChild(l);
+      setTimeout(() => done(l), 3000);
+    });
+  }
+
+  async function softGo(url, push, restoreY) {
+    const id = ++navId;
+    let doc;
+    try {
+      const res = await fetch(url.href, { headers: { Accept: 'text/html' }, credentials: 'same-origin' });
+      const type = res.headers.get('content-type') || '';
+      if (!type.includes('text/html')) throw new Error('not html');
+      doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+      if (doc.body.classList.contains('page-admin')) throw new Error('admin');
+    } catch {
+      location.href = url.href;
+      return;
+    }
+    if (id !== navId) return; // a newer click won
+
+    // stylesheets: add the ones this page needs before swapping (no flash of unstyled content)
+    const want = [...doc.querySelectorAll('link[rel="stylesheet"]')];
+    const have = [...document.querySelectorAll('link[rel="stylesheet"]')];
+    const havePaths = new Set(have.map((l) => pathOf(l.href)));
+    const added = await Promise.all(want.filter((l) => !havePaths.has(pathOf(l.href))).map((l) => loadCss(l.getAttribute('href'))));
+    if (id !== navId) return;
+    const wantPaths = new Set(want.map((l) => pathOf(l.getAttribute('href'))));
+
+    if (push) {
+      history.replaceState({ ...(history.state || {}), wy: 1, y: scrollY }, '');
+      history.pushState({ wy: 1, y: 0 }, '', url.href);
+    }
+
+    const swap = () => {
+      document.title = doc.title;
+      const desc = doc.querySelector('meta[name="description"]');
+      const mine = document.querySelector('meta[name="description"]');
+      if (desc && mine) mine.setAttribute('content', desc.getAttribute('content'));
+      // stylesheets this page doesn't use
+      have.forEach((l) => {
+        if (!wantPaths.has(pathOf(l.href))) l.remove();
+      });
+      // body: drop old page nodes, keep the injected layers (music, cursor, toasts, veil...)
+      document.body.className = doc.body.className;
+      document.body.querySelectorAll(':scope > [data-wy-page]').forEach((n) => n.remove());
+      const frag = document.createDocumentFragment();
+      [...doc.body.children].forEach((n) => {
+        if (n.tagName === 'SCRIPT') return;
+        n.dataset.wyPage = '';
+        frag.appendChild(document.adoptNode(n));
+      });
+      document.body.prepend(frag);
+      if (window.WYI18N && window.WYI18N.refresh) window.WYI18N.refresh(doc.title, desc ? desc.getAttribute('content') : null);
+      // shared chrome + effects
+      setupTools();
+      placeMusic();
+      if (window.WY && window.WY.mount) window.WY.mount();
+      scan(document);
+      if (restoreY != null) scrollTo(0, restoreY);
+      else if (url.hash) document.querySelector(url.hash)?.scrollIntoView();
+      else scrollTo(0, 0);
+    };
+
+    const reduce = RM || !document.startViewTransition;
+    if (reduce) swap();
+    else {
+      try {
+        await document.startViewTransition(swap).updateCallbackDone;
+      } catch {
+        /* swap already ran or transition skipped */
+      }
+    }
+    if (id !== navId) return;
+
+    // page scripts (vote.js, home.js, ideas.js...) run fresh each time
+    const scripts = [...doc.querySelectorAll('script[src]')].filter((s) => !SHARED.has(pathOf(s.getAttribute('src'))));
+    for (const s of scripts) {
+      await new Promise((done) => {
+        const el = document.createElement('script');
+        el.src = s.getAttribute('src');
+        el.dataset.wyPage = '';
+        el.onload = el.onerror = done;
+        document.body.appendChild(el);
+      });
+    }
+    document.dispatchEvent(new CustomEvent('wy:page', { detail: { url: url.href } }));
+  }
+
+  window.addEventListener('popstate', (e) => {
+    if (!e.state || !e.state.wy) return;
+    softGo(new URL(location.href), false, e.state.y || 0);
+  });
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
   /* Background music: off by default. Remembers on/off and where it was across pages. */
+  let musicBtn = null;
+  function placeMusic() {
+    if (!musicBtn) return;
+    const tools = document.querySelector('.wy-tools');
+    const langBtn = tools && tools.querySelector('[data-wy-lang]');
+    if (langBtn) langBtn.after(musicBtn);
+    else if (tools) tools.prepend(musicBtn);
+  }
+
   function setupMusic() {
     if (document.getElementById('wy-bgm')) return;
     // Only show the button once a music file has been added.
@@ -898,6 +1038,7 @@
     audio.volume = 0;
     const btn = document.createElement('button');
     btn.id = 'wy-bgm';
+    musicBtn = btn;
     btn.type = 'button';
     const tools = document.querySelector('.wy-tools');
     btn.className = tools ? 'wy-tool wy-bgm-tool' : 'wy-bgm';

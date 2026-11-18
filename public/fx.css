@@ -790,3 +790,4 @@ html.wy-lang-swap::view-transition-new(wy-header) {
 .wy-bgm-tool.is-on .wy-bgm-bars i { height: 10px; }
 .wy-bgm-tool:not(.is-on) .wy-bgm-bars { display: none; }
 .wy-bgm-tool:not(.is-on) { opacity: 1; }
+.wy-bgm-tool { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }

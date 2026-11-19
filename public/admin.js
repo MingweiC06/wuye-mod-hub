@@ -825,8 +825,7 @@
     if (button.disabled) return;
     const raw = window.prompt(
       '「' + item.title + '」现在 ' + (Number(item.votes) || 0) + ' 票（其中机器票 ' + (Number(item.voteAdjust) || 0) +
-        '）。
-加几票？填正数加票，负数减票（例如 50 或 -20）：',
+        '）。\n加几票？填正数加票，负数减票（例如 50 或 -20）：',
       '',
     );
     if (raw === null || !raw.trim()) return;

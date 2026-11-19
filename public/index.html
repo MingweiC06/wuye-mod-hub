@@ -16,14 +16,15 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png?v=20261119a">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
-  <link rel="stylesheet" href="/styles.css?v=20261118a">
-  <link rel="stylesheet" href="/cosmic.css?v=20261120h">
-  <link rel="stylesheet" href="/fx.css?v=20261119bmneq">
+  <link rel="stylesheet" href="/styles.css?v=20261119-1321">
+  <link rel="stylesheet" href="/cosmic.css?v=20261119-1321">
+  <link rel="stylesheet" href="/fx.css?v=20261119-1321">
   <link rel="preload" as="image" href="/assets/cover-amber.jpg">
-  <script src="/app.js?v=20261120a" defer></script>
-  <script src="/home.js?v=20261119c" defer></script>
-  <script src="/i18n.js?v=20261120e"></script>
-  <script src="/fx.js?v=20261120b"></script>
+  <script src="/device-id.js?v=20261119-1321" defer></script>
+  <script src="/app.js?v=20261119-1321" defer></script>
+  <script src="/home.js?v=20261119-1321" defer></script>
+  <script src="/i18n.js?v=20261119-1321"></script>
+  <script src="/fx.js?v=20261119-1321"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -160,6 +161,14 @@
             <input class="input" name="nickname" maxlength="16" placeholder="留下昵称上榜" aria-label="昵称">
             <button class="btn btn-ghost btn-sm" type="submit">上榜</button>
           </form>
+          <label class="consent-check consent-check--compact" for="nick-consent">
+            <input type="checkbox" id="nick-consent" name="crossBorderConsent" form="nick-form" required>
+            <span>同意<a href="/privacy#cross-border" target="_blank" rel="noopener">隐私政策</a>（昵称存放于美国服务器）</span>
+          </label>
+          <label class="consent-check consent-check--compact" for="nick-age">
+            <input type="checkbox" id="nick-age" name="ageConfirm" form="nick-form" required>
+            <span>我确认已年满 14 周岁</span>
+          </label>
           <p class="cx-note">投票 1 星 · 作品点星 1 星</p>
         </aside>
       </div>
@@ -199,6 +208,7 @@
           <a href="/ideas">许愿池</a>
           <a href="/polls">投票中心</a>
           <a href="/rules">许愿规则</a>
+          <a href="/privacy">隐私政策</a>
         </div>
         <div class="footer-col">
           <h4>找到我</h4>

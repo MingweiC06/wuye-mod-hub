@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -93,7 +93,7 @@ test('roadmap progress and supporter board', async () => {
   await admin(`/api/admin/roadmap/${ideas[0].id}`, { method: 'PATCH', body: { progress: 40, note: '技能特效完成' } });
   const rm = (await fan('/api/roadmap')).data.items.find((i) => i.id === ideas[0].id);
   assert.equal(rm.progress, 40);
-  await fan('/api/me/nickname', { method: 'POST', body: { nickname: '星穹列车长' } });
+  await fan('/api/me/nickname', { method: 'POST', body: { nickname: '星穹列车长', crossBorderConsent: true, ageConfirm: true } });
   const board = (await fan('/api/supporters')).data;
   assert.equal(board.me, '星穹列车长');
   assert.equal(board.items[0].nickname, '星穹列车长');
@@ -121,9 +121,9 @@ test('collector paste adds the video and its comments together', async () => {
 
 test('fan code gate, jar upload, signed download', async () => {
   const fanX = client('fan-device-gate-01');
-  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: 'x', code: 'abc' } })).status, 503);
+  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: 'x', code: 'abc', crossBorderConsent: true, ageConfirm: true } })).status, 503);
   assert.equal((await admin('/api/admin/fan', { method: 'PATCH', body: { code: '星穹 列车' } })).status, 200);
-  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: '小星', code: 'wrong' } })).status, 403);
+  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: '小星', code: 'wrong', crossBorderConsent: true, ageConfirm: true } })).status, 403);
 
   // A tiny valid zip header is enough for the magic-byte check.
   const jar = Buffer.concat([Buffer.from('504b0304', 'hex'), Buffer.alloc(64, 1)]);
@@ -144,7 +144,7 @@ test('fan code gate, jar upload, signed download', async () => {
   assert.equal(list.data.mods.length, 1);
   assert.equal(list.data.modpacks.length, 0);
   assert.equal((await fanX(`/api/mods/${mod.id}/token`, { method: 'POST' })).status, 403);
-  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: '小星', code: '星穹列车' } })).status, 200);
+  assert.equal((await fanX('/api/fan/verify', { method: 'POST', body: { nickname: '小星', code: '星穹列车', crossBorderConsent: true, ageConfirm: true } })).status, 200);
   const t = await fanX(`/api/mods/${mod.id}/token`, { method: 'POST' });
   const file = await fetch(base + t.data.url);
   assert.equal(file.status, 200);

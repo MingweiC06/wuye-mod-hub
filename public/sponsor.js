@@ -76,11 +76,29 @@
       return;
     }
     const btn = f.querySelector('button[type="submit"]');
+    if (!f.crossBorderConsent.checked) {
+      WY.toast('请先勾选同意隐私政策中的个人信息出境说明', 'error');
+      f.crossBorderConsent.focus();
+      return;
+    }
+    if (!f.ageConfirm.checked) {
+      WY.toast('请先确认你已年满 14 周岁', 'error');
+      f.ageConfirm.focus();
+      return;
+    }
     btn.disabled = true;
     try {
       const r = await WY.api('/api/sponsor', {
         method: 'POST',
-        body: { method: f.method.value, amount, note: f.note.value.trim(), message: f.message.value.trim(), anonymous: f.anonymous.checked },
+        body: {
+          method: f.method.value,
+          amount,
+          note: f.note.value.trim(),
+          message: f.message.value.trim(),
+          anonymous: f.anonymous.checked,
+          crossBorderConsent: true,
+          ageConfirm: true,
+        },
       });
       WY.toast(r.anonymous ? '收到！乌叶确认后会以「匿名」上榜' : '收到！乌叶确认后你就会上榜', 'success');
       if (window.WYFX) window.WYFX.burst?.(btn);

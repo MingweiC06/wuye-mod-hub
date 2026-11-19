@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -30,19 +30,19 @@ const admin = client('sp-admin-0001');
 await admin('/api/admin/login', { method: 'POST', body: { code: 'test-admin-code-1234' } });
 
 test('names: claim, taken, restore on another device, forget', async () => {
-  const c = await a('/api/me/claim', { method: 'POST', body: { name: '星穹旅人' } });
+  const c = await a('/api/me/claim', { method: 'POST', body: { name: '星穹旅人', crossBorderConsent: true, ageConfirm: true } });
   assert.equal(c.status, 200);
   assert.match(c.data.key, /^WY-[A-Z0-9]{4}-[A-Z0-9]{4}$/);
-  assert.equal((await b('/api/me/claim', { method: 'POST', body: { name: '星穹旅人' } })).status, 409);
-  assert.equal((await b('/api/me/restore', { method: 'POST', body: { name: '星穹旅人', key: 'WY-AAAA-AAAA' } })).status, 401);
-  const r = await b('/api/me/restore', { method: 'POST', body: { name: '星穹旅人', key: c.data.key } });
+  assert.equal((await b('/api/me/claim', { method: 'POST', body: { name: '星穹旅人', crossBorderConsent: true, ageConfirm: true } })).status, 409);
+  assert.equal((await b('/api/me/restore', { method: 'POST', body: { name: '星穹旅人', key: 'WY-AAAA-AAAA', crossBorderConsent: true, ageConfirm: true } })).status, 401);
+  const r = await b('/api/me/restore', { method: 'POST', body: { name: '星穹旅人', key: c.data.key, crossBorderConsent: true, ageConfirm: true } });
   assert.equal(r.data.me.name, '星穹旅人');
   await b('/api/me/forget', { method: 'POST' });
   assert.equal((await b('/api/me')).data.me, null);
 });
 
 test('sponsorship amounts stay admin-only', async () => {
-  const s = await a('/api/sponsor', { method: 'POST', body: { method: 'wechat', amount: 66, note: '星穹', message: '加油', anonymous: false } });
+  const s = await a('/api/sponsor', { method: 'POST', body: { method: 'wechat', amount: 66, note: '星穹', message: '加油', anonymous: false, crossBorderConsent: true, ageConfirm: true } });
   assert.equal(s.status, 200);
   let board = await a('/api/leaderboard');
   assert.equal(board.data.sponsors.length, 0, 'pending is not on the board');
@@ -57,7 +57,7 @@ test('sponsorship amounts stay admin-only', async () => {
 });
 
 test('new wishes wait for approval; one vote per wish per IP', async () => {
-  const w = await a('/api/ideas', { method: 'POST', body: { title: '测试许愿·纯美女神', description: '想看纯美女神的模组，做成一个完整的Boss战吧', category: 'aeon' } });
+  const w = await a('/api/ideas', { method: 'POST', body: { title: '测试许愿·纯美女神', description: '想看纯美女神的模组，做成一个完整的Boss战吧', category: 'aeon', crossBorderConsent: true, ageConfirm: true } });
   assert.equal(w.status, 201);
   const id = w.data.idea.id;
   assert.equal((await a(`/api/ideas/${id}/vote`, { method: 'POST' })).status, 404, 'cannot vote before approval');

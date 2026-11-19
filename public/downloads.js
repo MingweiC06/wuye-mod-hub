@@ -91,10 +91,21 @@
   async function onVerify(event) {
     event.preventDefault();
     const form = event.target;
+    if (!form.crossBorderConsent.checked) {
+      WY.toast('请先勾选同意隐私政策中的个人信息出境说明', 'error');
+      return;
+    }
+    if (!form.ageConfirm.checked) {
+      WY.toast('请先确认你已年满 14 周岁', 'error');
+      return;
+    }
     const btn = form.querySelector('button');
     btn.disabled = true;
     try {
-      await WY.api('/api/fan/verify', { method: 'POST', body: { nickname: form.nickname.value.trim(), code: form.code.value } });
+      await WY.api('/api/fan/verify', {
+        method: 'POST',
+        body: { nickname: form.nickname.value.trim(), code: form.code.value, crossBorderConsent: true, ageConfirm: true },
+      });
       const r = btn.getBoundingClientRect();
       window.WYFX?.burst(r.left + r.width / 2, r.top + r.height / 2, 30);
       window.WYFX?.play('success');

@@ -11,14 +11,15 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png?v=20261119a">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
-  <link rel="stylesheet" href="/styles.css?v=20261118a">
-  <link rel="stylesheet" href="/cosmic.css?v=20261120h">
-  <link rel="stylesheet" href="/fx.css?v=20261119bmneq">
-  <script src="/app.js?v=20261120a" defer></script>
-  <script src="/me.js?v=1" defer></script>
-  <script src="/sponsor.js?v=2" defer></script>
-  <script src="/i18n.js?v=20261120e"></script>
-  <script src="/fx.js?v=20261120b"></script>
+  <link rel="stylesheet" href="/styles.css?v=20261119-1321">
+  <link rel="stylesheet" href="/cosmic.css?v=20261119-1321">
+  <link rel="stylesheet" href="/fx.css?v=20261119-1321">
+  <script src="/device-id.js?v=20261119-1321" defer></script>
+  <script src="/app.js?v=20261119-1321" defer></script>
+  <script src="/me.js?v=20261119-1321" defer></script>
+  <script src="/sponsor.js?v=20261119-1321" defer></script>
+  <script src="/i18n.js?v=20261119-1321"></script>
+  <script src="/fx.js?v=20261119-1321"></script>
 </head>
 <body class="page-sponsor">
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -91,6 +92,14 @@
             <label class="field-label" for="sp-msg">想对乌叶说的话（只有站长能看到，可不填）</label>
             <input class="input" id="sp-msg" name="message" maxlength="60" autocomplete="off">
             <label class="sp-anon"><input type="checkbox" name="anonymous" id="sp-anon"> 匿名上榜（榜上显示「匿名」）</label>
+            <label class="consent-check" for="sp-consent">
+              <input type="checkbox" id="sp-consent" name="crossBorderConsent" required>
+              <span>我已阅读并同意<a href="/privacy#cross-border" target="_blank" rel="noopener">《隐私政策》的个人信息出境说明</a>：赞助金额、备注与留言会保存在位于美国的服务器上。</span>
+            </label>
+            <label class="consent-check" for="sp-age">
+              <input type="checkbox" id="sp-age" name="ageConfirm" required>
+              <span>我确认已年满 14 周岁（未满 14 周岁请先征得监护人同意，或不要提交赞助记录）。</span>
+            </label>
             <button class="btn btn-primary btn-lg" type="submit">我已赞助，提交</button>
           </form>
         </div>
@@ -119,6 +128,7 @@
           <a href="/ideas">许愿池</a>
           <a href="/polls">投票中心</a>
           <a href="/rules">许愿规则</a>
+          <a href="/privacy">隐私政策</a>
         </div>
         <div class="footer-col">
           <h4>找到我</h4>

@@ -12,6 +12,7 @@ import { handleApi } from './lib/api.js';
 import { migrateExtras, seedExtras } from './lib/extras.js';
 import { migrateMods } from './lib/mods.js';
 import { migrateSponsor } from './lib/sponsor.js';
+import { migrateConsent } from './lib/consent.js';
 import {
   HttpError,
   RateLimiter,
@@ -33,6 +34,7 @@ const PAGE_REWRITES = new Map([
   ['/polls', '/polls.html'],
   ['/admin', '/admin.html'],
   ['/rules', '/rules.html'],
+  ['/privacy', '/privacy.html'],
   ['/downloads', '/downloads.html'],
   ['/sponsor', '/sponsor.html'],
   ['/leaderboard', '/leaderboard.html'],
@@ -51,6 +53,7 @@ export function createApp(options = {}) {
   migrateExtras(db);
   migrateMods(db);
   migrateSponsor(db);
+  migrateConsent(db);
   seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
@@ -116,11 +119,18 @@ export function createApp(options = {}) {
 
       const cookies = parseCookies(req.headers.cookie);
       let vid = cookies.wy_vid;
+      const vidMaxAge = 180 * 24 * 3600; // 180 天：与 localStorage 设备标识的 TTL 保持一致
       if (!/^[a-f0-9]{32}$/.test(vid || '')) {
         vid = randomHex(16);
         res.appendHeader(
           'Set-Cookie',
-          serializeCookie('wy_vid', vid, { maxAge: 400 * 24 * 3600, secure: secureCookies, sameSite: 'Lax' }),
+          serializeCookie('wy_vid', vid, { maxAge: vidMaxAge, secure: secureCookies, sameSite: 'Lax' }),
+        );
+      } else if (req.method !== 'GET' && req.method !== 'HEAD') {
+        // 滑动续期：只在实际提交（投票/许愿/赞助…）时续期，读取页面不下发多余的 Set-Cookie。
+        res.appendHeader(
+          'Set-Cookie',
+          serializeCookie('wy_vid', vid, { maxAge: vidMaxAge, secure: secureCookies, sameSite: 'Lax' }),
         );
       }
       const deviceHeader = String(req.headers['x-device-id'] || '');

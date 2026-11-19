@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "wuye-mod-hub",
   "version": "1.0.0",
   "description": "乌叶MC · 模组许愿池 —— 粉丝模组灵感投稿、投票与官方投票站",
@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test tests/api.test.js tests/extras.test.js tests/sponsor.test.js tests/shield.test.js tests/backup.test.js",
+    "test": "node --test tests/api.test.js tests/extras.test.js tests/sponsor.test.js tests/shield.test.js tests/backup.test.js tests/privacy.test.js tests/erasure.test.js tests/device-id.test.js",
     "backup": "node scripts/backup.js",
     "backup:list": "node scripts/restore-backup.js --list",
     "backup:restore": "node scripts/restore-backup.js",

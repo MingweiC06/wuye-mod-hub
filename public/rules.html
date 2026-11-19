@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -11,13 +11,14 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png?v=20261119a">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
-  <link rel="stylesheet" href="/styles.css?v=20261118a">
-  <link rel="stylesheet" href="/rules.css?v=1">
-  <link rel="stylesheet" href="/cosmic.css?v=20261120h">
-  <link rel="stylesheet" href="/fx.css?v=20261119bmneq">
-  <script src="/app.js?v=20261120a" defer></script>
-  <script src="/i18n.js?v=20261120e"></script>
-  <script src="/fx.js?v=20261120b"></script>
+  <link rel="stylesheet" href="/styles.css?v=20261119-1321">
+  <link rel="stylesheet" href="/rules.css?v=20261119-1321">
+  <link rel="stylesheet" href="/cosmic.css?v=20261119-1321">
+  <link rel="stylesheet" href="/fx.css?v=20261119-1321">
+  <script src="/device-id.js?v=20261119-1321" defer></script>
+  <script src="/app.js?v=20261119-1321" defer></script>
+  <script src="/i18n.js?v=20261119-1321"></script>
+  <script src="/fx.js?v=20261119-1321"></script>
 </head>
 <body class="page-rules">
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -139,10 +140,15 @@
             <h2><span class="num">05</span>隐私与安全</h2>
             <ul class="rule-list">
               <li>站内不要求手机号、身份证或第三方登录，也没有账号体系。</li>
-              <li>为了防刷票，服务器会记录一个匿名设备标识和必要的请求信息（IP、时间、UA），仅用于限流和安全审计。</li>
+              <li>为了防刷票，服务器会记录一个浏览器随机生成的匿名设备标识、IP 的不可逆哈希和操作时间，仅用于限流和安全审计；不保存原始 IP，也不读取、保存 User-Agent。设备标识与 Cookie 的期限是 180 天，提交操作会续期。投票、点赞使用的是设备标识的 HMAC 假名，<strong>假名化不等于匿名</strong>，服务器仍能关联同一设备的行为。</li>
+              <li>涉及个人信息的表单（许愿、解锁下载、认领昵称、赞助）都需要你确认<strong>已年满 14 周岁</strong>；未确认时不能提交，也不会收集出生日期。</li>
               <li>昵称与许愿内容会公开展示，请不要在许愿里填写真实姓名、住址等隐私信息。</li>
+              <li>如果你使用「解锁下载」，会保存一个你手动填写的抖音昵称（不需要登录抖音，也不关联账号），仅用于解锁与站长核对；使用「认领昵称」会保存昵称和一次性钥匙。</li>
+              <li>赞助页会保存你填写的金额、支付方式、备注和留言；金额只有站长能看到，匿名时榜单不显示你的名字。</li>
               <li>站长后台使用独立管理码登录，不对外注册；管理操作会写审计日志。</li>
-              <li>本站使用 HTTPS，通信内容加密；如发现安全漏洞，请通过抖音私信联系。</li>
+              <li><strong>个人信息出境：</strong>本站服务器在美国弗吉尼亚北部。许愿、解锁下载、认领昵称、赞助这四个表单都需要你单独勾选同意后才会提交，属于个人信息出境。不勾选也可以正常浏览、投票和点赞。详见 <a href="/privacy#cross-border">隐私政策的出境说明</a>。</li>
+              <li><strong>删除与联系：</strong>可以私信站长要求查询、更正或删除相关记录，7 个工作日内首次回复；后台现支持按类别删除下载昵称、昵称档案、昵称与钥匙、赞助记录。详见 <a href="/privacy#rights">删除与你的权利</a>。</li>
+              <li>本站使用 HTTPS，通信内容加密。完整的收集清单、保存期限与删除方式见 <a href="/privacy">隐私政策</a>。</li>
             </ul>
           </section>
 
@@ -167,7 +173,7 @@
               </details>
               <details>
                 <summary>网站会收集我的抖音账号吗？</summary>
-                <p>不会。本站与抖音账号体系完全独立，不需要登录抖音。</p>
+                <p>本站不接入抖音登录，也拿不到你的抖音账号信息。只有一个例外：你使用「解锁下载」时，可以主动填写一个抖音昵称，用来确认你已解锁并显示欢迎语——这个昵称由你手动输入，不会去验证或关联你的抖音账号。你使用的「认领昵称」功能里的昵称，也是你自己填的。完整收集清单见 <a href="/privacy">隐私政策</a>。</p>
               </details>
             </div>
           </section>
@@ -202,6 +208,7 @@
           <a href="/ideas">许愿池</a>
           <a href="/polls">投票中心</a>
           <a href="/rules">许愿规则</a>
+          <a href="/privacy">隐私政策</a>
         </div>
         <div class="footer-col">
           <h4>找到我</h4>

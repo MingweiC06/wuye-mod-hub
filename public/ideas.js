@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    乌叶MC · 许愿池 /ideas — page script
    Depends on the shared window.WY helpers from /app.js (api / esc / toast...).
    All dynamic text is escaped with WY.esc before it reaches innerHTML.
@@ -117,6 +117,8 @@
     els.desc = byId('idea-desc');
     els.author = byId('idea-author');
     els.website = byId('idea-website');
+    els.consent = byId('idea-consent');
+    els.age = byId('idea-age');
     els.categoryPicker = byId('category-picker');
     els.titleError = byId('title-error');
     els.descError = byId('desc-error');
@@ -649,11 +651,15 @@
       category: state.formCategory,
       author: els.author.value.trim(),
       website: els.website ? els.website.value : '',
+      crossBorderConsent: Boolean(els.consent && els.consent.checked),
+      ageConfirm: Boolean(els.age && els.age.checked),
     };
   }
 
   function validateForm(values) {
     if (values.website) return { field: 'form', message: '提交失败，请稍后再试' };
+    if (!values.crossBorderConsent) return { field: 'form', message: '请先勾选同意隐私政策中的个人信息出境说明' };
+    if (!values.ageConfirm) return { field: 'form', message: '请先确认你已年满 14 周岁' };
     if (!values.title) return { field: 'title', message: '请先写一个标题（4-40 字）' };
     if (values.title.length < 4) return { field: 'title', message: '灵感标题至少 4 个字' };
     if (values.title.length > 40) return { field: 'title', message: '灵感标题最多 40 个字' };

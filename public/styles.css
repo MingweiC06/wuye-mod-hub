@@ -2631,3 +2631,40 @@ hr {
     margin-top: 8px;
   }
 }
+
+/* ---------- 个人信息出境单独同意（各表单共用） ---------- */
+
+.consent-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 16px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(88, 230, 230, 0.04);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.consent-check input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--cyan);
+}
+
+.consent-check a {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.consent-check--compact {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  gap: 8px;
+}

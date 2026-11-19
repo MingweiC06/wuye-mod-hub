@@ -12,17 +12,19 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png?v=20261119a">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
-  <link rel="stylesheet" href="/styles.css?v=20261118a">
-  <link rel="stylesheet" href="/admin.css?v=4">
-  <link rel="stylesheet" href="/cosmic.css?v=20261120h">
-  <link rel="stylesheet" href="/fx.css?v=20261119bmneq">
-  <script src="/app.js?v=20261120a" defer></script>
-  <script src="/admin.js?v=8" defer></script>
-  <script src="/admin-files.js?v=2c" defer></script>
-  <script src="/admin-channel.js?v=10" defer></script>
-  <script src="/admin-sponsor.js?v=2" defer></script>
-  <script src="/admin-boards.js?v=1" defer></script>
-  <script src="/fx.js?v=20261120b"></script>
+  <link rel="stylesheet" href="/styles.css?v=20261119-1321">
+  <link rel="stylesheet" href="/admin.css?v=20261119-1321">
+  <link rel="stylesheet" href="/cosmic.css?v=20261119-1321">
+  <link rel="stylesheet" href="/fx.css?v=20261119-1321">
+  <script src="/device-id.js?v=20261119-1321" defer></script>
+  <script src="/app.js?v=20261119-1321" defer></script>
+  <script src="/admin.js?v=20261119-1321" defer></script>
+  <script src="/admin-files.js?v=20261119-1321" defer></script>
+  <script src="/admin-channel.js?v=20261119-1321" defer></script>
+  <script src="/admin-sponsor.js?v=20261119-1321" defer></script>
+  <script src="/admin-boards.js?v=20261119-1321" defer></script>
+  <script src="/admin-data.js?v=20261119-1321" defer></script>
+  <script src="/fx.js?v=20261119-1321"></script>
 </head>
 <body class="page-admin">
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -108,6 +110,7 @@
             <button class="tab" id="tab-files" type="button" role="tab" aria-selected="false" aria-controls="panel-files" data-tab="files" tabindex="-1">模组文件</button>
             <button class="tab" id="tab-sponsor" type="button" role="tab" aria-selected="false" aria-controls="panel-sponsor" data-tab="sponsor" tabindex="-1">赞助收款</button>
             <button class="tab" id="tab-boards" type="button" role="tab" aria-selected="false" aria-controls="panel-boards" data-tab="boards" tabindex="-1">排行榜</button>
+            <button class="tab" id="tab-privacy" type="button" role="tab" aria-selected="false" aria-controls="panel-privacy" data-tab="privacy" tabindex="-1">数据删除</button>
           </div>
         </div>
       </section>
@@ -312,6 +315,35 @@
             <div class="admin-block-head"><h2>赞助榜</h2><span class="hint">按金额排名，金额不公开。调整填元，正数加、负数减（只影响排名）。</span></div>
             <form class="board-add" data-board-add="sponsors"><input class="input" name="name" maxlength="20" placeholder="名字" required><input class="input" name="adjust" type="number" step="1" placeholder="加几元" required><button class="btn btn-primary btn-sm" type="submit">添加 / 调整</button></form>
             <div class="board-rows" id="board-sponsors"></div>
+          </section>
+        </section>
+        <section class="admin-panel" id="panel-privacy" data-panel="privacy" role="tabpanel" aria-labelledby="tab-privacy" tabindex="0" hidden>
+          <div class="page-head admin-panel-head">
+            <div>
+              <p class="eyebrow"><span class="dot"></span>DATA ERASURE</p>
+              <h2>数据删除</h2>
+              <p class="lead">按类别永久删除个人数据。这是硬删除，无法撤销；操作会记录一条不含个人信息的审计日志（类型、编号、关联条数）。删除后旧备份里可能仍有副本，最多 14 天后随备份轮换消失。</p>
+            </div>
+          </div>
+          <section class="panel admin-block">
+            <div class="admin-block-head"><h2>选择数据类型</h2><span class="hint">每类最多列出最近 300 条。</span></div>
+            <div class="board-add" id="erase-types">
+              <button class="chip is-active" type="button" data-erase-type="fan">下载昵称</button>
+              <button class="chip" type="button" data-erase-type="supporter">昵称与钥匙</button>
+              <button class="chip" type="button" data-erase-type="profile">昵称档案</button>
+              <button class="chip" type="button" data-erase-type="sponsorship">赞助记录</button>
+            </div>
+            <p class="hint" id="erase-type-note">删除「下载昵称」会同时清理审计日志里完全相同的昵称记录。</p>
+            <div class="board-rows" id="erase-list"><p class="hint">加载中…</p></div>
+          </section>
+          <section class="panel admin-block">
+            <div class="admin-block-head"><h2>确认删除</h2><span class="hint">需要重新输入管理码，并输入 DELETE。</span></div>
+            <form class="board-add" id="erase-form">
+              <input class="input" name="code" type="password" autocomplete="current-password" placeholder="管理码" required>
+              <input class="input" name="confirm" placeholder="输入 DELETE 确认" autocomplete="off" required>
+              <button class="btn btn-primary btn-sm" type="submit" id="erase-submit" disabled>删除选中项</button>
+            </form>
+            <p class="hint" id="erase-status" role="status" aria-live="polite"></p>
           </section>
         </section>
         <section class="admin-panel" id="panel-files" data-panel="files" role="tabpanel" aria-labelledby="tab-files" tabindex="0" hidden>

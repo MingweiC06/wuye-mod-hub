@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -97,19 +97,20 @@ test('idea list, detail, filters and pagination', async () => {
 test('idea creation validation and anti-spam', async () => {
   const shortTitle = await client('/api/ideas', {
     method: 'POST',
-    body: { title: '太短', description: '这是一个长度足够十个字的测试描述内容。', category: 'aeon' },
+    body: { title: '太短', description: '这是一个长度足够十个字的测试描述内容。', category: 'aeon', crossBorderConsent: true, ageConfirm: true },
   });
   assert.equal(shortTitle.status, 400);
 
   const badCategory = await client('/api/ideas', {
     method: 'POST',
-    body: { title: '一个正常长度的标题', description: '这是一个长度足够十个字的测试描述内容。', category: 'nope' },
+    body: { title: '一个正常长度的标题', description: '这是一个长度足够十个字的测试描述内容。', category: 'nope', crossBorderConsent: true, ageConfirm: true },
   });
   assert.equal(badCategory.status, 400);
 
   const banned = await client('/api/ideas', {
     method: 'POST',
     body: {
+      crossBorderConsent: true, ageConfirm: true,
       title: '加微信领取模组',
       description: '这是一个长度足够十个字的测试描述内容，加微信即可领取。',
       category: 'other',
@@ -123,6 +124,7 @@ test('idea creation validation and anti-spam', async () => {
       title: '机器人提交的测试标题',
       description: '这是一个长度足够十个字的测试描述内容。',
       category: 'other',
+      crossBorderConsent: true, ageConfirm: true,
       website: 'http://spam.example',
     },
   });
@@ -134,6 +136,7 @@ test('idea creation validation and anti-spam', async () => {
       title: '测试：让星神跳科目三',
       description: '纯粹用于联调测试的灵感描述，长度足够十个字以上。',
       category: 'other',
+      crossBorderConsent: true, ageConfirm: true,
       author: '测试员',
     },
   });
@@ -147,6 +150,7 @@ test('idea creation validation and anti-spam', async () => {
       title: '测试：让星神跳科目三',
       description: '重复的标题应该被识别出来，这是另一段描述。',
       category: 'other',
+      crossBorderConsent: true, ageConfirm: true,
     },
   });
   assert.equal(duplicate.status, 409);
@@ -231,14 +235,14 @@ test('CSRF guard rejects header-less and cross-origin writes', async () => {
   const noHeader = await client('/api/ideas', {
     method: 'POST',
     csrf: false,
-    body: { title: '跨站请求测试标题', description: '这是一段长度足够的跨站请求测试描述。', category: 'other' },
+    body: { crossBorderConsent: true, ageConfirm: true, title: '跨站请求测试标题', description: '这是一段长度足够的跨站请求测试描述。', category: 'other' },
   });
   assert.equal(noHeader.status, 403);
 
   const badOrigin = await client('/api/ideas', {
     method: 'POST',
     headers: { origin: 'https://evil.example' },
-    body: { title: '来源校验测试标题', description: '这是一段长度足够的来源校验测试描述。', category: 'other' },
+    body: { crossBorderConsent: true, ageConfirm: true, title: '来源校验测试标题', description: '这是一段长度足够的来源校验测试描述。', category: 'other' },
   });
   assert.equal(badOrigin.status, 403);
 });

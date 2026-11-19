@@ -264,6 +264,9 @@ npm run backup:restore -- --snapshot <快照目录> --target <目标目录>
 - 服务器本地备份**不算异地备份**：加密异地副本用 `OFFSITE_DIR` + `BACKUP_PASSPHRASE`，
   具体机制、恢复演练步骤和待选的存储服务见 **[deploy/BACKUP.md](deploy/BACKUP.md)**。
 
+隐私政策页面在 `/privacy`（`public/privacy.html`），页脚与规则页 FAQ 都链接到它；
+改动数据收集行为时请同步更新该页，`npm test` 里有对应断言。
+
 ---
 
 ## 静态资源版本号（破浏览器缓存）

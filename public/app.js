@@ -38,13 +38,15 @@
     return Array.from(buffer, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  /* One device = one vote bucket. Short random id, survives reloads. */
-  let deviceId = storage.get('wy:device');
+  /* One device = one vote bucket. Short random id, 180 天滑动有效期（见 device-id.js）。 */
+  const deviceInfo = window.WYDeviceId ? window.WYDeviceId.current() : null;
+  let deviceId = deviceInfo ? deviceInfo.id : storage.get('wy:device');
   if (!/^[a-z0-9-]{10,64}$/.test(deviceId || '')) {
     deviceId = `d-${randomHex(12)}`;
     storage.set('wy:device', deviceId);
   }
   WY.deviceId = deviceId;
+  WY.deviceRotated = Boolean(deviceInfo && deviceInfo.rotated);
 
   /* ---------------- text / number helpers ---------------- */
 
@@ -154,6 +156,8 @@
       error.code = data?.error?.code || 'http_error';
       throw error;
     }
+    // 提交成功后滑动续期设备标识（与服务器 wy_vid 的续期时机一致）。
+    if (method !== 'GET' && window.WYDeviceId) window.WYDeviceId.touch();
     return data;
   };
 
@@ -471,8 +475,25 @@
         event.preventDefault();
         const nickname = form.nickname.value.trim();
         if (!nickname) return;
+        const consent = form.elements.crossBorderConsent;
+        if (consent && !consent.checked) {
+          WY.toast('请先勾选同意隐私政策中的个人信息出境说明', 'error');
+          return;
+        }
+        const age = form.elements.ageConfirm;
+        if (age && !age.checked) {
+          WY.toast('请先确认你已年满 14 周岁', 'error');
+          return;
+        }
         try {
-          await WY.api('/api/me/nickname', { method: 'POST', body: { nickname } });
+          await WY.api('/api/me/nickname', {
+            method: 'POST',
+            body: {
+              nickname,
+              crossBorderConsent: Boolean(consent && consent.checked),
+              ageConfirm: Boolean(age && age.checked),
+            },
+          });
           WY.toast('已登记，继续投票攒星光吧', 'success');
           paint(await WY.api('/api/supporters'));
         } catch (error) {

@@ -1,0 +1,127 @@
+/* Privacy page — 乌叶MC · 模组许愿池 */
+/* 版式复用 rules.css 的 .rule-block / .rule-list / .rules-layout，这里只放本页专属部分。 */
+
+.page-privacy .page-head > .container {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.page-privacy .page-head-copy {
+  max-width: 680px;
+}
+
+.page-privacy .page-head-aside {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.privacy-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  color: var(--muted-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.privacy-meta span + span::before {
+  content: '/';
+  margin-right: 14px;
+  color: var(--line-strong);
+}
+
+/* 数据清单表格 */
+
+.data-wrap {
+  margin: 18px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(6, 11, 19, 0.45);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table thead th {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-strong);
+  background: rgba(88, 230, 230, 0.06);
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table tbody th,
+.data-table tbody td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  text-align: left;
+  line-height: 1.72;
+}
+
+.data-table tbody th {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.data-table tbody td {
+  color: var(--muted);
+}
+
+.data-table tbody tr:last-child th,
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(88, 230, 230, 0.1);
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.rule-block code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(88, 230, 230, 0.1);
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .data-table {
+    min-width: 620px;
+  }
+
+  .privacy-meta {
+    gap: 10px;
+    font-size: 10px;
+  }
+
+  .privacy-meta span + span::before {
+    margin-right: 10px;
+  }
+}

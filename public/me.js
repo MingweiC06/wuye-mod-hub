@@ -34,6 +34,14 @@
         <button class="chip is-active" type="button" data-mode="claim">起个名字</button>
         <button class="chip" type="button" data-mode="restore">我有钥匙</button>
       </div>
+      <label class="consent-check consent-check--compact" for="me-cross-border-consent">
+        <input type="checkbox" id="me-cross-border-consent" name="crossBorderConsent" required>
+        <span>同意<a href="/privacy#cross-border" target="_blank" rel="noopener">隐私政策</a>（昵称与钥匙档案存于美国服务器）</span>
+      </label>
+      <label class="consent-check consent-check--compact" for="me-age-consent">
+        <input type="checkbox" id="me-age-consent" name="ageConfirm" required>
+        <span>我确认已年满 14 周岁</span>
+      </label>
       <form class="me-form" data-form="claim" novalidate>
         <input class="input" name="name" maxlength="16" placeholder="上榜用的名字（1–16 个字）" autocomplete="nickname" required>
         <button class="btn btn-primary btn-sm" type="submit">确定</button>
@@ -54,8 +62,18 @@
       e.preventDefault();
       const name = e.target.name.value.trim();
       if (!name) return;
+      const consent = card.querySelector('#me-cross-border-consent');
+      if (!consent || !consent.checked) {
+        WY.toast('请先勾选同意隐私政策中的个人信息出境说明', 'error');
+        return;
+      }
+      const age = card.querySelector('#me-age-consent');
+      if (!age || !age.checked) {
+        WY.toast('请先确认你已年满 14 周岁', 'error');
+        return;
+      }
       try {
-        const r = await WY.api('/api/me/claim', { method: 'POST', body: { name } });
+        const r = await WY.api('/api/me/claim', { method: 'POST', body: { name, crossBorderConsent: true, ageConfirm: true } });
         render(card, r.me, r.key);
         document.dispatchEvent(new CustomEvent('wy:me', { detail: r.me }));
       } catch (err) {
@@ -64,8 +82,21 @@
     });
     card.querySelector('[data-form="restore"]').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const consent = card.querySelector('#me-cross-border-consent');
+      if (!consent || !consent.checked) {
+        WY.toast('请先勾选同意隐私政策中的个人信息出境说明', 'error');
+        return;
+      }
+      const age = card.querySelector('#me-age-consent');
+      if (!age || !age.checked) {
+        WY.toast('请先确认你已年满 14 周岁', 'error');
+        return;
+      }
       try {
-        const r = await WY.api('/api/me/restore', { method: 'POST', body: { name: e.target.name.value.trim(), key: e.target.key.value.trim() } });
+        const r = await WY.api('/api/me/restore', {
+          method: 'POST',
+          body: { name: e.target.name.value.trim(), key: e.target.key.value.trim(), crossBorderConsent: true, ageConfirm: true },
+        });
         WY.toast(`欢迎回来，${r.me.name}`, 'success');
         render(card, r.me);
         document.dispatchEvent(new CustomEvent('wy:me', { detail: r.me }));

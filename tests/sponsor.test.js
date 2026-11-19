@@ -107,3 +107,24 @@ test('sponsor form is refused for a method without a QR code', async () => {
   const r = await a('/api/sponsor', { method: 'POST', body: { method: 'alipay', amount: 10, crossBorderConsent: true, ageConfirm: true } });
   assert.equal(r.status, 400);
 });
+
+test('admin can delete fan names, sponsorship records and board names', async () => {
+  const fan = client('sp-device-del1');
+  const c = await fan('/api/me/claim', { method: 'POST', body: { name: '删我测试', crossBorderConsent: true, ageConfirm: true } });
+  assert.equal(c.status, 200);
+  const s = await fan('/api/sponsor', { method: 'POST', body: { method: 'wechat', amount: 8, crossBorderConsent: true, ageConfirm: true } });
+  assert.equal(s.status, 200);
+  await admin(`/api/admin/sponsorships/${s.data.id}`, { method: 'PATCH', body: { status: 'confirmed' } });
+  const names = async () => (await admin('/api/admin/boards')).data.sponsors.list.map((r) => r.name);
+  assert.ok((await names()).includes('删我测试'));
+  assert.equal((await admin('/api/admin/boards', { method: 'DELETE', body: { board: 'sponsors', name: '删我测试' } })).status, 200);
+  assert.ok(!(await names()).includes('删我测试'));
+  const s2 = await fan('/api/sponsor', { method: 'POST', body: { method: 'wechat', amount: 3, crossBorderConsent: true, ageConfirm: true } });
+  assert.equal((await admin(`/api/admin/sponsorships/${s2.data.id}`, { method: 'DELETE' })).status, 200);
+  assert.ok(!(await admin('/api/admin/sponsorships')).data.items.some((x) => x.id === s2.data.id));
+  const p = (await admin('/api/admin/profiles')).data.items.find((x) => x.name === '删我测试');
+  assert.equal((await admin(`/api/admin/profiles/${p.id}`, { method: 'DELETE' })).status, 200);
+  assert.ok(!(await admin('/api/admin/profiles')).data.items.some((x) => x.name === '删我测试'));
+  assert.equal((await admin(`/api/admin/profiles/${p.id}`, { method: 'DELETE' })).status, 404);
+  assert.equal((await fan('/api/admin/profiles/1', { method: 'DELETE' })).status, 401);
+});

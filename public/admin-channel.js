@@ -156,7 +156,7 @@
       } else if (event.target.closest('[data-feature]')) {
         await WY.api(`/api/admin/videos/${key}`, { method: 'PATCH', body: { featured: event.target.closest('[data-feature]').dataset.feature === '1' } });
       } else if (event.target.closest('[data-del]')) {
-        if (!window.confirm('删除这条视频？粉丝点星也会一起删除。')) return;
+        if (!(await WY.confirm({ title: '删除这条视频？', message: '粉丝点星也会一起删除。', okText: '删除', danger: true }))) return;
         await WY.api(`/api/admin/videos/${key}`, { method: 'DELETE' });
       } else return;
       loadVideos();

@@ -720,6 +720,8 @@ a:not(.btn):not(.cx-work-cover):not(.brand):not(.chip):hover {
 ::view-transition-old(wy-header),
 ::view-transition-new(wy-header) { animation: none; }
 ::view-transition-old(wy-progress) { display: none; }
+/* Only the new header is shown during a page change, so nothing in it doubles up. */
+::view-transition-old(wy-header) { display: none; }
 ::view-transition-old(root) { animation: wy-vt-out 0.42s cubic-bezier(0.4, 0, 1, 1) both; }
 ::view-transition-new(root) { animation: wy-vt-in 0.85s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes wy-vt-out {
@@ -815,3 +817,4 @@ html.wy-lang-swap::view-transition-new(wy-header) {
 .wy-admin-badge:hover, .wy-admin-badge:focus-visible { transform: scale(1.1) rotate(-6deg); filter: drop-shadow(0 0 10px rgba(232, 196, 106, .9)); }
 @keyframes wy-badge-in { from { opacity: 0; transform: scale(.4) rotate(-90deg); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .wy-admin-badge { animation: none; } }
+.wy-admin-badge.is-quiet { animation: none; }

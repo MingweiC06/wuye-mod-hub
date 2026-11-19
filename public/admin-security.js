@@ -59,7 +59,7 @@
     const d = devices.find((x) => (x.id || 'legacy') === key);
     const label = d ? d.label : '这台设备';
     const q = forget ? `移除「${label}」？它会立即退出，并从列表中删除。` : d && d.current ? '退出本机的登录？' : `让「${label}」立即退出登录？`;
-    if (!window.confirm(q)) return;
+    if (!(await WY.confirm({ title: forget ? '移除设备' : '退出登录', message: q, okText: forget ? '移除' : '退出', danger: true }))) return;
     btn.disabled = true;
     try {
       const r = await WY.api(`/api/admin/devices/${key}${forget ? '?forget=1' : ''}`, { method: 'DELETE' });
@@ -102,7 +102,7 @@
       return;
     }
     if (!off && !confirmed) return;
-    if (off && !window.confirm('关闭解锁图案？之后登录只需要管理码。')) return;
+    if (off && !(await WY.confirm({ title: '关闭解锁图案？', message: '之后登录只需要管理码。', okText: '关闭', danger: true }))) return;
     $('pattern-error').textContent = '';
     try {
       const r = await WY.api('/api/admin/pattern', { method: 'PUT', body: { code, pattern: off ? '' : confirmed } });

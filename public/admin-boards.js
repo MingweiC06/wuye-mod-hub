@@ -19,6 +19,7 @@
         <button class="btn btn-primary btn-sm" type="button" data-save>保存</button>
         <button class="btn btn-ghost btn-sm" type="button" data-hide>${r.hidden ? '恢复' : '隐藏'}</button>
         ${r.adjust || r.hidden ? '<button class="btn btn-ghost btn-sm" type="button" data-reset>清除调整</button>' : ''}
+        <button class="btn btn-danger btn-sm" type="button" data-del>删除</button>
       </div>
     </div>`;
   }
@@ -57,7 +58,7 @@
 
   function boot() {
     for (const board of ['stars', 'sponsors']) {
-      document.getElementById(`board-${board}`).addEventListener('click', (e) => {
+      document.getElementById(`board-${board}`).addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         const row = e.target.closest('[data-name]');
         if (!btn || !row) return;
@@ -68,6 +69,23 @@
           save(board, r.name, v, r.hidden, '已保存');
         } else if (btn.hasAttribute('data-hide')) {
           save(board, r.name, r.adjust, !r.hidden, r.hidden ? '已恢复' : '已隐藏');
+        } else if (btn.hasAttribute('data-del')) {
+          const ok = await WY.confirm({
+            title: `从${board === 'stars' ? '星光榜' : '赞助榜'}删除「${r.name}」？`,
+            message: board === 'stars'
+              ? '会删除这个名字（粉丝名字和钥匙、昵称），TA 的投票保留。删除后无法恢复。'
+              : '会删除这个名字的赞助记录。删除后无法恢复。',
+            okText: '删除',
+            danger: true,
+          });
+          if (!ok) return;
+          try {
+            await WY.api('/api/admin/boards', { method: 'DELETE', body: { board, name: r.name } });
+            WY.toast(`已删除「${r.name}」`, 'success');
+            load();
+          } catch (err) {
+            WY.toast(err.message, 'error');
+          }
         } else if (btn.hasAttribute('data-reset')) {
           save(board, r.name, 0, false, '已清除调整');
         }

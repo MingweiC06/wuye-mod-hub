@@ -66,6 +66,7 @@
                 ${s.status !== 'confirmed' ? '<button class="btn btn-primary btn-sm" type="button" data-set="confirmed">确认</button>' : ''}
                 ${s.status !== 'rejected' ? '<button class="btn btn-ghost btn-sm" type="button" data-set="rejected">拒绝</button>' : ''}
                 ${s.status !== 'pending' ? '<button class="btn btn-ghost btn-sm" type="button" data-set="pending">改回待确认</button>' : ''}
+                <button class="btn btn-danger btn-sm" type="button" data-sp-del>删除</button>
               </div>
             </div>`,
           )
@@ -80,7 +81,7 @@
           .map(
             (p) => `<div class="sp-admin-row" data-profile="${p.id}">
               <div><b>${WY.esc(p.name)}</b><div class="meta">${new Date(p.createdAt).toLocaleDateString()} 创建 · ${p.devices} 台设备</div><div class="sp-admin-key" data-key></div></div>
-              <div class="acts"><button class="btn btn-ghost btn-sm" type="button" data-reset>重置钥匙</button></div>
+              <div class="acts"><button class="btn btn-ghost btn-sm" type="button" data-reset>重置钥匙</button><button class="btn btn-danger btn-sm" type="button" data-del>删除</button></div>
             </div>`,
           )
           .join('')
@@ -111,6 +112,20 @@
         saveConfig({ note: e.target.note.value.trim() }, '说明已保存');
       });
       $('sp-admin-list').addEventListener('click', async (e) => {
+        const del = e.target.closest('[data-sp-del]');
+        if (del) {
+          const id = del.closest('[data-sp]').dataset.sp;
+          const ok = await WY.confirm({ title: '删除这条赞助记录？', message: '删除后无法恢复，赞助榜也会随之更新。', okText: '删除', danger: true });
+          if (!ok) return;
+          try {
+            await WY.api(`/api/admin/sponsorships/${id}`, { method: 'DELETE' });
+            WY.toast('已删除', 'success');
+            loadList();
+          } catch (err) {
+            WY.toast(err.message, 'error');
+          }
+          return;
+        }
         const b = e.target.closest('[data-set]');
         if (!b) return;
         const id = b.closest('[data-sp]').dataset.sp;
@@ -123,10 +138,27 @@
         }
       });
       $('profiles-admin').addEventListener('click', async (e) => {
+        const del = e.target.closest('[data-del]');
+        if (del) {
+          const row = del.closest('[data-profile]');
+          const name = row.querySelector('b').textContent;
+          const ok = await WY.confirm({ title: `删除「${name}」？`, message: '名字和钥匙会被删除，已登录的设备会退出。TA 的赞助记录会保留，但不再显示这个名字。删除后无法恢复。', okText: '删除', danger: true });
+          if (!ok) return;
+          try {
+            await WY.api(`/api/admin/profiles/${row.dataset.profile}`, { method: 'DELETE' });
+            WY.toast(`已删除「${name}」`, 'success');
+            loadProfiles();
+            loadList();
+          } catch (err) {
+            WY.toast(err.message, 'error');
+          }
+          return;
+        }
         const b = e.target.closest('[data-reset]');
         if (!b) return;
         const row = b.closest('[data-profile]');
-        if (!window.confirm('重置后旧钥匙立刻失效，确定吗？')) return;
+        const ok = await WY.confirm({ title: '重置钥匙？', message: '重置后旧钥匙立刻失效，需要把新钥匙私信给 TA。', okText: '重置', danger: true });
+        if (!ok) return;
         try {
           const r = await WY.api(`/api/admin/profiles/${row.dataset.profile}/reset-key`, { method: 'POST' });
           row.querySelector('[data-key]').textContent = `新钥匙：${r.key}（只显示这一次，请私信给 ${r.name}）`;

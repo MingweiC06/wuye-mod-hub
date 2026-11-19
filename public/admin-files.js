@@ -277,7 +277,7 @@
       } else if (event.target.closest('[data-hide]')) {
         await WY.api(`/api/admin/mods/${id}`, { method: 'PATCH', body: { hidden: event.target.closest('[data-hide]').dataset.hide === '1' } });
       } else if (event.target.closest('[data-del]')) {
-        if (!window.confirm('永久删除这个文件？')) return;
+        if (!(await WY.confirm({ title: '永久删除这个文件？', message: '删除后无法恢复。', okText: '删除', danger: true }))) return;
         await WY.api(`/api/admin/mods/${id}`, { method: 'DELETE' });
       } else return;
       loadList();

@@ -860,16 +860,38 @@
       <path fill="none" stroke="#1a1408" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" d="M7.4 9.2l4.6 7 4.6-7"/>
     </svg>`;
 
+  // Remember the last answer so the badge is in place on the first paint of the next page (no jump,
+  // no double badge during the page transition); the server check then confirms or removes it.
+  const BADGE_KEY = 'wy-admin-badge';
+  const badgeMemo = (v) => {
+    try {
+      if (v === undefined) return sessionStorage.getItem(BADGE_KEY) === '1';
+      if (v) sessionStorage.setItem(BADGE_KEY, '1');
+      else sessionStorage.removeItem(BADGE_KEY);
+    } catch {
+      /* storage blocked */
+    }
+    return false;
+  };
+
   async function showAdminBadge(box) {
+    if (badgeMemo()) addAdminBadge(box, true);
+    let authed = false;
     try {
       const r = await fetch('/api/admin/me', { credentials: 'same-origin' });
-      if (!r.ok || !(await r.json()).authed) return;
+      authed = r.ok && Boolean((await r.json()).authed);
     } catch {
       return;
     }
+    badgeMemo(authed);
+    if (authed) addAdminBadge(box, false);
+    else box.querySelector('.wy-admin-badge')?.remove();
+  }
+
+  function addAdminBadge(box, quiet) {
     if (box.querySelector('.wy-admin-badge')) return;
     const a = document.createElement('a');
-    a.className = 'wy-admin-badge';
+    a.className = quiet ? 'wy-admin-badge is-quiet' : 'wy-admin-badge';
     a.href = '/admin';
     a.title = '站长已登录 · 进入后台';
     a.setAttribute('aria-label', '站长已登录，进入后台');

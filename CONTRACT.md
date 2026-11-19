@@ -1,4 +1,4 @@
-# 乌叶MC · 模组许愿池 — 开发契约（CONTRACT）
+﻿# 乌叶MC · 模组许愿池 — 开发契约（CONTRACT）
 
 所有接手页面的人先通读本文件，再动代码。**共享文件不要改**：`public/index.html`、`public/styles.css`、`public/app.js`、`public/home.js`、`lib/*`、`app.js`、`server.js`、`tests/*`。只写分配给你的文件；需要共享样式/脚本改动时先找 Lead。
 
@@ -27,7 +27,7 @@
 
 ## 3. 开发环境
 
-- 项目根：`C:\Users\Chenm\Downloads\DSH_Download\wuye-mod-hub`
+- 项目根：`C:\Users\Chenm\Downloads\乌叶网站`
 - 开发服务器：http://127.0.0.1:8090 （已在跑；`npm start` 可复现）
 - 开发管理码：`wuye-dev-admin-2026`（登录 `/admin`）
 - 数据目录：`./data`（SQLite `wuye.db`）；重置：停服后删 `data/wuye.db*` 再启动

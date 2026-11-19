@@ -304,6 +304,9 @@
     els.list.setAttribute('aria-busy', String(Boolean(busy)));
   }
 
+  // wish-admin.js (站长) turned a comment into a wish: show it.
+  document.addEventListener('wy:wishes-changed', function () { loadIdeas({ reset: true, page: 1 }); });
+
   function loadIdeas(options) {
     const reset = Boolean(options && options.reset);
     const page = Math.max(1, Number(options && options.page) || 1);

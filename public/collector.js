@@ -35,8 +35,7 @@
         id,
         title: rawTitle.replace(/^第\d+集\s*\|\s*/, '').split(/\s*《/)[0].slice(0, 60),
         series: ((rawTitle.match(/《[^》]+》/) || [''])[0]).slice(0, 40),
-        likes: txt('[data-e2e="video-player-digg"]').split('
-')[0],
+        likes: txt('[data-e2e="video-player-digg"]').split('\n')[0],
         published: (txt('[data-e2e="detail-video-publish-time"]').match(/(\d{4}-)?(\d{2}-\d{2})/) || [])[2] || '',
         cover: (q('video') && q('video').poster) || (q('meta[property="og:image"]') || {}).content || '',
       }

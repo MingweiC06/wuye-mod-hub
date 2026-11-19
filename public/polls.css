@@ -355,3 +355,14 @@ body.page-polls .poll h3:focus-visible {
   box-shadow: 0 18px 40px rgba(0, 0, 0, .55), 0 0 0 1px rgba(232, 196, 106, .5);
 }
 body.vb-dragging { cursor: grabbing; user-select: none; }
+
+/* admin ✎ next to vote counts */
+.vb-pen { display: none; margin-left: 6px; padding: 0 5px; border: 1px solid rgba(232, 196, 106, .35); border-radius: 6px; background: transparent; color: #e8c46a; font-size: 12px; line-height: 18px; cursor: pointer; vertical-align: 1px; transition: background .15s ease, border-color .15s ease; }
+.vb-admin .vb-pen { display: inline-block; }
+.vb-pen:hover, .vb-pen:focus-visible { background: rgba(232, 196, 106, .14); border-color: rgba(232, 196, 106, .8); }
+.vb-votes-edit { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.vb-votes-edit > div, .vb-votes-edit > label { display: grid; gap: 6px; padding: 12px; border: 1px solid rgba(232, 196, 106, .18); border-radius: 10px; background: rgba(255, 255, 255, .02); }
+.vb-votes-edit span { font-size: 12px; opacity: .7; }
+.vb-votes-edit b { font-size: 22px; color: #f3e3b5; }
+.vb-votes-edit .input { width: 100%; font-size: 18px; }
+@media (max-width: 520px) { .vb-votes-edit { grid-template-columns: 1fr; } }

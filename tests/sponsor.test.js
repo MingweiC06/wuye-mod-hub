@@ -85,6 +85,13 @@ test('admin can add and remove bot votes, never below zero', async () => {
   const floor = await admin(`/api/admin/ideas/${idea.id}`, { method: 'PATCH', body: { addVotes: -99999 } });
   assert.equal(floor.data.idea.votes, 0);
   assert.equal((await a(`/api/admin/ideas/${idea.id}`, { method: 'PATCH', body: { addVotes: 5 } })).status, 401);
+  // real vs bot split for the ✎ dialog
+  await admin(`/api/admin/ideas/${idea.id}`, { method: 'PATCH', body: { addVotes: 7 } });
+  const v = await admin(`/api/admin/ideas/${idea.id}/votes`);
+  assert.equal(v.status, 200);
+  assert.equal(v.data.total, v.data.real + v.data.bot);
+  assert.equal(v.data.total, 7);
+  assert.equal((await a(`/api/admin/ideas/${idea.id}/votes`)).status, 401);
 });
 
 test('admin can adjust, hide and add names on both leaderboards', async () => {

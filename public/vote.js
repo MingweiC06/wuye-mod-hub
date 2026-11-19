@@ -24,7 +24,7 @@
           ${c.description ? `<p data-raw>${WY.esc(c.description)}</p>` : ''}
           <div class="vb-meter" aria-hidden="true"><i></i></div>
           <div class="vb-foot">
-            <span class="vb-n"><b>${c.votes}</b> 票${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}</span>
+            <span class="vb-n"><b>${c.votes}</b> 票<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}</span>
             <button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button>
           </div>
         </div>
@@ -141,7 +141,7 @@
         <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
-          <span class="vb-sub">${WY.esc(c.game || '')}${done && !c.votes ? '' : `${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票`}</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
+          <span class="vb-sub">${WY.esc(c.game || '')}${done && !c.votes ? '' : `${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票${done ? '' : `<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>`}`}</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
           ${done ? `<div class="vb-foot vb-done-foot"><span class="vb-sub vb-done-tag">✓ 已完成${c.videoDate ? ` · ${WY.esc(c.videoDate)} 发布` : ''}</span>${watch ? `<a class="vb-watch" href="${watch}" target="_blank" rel="noopener" aria-label="在抖音看《${WY.esc(c.title)}》">看视频 <span aria-hidden="true">→</span></a>` : ''}</div>` : accepted ? `<div class="vb-foot"><span class="vb-sub vb-acc">★ 已采纳</span><button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button></div>` : `<div class="vb-meter is-build" aria-hidden="true"><i></i></div>${state.admin ? `<div class="vb-foot"><span class="vb-sub">制作中</span><button class="btn btn-primary btn-sm vb-done-btn" type="button" data-done="${c.id}">✓ 完成</button></div>` : '<span class="vb-sub">制作中</span>'}`}
         </div>
       </article>`;
@@ -252,6 +252,59 @@
     $('vb-building').addEventListener('click', (e) => {
       const b = e.target.closest('[data-done]');
       if (b) markDone(Number(b.dataset.done), b);
+    });
+    document.addEventListener('click', (e) => {
+      const p = e.target.closest('[data-pen]');
+      if (p) editVotes(Number(p.dataset.pen));
+    });
+  }
+
+  // ✎ on a card: see real vs bot votes and set the bot votes.
+  async function editVotes(id) {
+    let info;
+    try {
+      info = await WY.api(`/api/admin/ideas/${id}/votes`);
+    } catch (e) {
+      WY.toast(e.message, 'error');
+      return;
+    }
+    const dlg = WY.dialog({
+      title: '改票数',
+      subtitle: info.title,
+      body: `<div class="vb-votes-edit">
+          <div><span>真实票</span><b>${info.real}</b></div>
+          <label><span>机器人票</span><input class="input" type="number" step="1" min="${-info.real}" value="${info.bot}" data-bot></label>
+          <div><span>显示总票数</span><b data-total>${info.total}</b></div>
+        </div>
+        <p class="muted dialog-text">真实票是粉丝投的（含评论区）。机器人票可加可减，总票数不会低于 0。</p>`,
+      footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
+    });
+    const input = dlg.body.querySelector('[data-bot]');
+    const total = dlg.body.querySelector('[data-total]');
+    input.addEventListener('input', () => {
+      const n = Number(input.value);
+      total.textContent = Number.isInteger(n) ? Math.max(0, info.real + n) : '—';
+    });
+    input.focus();
+    input.select();
+    dlg.footer.querySelector('[data-cancel]').addEventListener('click', () => dlg.close());
+    const save = async () => {
+      const n = Number(input.value);
+      if (!Number.isInteger(n)) return WY.toast('请填整数', 'error');
+      dlg.close();
+      if (n === info.bot) return;
+      try {
+        await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { addVotes: n - info.bot } });
+        WY.toast(`「${info.title}」票数已更新`, 'success');
+        cards.delete(id);
+        await load();
+      } catch (e) {
+        WY.toast(e.message, 'error');
+      }
+    };
+    dlg.footer.querySelector('[data-ok]').addEventListener('click', save);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') save();
     });
   }
 

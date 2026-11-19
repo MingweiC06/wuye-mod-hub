@@ -14,6 +14,7 @@ import { migrateMods } from './lib/mods.js';
 import { migrateSponsor } from './lib/sponsor.js';
 import { migrateConsent } from './lib/consent.js';
 import { migrateVisits, recordVisit } from './lib/visits.js';
+import { migrateAdminSecurity } from './lib/admin-security.js';
 import {
   HttpError,
   RateLimiter,
@@ -61,6 +62,7 @@ export function createApp(options = {}) {
   migrateSponsor(db);
   migrateConsent(db);
   migrateVisits(db);
+  migrateAdminSecurity(db);
   seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);

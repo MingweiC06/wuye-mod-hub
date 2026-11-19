@@ -12,11 +12,12 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
-  <link rel="stylesheet" href="/admin.css?v=20261119-1321">
+  <link rel="stylesheet" href="/admin.css?v=20261120-2">
   <link rel="stylesheet" href="/cosmic.css?v=20261119-1321">
   <script src="/device-id.js?v=20261119-1321" defer></script>
   <script src="/app.js?v=20261119-1321" defer></script>
-  <script src="/admin-login.js?v=20261119-1321" defer></script>
+  <script src="/pattern-pad.js?v=20261120-1" defer></script>
+  <script src="/admin-login.js?v=20261120-1" defer></script>
 </head>
 <body class="page-admin">
   <main id="main" class="admin-main">
@@ -29,6 +30,11 @@
           <div class="field">
             <label for="login-code">管理码</label>
             <input class="input" id="login-code" name="code" type="password" minlength="4" maxlength="128" autocomplete="off" placeholder="请输入管理码" required>
+          </div>
+          <div class="field" id="login-pattern-wrap" hidden>
+            <label>解锁图案</label>
+            <p class="wy-pattern-hint" id="login-pattern-hint">按住并连接至少 4 个点</p>
+            <div id="login-pattern"></div>
           </div>
           <p class="admin-form-error" id="login-error" role="alert" aria-live="polite"></p>
           <button class="btn btn-primary btn-block" id="login-submit" type="submit">进入后台</button>

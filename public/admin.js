@@ -266,6 +266,10 @@
       await enterAdmin({ authed: true, expiresAt: data && data.expiresAt, mustChange: false });
       if (state.me) WY.toast('登录成功', 'success');
     } catch (error) {
+      if (error && error.code === 'pattern_required') {
+        location.replace('/admin'); // the full sign-in page has the pattern pad
+        return;
+      }
       if (error && error.status === 401) {
         setLoginError('管理码不正确，请再试一次。');
       } else {
@@ -327,6 +331,7 @@
       return;
     }
     renderSettings();
+    document.dispatchEvent(new CustomEvent('wy:settings'));
   }
 
   function onTabKeydown(event) {

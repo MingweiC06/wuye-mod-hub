@@ -13,17 +13,19 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
-  <link rel="stylesheet" href="/admin.css?v=20261120-1">
+  <link rel="stylesheet" href="/admin.css?v=20261120-2">
   <link rel="stylesheet" href="/cosmic.css?v=20261119-1321">
   <link rel="stylesheet" href="/fx.css?v=20261120-1">
   <script src="/device-id.js?v=20261119-1321" defer></script>
   <script src="/app.js?v=20261119-1321" defer></script>
-  <script src="/admin.js?v=20261120-2" defer></script>
+  <script src="/admin.js?v=20261120-3" defer></script>
   <script src="/admin-files.js?v=20261119-1321" defer></script>
   <script src="/admin-channel.js?v=20261120-1" defer></script>
   <script src="/admin-sponsor.js?v=20261119-1321" defer></script>
   <script src="/admin-boards.js?v=20261119-1321" defer></script>
   <script src="/admin-visits.js?v=20261120-1" defer></script>
+  <script src="/pattern-pad.js?v=20261120-1" defer></script>
+  <script src="/admin-security.js?v=20261120-1" defer></script>
   <script src="/admin-data.js?v=20261119-1321" defer></script>
   <script src="/fx.js?v=20261120-1"></script>
 </head>
@@ -428,6 +430,37 @@
                   <span class="hint">留空保存会显示默认公告文案。</span>
                 </div>
               </form>
+            </section>
+
+            <section class="panel admin-block" aria-labelledby="devices-title">
+              <div class="admin-block-head">
+                <h2 id="devices-title">登录设备</h2>
+                <span class="badge badge-cyan" id="devices-count">—</span>
+              </div>
+              <p class="small muted admin-block-note">每次用管理码登录都会记下设备（浏览器 · 系统）。不认识的设备可以让它立即退出；「移除」会同时把它从列表里删掉。</p>
+              <ul class="admin-devices" id="devices-list"><li class="skeleton skeleton-row"></li></ul>
+            </section>
+
+            <section class="panel admin-block" aria-labelledby="pattern-title">
+              <div class="admin-block-head">
+                <h2 id="pattern-title">解锁图案</h2>
+                <span class="badge badge-gold" id="pattern-state">—</span>
+              </div>
+              <p class="small muted admin-block-note">开启后，登录时除了管理码还要画出这个图案（像手机锁屏）。设置或关闭都需要再输入一次管理码。</p>
+              <div class="admin-pattern-box">
+                <p class="wy-pattern-hint" id="pattern-hint">画一个新图案（至少 4 个点）</p>
+                <div id="pattern-pad"></div>
+                <div class="field">
+                  <label for="pattern-code">当前管理码</label>
+                  <input class="input" id="pattern-code" type="password" minlength="4" maxlength="128" autocomplete="off">
+                </div>
+                <p class="admin-form-error" id="pattern-error" role="alert" aria-live="polite"></p>
+                <div class="admin-form-actions">
+                  <button class="btn btn-primary btn-sm" id="pattern-save" type="button" disabled>保存图案</button>
+                  <button class="btn btn-ghost btn-sm" id="pattern-redo" type="button">重画</button>
+                  <button class="btn btn-danger btn-sm" id="pattern-off" type="button" hidden>关闭图案</button>
+                </div>
+              </div>
             </section>
 
             <section class="panel admin-block admin-danger-zone" aria-labelledby="code-title">

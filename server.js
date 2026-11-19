@@ -29,6 +29,15 @@ function readToken() {
   }
 }
 
+// Shared secret for the China relay (EdgeOne Pages → here). Lives in data/relay-secret.txt.
+function readRelaySecret() {
+  try {
+    return fs.readFileSync(path.join(process.env.DATA_DIR || 'data', 'relay-secret.txt'), 'utf8').trim();
+  } catch {
+    return '';
+  }
+}
+
 const PORT = Number.parseInt(process.env.PORT || '8080', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
@@ -38,6 +47,7 @@ const app = createApp({
   trustProxy: process.env.TRUST_PROXY === '1',
   secureCookies: process.env.COOKIE_SECURE === '1',
   cfApiToken: process.env.CF_API_TOKEN || readToken(),
+  relaySecret: process.env.RELAY_SECRET || readRelaySecret(),
   cfZoneId: process.env.CF_ZONE_ID,
   shieldRpm: process.env.SHIELD_RPM,
   shieldCalmMinutes: process.env.SHIELD_CALM_MIN,

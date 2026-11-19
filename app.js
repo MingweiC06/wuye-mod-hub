@@ -43,6 +43,7 @@ export function createApp(options = {}) {
   const publicDir = path.resolve(options.publicDir || DEFAULT_PUBLIC);
   const trustProxy = Boolean(options.trustProxy);
   const secureCookies = Boolean(options.secureCookies);
+  const relaySecret = String(options.relaySecret || '');
 
   fs.mkdirSync(dataDir, { recursive: true });
   const db = openDatabase(path.join(dataDir, 'wuye.db'));
@@ -83,7 +84,11 @@ export function createApp(options = {}) {
     applySecurityHeaders(req, res);
     const url = new URL(req.url || '/', 'http://localhost');
     const pathname = url.pathname;
-    const ip = clientIp(req, trustProxy);
+    // China relay (EdgeOne): trusted only with the shared secret; carries the visitor's real IP and host.
+    const relayed = Boolean(relaySecret) && sha256(String(req.headers['x-wuye-relay'] || '')) === sha256(relaySecret);
+    const relayIp = relayed ? String(req.headers['x-wuye-client-ip'] || '').trim() : '';
+    const ip = relayIp && /^[0-9a-fA-F:.]{3,45}$/.test(relayIp) ? relayIp : clientIp(req, trustProxy);
+    const host = relayed && req.headers['x-wuye-host'] ? String(req.headers['x-wuye-host']) : String(req.headers.host || '');
 
     if (pathname.startsWith('/api/')) {
       if (!['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) {
@@ -103,7 +108,7 @@ export function createApp(options = {}) {
           } catch {
             originHost = '';
           }
-          if (!originHost || originHost !== String(req.headers.host || '')) {
+          if (!originHost || originHost !== host) {
             throw forbidden('请求来源校验失败');
           }
         }

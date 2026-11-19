@@ -13,19 +13,19 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
-  <link rel="stylesheet" href="/admin.css?v=20261120-2">
+  <link rel="stylesheet" href="/admin.css?v=20261120-4">
   <link rel="stylesheet" href="/cosmic.css?v=20261119-1321">
   <link rel="stylesheet" href="/fx.css?v=20261120-2">
   <script src="/device-id.js?v=20261119-1321" defer></script>
   <script src="/app.js?v=20261119-1321" defer></script>
-  <script src="/admin.js?v=20261120-3" defer></script>
+  <script src="/admin.js?v=20261120-4" defer></script>
   <script src="/admin-files.js?v=20261120-2" defer></script>
   <script src="/admin-channel.js?v=20261120-2" defer></script>
   <script src="/admin-sponsor.js?v=20261120-3" defer></script>
   <script src="/admin-boards.js?v=20261120-2" defer></script>
   <script src="/admin-visits.js?v=20261120-1" defer></script>
   <script src="/pattern-pad.js?v=20261120-1" defer></script>
-  <script src="/admin-security.js?v=20261120-2" defer></script>
+  <script src="/admin-security.js?v=20261120-4" defer></script>
   <script src="/admin-data.js?v=20261119-1321" defer></script>
   <script src="/fx.js?v=20261120-2"></script>
 </head>
@@ -437,7 +437,8 @@
                 <h2 id="devices-title">登录设备</h2>
                 <span class="badge badge-cyan" id="devices-count">—</span>
               </div>
-              <p class="small muted admin-block-note">每次用管理码登录都会记下设备（浏览器 · 系统）。不认识的设备可以让它立即退出；「移除」会同时把它从列表里删掉。</p>
+              <p class="small muted admin-block-note">每次用管理码登录都会记下设备（浏览器 · 系统）和 IP。不认识的设备可以让它立即退出；「移除」会同时把它从列表里删掉。<br>★ 主设备：不会被别的设备踢出，改管理码也不会退出；有主设备时，只有它能改管理码和解锁图案，换主设备也要它批准。</p>
+              <p class="admin-primary-ask" id="devices-primary" hidden></p>
               <ul class="admin-devices" id="devices-list"><li class="skeleton skeleton-row"></li></ul>
             </section>
 

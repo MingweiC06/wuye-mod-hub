@@ -1666,13 +1666,18 @@
 
     setButtonBusy(els.codeSave, true, '修改中…');
     try {
-      await WY.api('/api/admin/code', {
+      const r = await WY.api('/api/admin/code', {
         method: 'POST',
         body: { current: current, next: next },
       });
       els.codeForm.reset();
-      showAuth('管理码已修改，请用新管理码重新登录。', 'info');
-      WY.toast('管理码已修改，请重新登录', 'success');
+      if (r && r.relogin === false) {
+        // 主设备 stays signed in; every other device was signed out.
+        WY.toast('管理码已修改。其他设备都已退出，主设备保持登录。', 'success');
+      } else {
+        showAuth('管理码已修改，请用新管理码重新登录。', 'info');
+        WY.toast('管理码已修改，请重新登录', 'success');
+      }
     } catch (error) {
       if (error && error.status === 401 && error.code === 'invalid_code') {
         els.codeError.textContent = '当前管理码不正确。';

@@ -448,96 +448,77 @@ sudo ufw status verbose
 
 ## 11. 备份
 
-数据库就是全部内容，**备份是运维里最重要的一件事**。
+> **2026-11-19 更新**：审计发现生产上原本没有任何备份、也没有定时任务。
+> 现已改为「快照目录 + systemd timer + 部署前备份 + 可选加密异地」，
+> 完整说明（含恢复演练、异地存储选型）见 **[BACKUP.md](BACKUP.md)**。
+>
+> 本节保留要点，路径按当前生产环境（`/opt/wuye`、服务名 `wuye`）书写；
+> 旧文档里的 `/srv/wuye-mod-hub` 已废弃。
 
-### 11.1 手动备份
+### 11.1 备份包含什么
 
-```bash
-sudo -u wuye /usr/bin/node /srv/wuye-mod-hub/scripts/backup.js
-```
+每次备份生成 `backups/snapshot-YYYYMMDD-HHmmss/`：
 
-输出示例（真实结果，约 200KB）：
+- `wuye.db`：`VACUUM INTO` 在线快照（WAL 模式下不用停服，不改源库）；
+- `files/`：模组/资源包上传文件（可能 16MB+，以前完全没备份）；
+- `media/`：后台图片与赞助说明图；
+- `secrets/`：`admin-code.txt`、`relay-secret.txt`、`cf-token.txt`（存在才备份）；
+- `manifest.json` + `SHA256SUMS`：大小、逐表行数、每个文件的 SHA-256。
 
-```
-乌叶MC · 模组许愿池 — 数据备份
-  数据库    /srv/wuye-mod-hub/data/wuye.db
-  备份目录  /srv/wuye-mod-hub/backups
+脚本行为：写盘前检查磁盘余量；写完立刻校验（SHA256SUMS → `integrity_check` → 逐表行数），
+失败就删除这份快照并退出码 1；快照目录 0700、文件 0600；只保留最近 `KEEP` 份（默认 14）。
 
-  备份文件  /srv/wuye-mod-hub/backups/wuye-20261117-142953.db
-  文件大小  208.0 KB
-  保留策略  最近 14 份（现有 1 份，本次清理 0 份）
-
-备份完成。
-```
-
-脚本行为：
-
-- 用 Node 内置 `node:sqlite` 打开数据库，执行 `VACUUM INTO` 生成**事务一致快照**；
-  数据库开着（WAL 模式）也能在线备份，**不需要停服**，也不改源库；
-- 文件名校验为 `wuye-YYYYMMDD-HHmmss.db`（服务器本地时间），同一秒重复执行会加
-  `-2`、`-3` 后缀；
-- 校验备份文件 > 0 字节；
-- 只保留最近 `KEEP` 份（默认 14），更早的自动删除；`BACKUP_DIR`、`KEEP` 可用环境
-  变量覆盖，相对路径按项目根解析；
-- 任何一步失败以退出码 1 结束并打印中文原因（如数据库不存在、目录不可写）。
-
-### 11.2 定时备份（cron）
-
-Ubuntu 上 cron 默认已安装。给 `wuye` 用户加任务：
+### 11.2 手动备份
 
 ```bash
-sudo -u wuye crontab -e
+sudo -u wuye env DATA_DIR=/opt/wuye/data BACKUP_DIR=/opt/wuye/backups KEEP=14 \
+  /usr/bin/node /opt/wuye/scripts/backup.js
+
+# 列出快照
+sudo -u wuye /usr/bin/node /opt/wuye/scripts/restore-backup.js --list
 ```
 
-加入（每天 03:17，日志进 syslog，标签 `wuye-backup`）：
-
-```cron
-17 3 * * * cd /srv/wuye-mod-hub && /usr/bin/node scripts/backup.js 2>&1 | logger -t wuye-backup
-```
-
-验证：
+### 11.3 每日自动备份（systemd timer）
 
 ```bash
-sudo ls -lh /srv/wuye-mod-hub/backups
-sudo journalctl -t wuye-backup -n 30 --no-pager
+sudo install -m 0644 /opt/wuye/deploy/wuye-backup.service /etc/systemd/system/
+sudo install -m 0644 /opt/wuye/deploy/wuye-backup.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now wuye-backup.timer
+
+systemctl list-timers wuye-backup.timer --no-pager
+sudo journalctl -u wuye-backup -n 50 --no-pager
 ```
 
-建议再加一条**每周异地备份**：把 `backups/` 同步到另一台机器或对象存储（例如
-云厂商 OSS/COS，选符合你合规要求的区域），并在传输/存储时加密——备份里含全部
-访客记录、IP 哈希、管理码哈希，泄露等于站点被看光：
+timer 在服务器时区 18:47（当前 UTC，北京时间约 02:47）触发，`Persistent=true` 补跑错过的时点。
+unit 以 `wuye` 用户运行，`ProtectSystem=strict`，只允许写 `/opt/wuye/data` 与 `/opt/wuye/backups`。
+**部署脚本 `scripts/deploy-oracle.ps1` 会自动安装/刷新这个 timer，并在每次部署前先做一次备份。**
+
+### 11.4 恢复
+
+先演练，别等出事才第一次用（演练步骤与真实恢复步骤见 [BACKUP.md §4](BACKUP.md)）。
+要点：
 
 ```bash
-# 示例：rsync 到另一台服务器（需要先配好 wuye 用户的 SSH 密钥）
-rsync -az --delete /srv/wuye-mod-hub/backups/ backup@10.0.0.2:/data/wuye-backups/
+sudo systemctl stop wuye
+sudo -u wuye /usr/bin/node /opt/wuye/scripts/restore-backup.js \
+  --snapshot /opt/wuye/backups/snapshot-YYYYMMDD-HHmmss \
+  --target /opt/wuye/data --force --with-secrets
+sudo systemctl start wuye
 ```
 
-保留策略在异地端也要有，别无限增长。
-
-### 11.3 恢复
-
-```bash
-# 1) 停服（避免边恢复边写入）
-sudo systemctl stop wuye-mod-hub
-
-# 2) 先备份现场（万一恢复错了还能回去）
-sudo -u wuye cp /srv/wuye-mod-hub/data/wuye.db /tmp/wuye-before-restore.db
-
-# 3) 覆盖数据库，并删掉旧的 WAL/SHM，否则 SQLite 会用旧日志覆盖你的恢复
-sudo -u wuye cp /srv/wuye-mod-hub/backups/wuye-YYYYMMDD-HHmmss.db \
-  /srv/wuye-mod-hub/data/wuye.db
-sudo rm -f /srv/wuye-mod-hub/data/wuye.db-wal /srv/wuye-mod-hub/data/wuye.db-shm
-
-# 4) 权限归位并启动
-sudo chown wuye:wuye /srv/wuye-mod-hub/data/wuye.db
-sudo chmod 600 /srv/wuye-mod-hub/data/wuye.db
-sudo systemctl start wuye-mod-hub
-curl -fsS http://127.0.0.1:8080/api/health
-```
-
-恢复后管理码仍是备份时的那个；`data/admin-code.txt` 不在数据库里，不重要。
+恢复脚本会先校验快照、再恢复、再复核（文件哈希 + `integrity_check` + 逐表行数），
+并删除目标目录里旧的 `wuye.db-wal` / `wuye.db-shm`（否则旧日志会回放污染恢复结果）。
 
 > 直接 `cp data/wuye.db` 热拷贝**不可靠**（可能漏掉 WAL 里已提交的事务）；
-> 请用 `scripts/backup.js` 或先停服。
+> 用 `scripts/backup.js` 或先停服。
+
+### 11.5 异地备份（尚未配置）
+
+服务器本地快照不能抵御机器/磁盘损坏。`OFFSITE_DIR` + `BACKUP_PASSPHRASE` 会把每份快照
+逐文件 AES-256-GCM 加密后写到另一个目录，再由 rclone/rsync 同步到真正的异地存储。
+存储服务需要你来选（Cloudflare R2 / Backblaze B2 / 阿里云 OSS / Oracle Object Storage /
+自备 NAS），**配置并验证前 P0-1 不算解决**。细则见 [BACKUP.md §5](BACKUP.md)。
 
 ---
 

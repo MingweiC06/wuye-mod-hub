@@ -1,0 +1,37 @@
+[Unit]
+# 乌叶MC · 模组许愿池 — 数据备份（数据库 + 上传文件 + 媒体文件）
+# 安装与恢复流程见 deploy/BACKUP.md
+Description=Wuye data backup (SQLite + files + media)
+Documentation=file:///opt/wuye/deploy/BACKUP.md
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=wuye
+Group=wuye
+WorkingDirectory=/opt/wuye
+Environment=NODE_ENV=production
+Environment=DATA_DIR=/opt/wuye/data
+Environment=BACKUP_DIR=/opt/wuye/backups
+Environment=KEEP=14
+Environment=OFFSITE_DIR=/opt/wuye/offsite
+# 启用加密异地备份：把 BACKUP_PASSPHRASE / RCLONE_DEST / RCLONE_CONFIG 写进 /etc/wuye/backup.env（0600）。
+# 未配置时 offsite-sync.sh 会打印「跳过」并正常退出，本地备份不受影响。
+EnvironmentFile=-/etc/wuye/backup.env
+ExecStart=/usr/bin/node /opt/wuye/scripts/backup.js
+ExecStartPost=/bin/sh /opt/wuye/scripts/offsite-sync.sh push
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=30min
+SyslogIdentifier=wuye-backup
+
+# 收紧权限：整机只读，只有 data/ 与 backups/ 可写（backups/ 不存在时忽略）
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateDevices=true
+ReadWritePaths=/opt/wuye/data -/opt/wuye/backups -/opt/wuye/offsite
+
+StandardOutput=journal
+StandardError=journal

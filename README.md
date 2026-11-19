@@ -247,22 +247,22 @@ npm test
 
 ## 备份与恢复
 
-数据库是站点全部内容，请定期备份。
+数据（数据库 + 上传文件 + 媒体文件）需要定期备份。每次备份生成一个快照目录，
+含数据库在线快照、`files/`、`media/`、密钥文件、`manifest.json` 与 `SHA256SUMS`。
 
 ```bash
-npm run backup
-# 等价于 node scripts/backup.js
+npm run backup          # 备份一次 → backups/snapshot-YYYYMMDD-HHmmss/
+npm run backup:list     # 列出已有快照
+npm run backup:restore -- --snapshot <快照目录> --target <目标目录>
 ```
 
-- 使用 `VACUUM INTO` 生成**事务一致快照**，服务运行中（WAL 模式）也可在线备份；
-- 输出到 `backups/wuye-YYYYMMDD-HHmmss.db`（服务器本地时间），校验文件 > 0 字节；
-- 默认只保留最近 **14** 份，更早的自动删除；可用 `BACKUP_DIR`、`KEEP` 调整；
-- 备份文件与数据库一样敏感（含访客记录、IP 哈希、管理码哈希），目录权限 700，
-  异地备份请加密。
-
-恢复步骤（先停服、覆盖数据库、删除旧的 `-wal`/`-shm`、再启动）见
-[deploy/README.md 的备份章节](deploy/README.md#11-备份)。生产环境的每日 cron
-示例也在同一份文档里。
+- 数据库用 `VACUUM INTO` 生成**事务一致快照**，服务运行中（WAL 模式）也可在线备份；
+- 写完立刻校验：SHA256SUMS → `integrity_check` → 逐表行数；失败会删除坏快照；
+- 默认只保留最近 **14** 份，可用 `BACKUP_DIR`、`KEEP` 调整；
+- 备份目录 700、文件 600（含访客记录、IP 哈希、管理码哈希，属敏感数据）；
+- 日常自动备份用 `deploy/wuye-backup.timer`（systemd，每天一次），部署脚本会自动安装；
+- 服务器本地备份**不算异地备份**：加密异地副本用 `OFFSITE_DIR` + `BACKUP_PASSPHRASE`，
+  具体机制、恢复演练步骤和待选的存储服务见 **[deploy/BACKUP.md](deploy/BACKUP.md)**。
 
 ---
 

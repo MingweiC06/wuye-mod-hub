@@ -1,0 +1,14 @@
+[Unit]
+# 乌叶MC · 模组许愿池 — 每日数据备份（服务器时区 18:47，北京时间约 02:47）
+Description=Daily wuye data backup
+Documentation=file:///opt/wuye/deploy/BACKUP.md
+
+[Timer]
+OnCalendar=*-*-* 18:47:00
+RandomizedDelaySec=600
+AccuracySec=1min
+Persistent=true
+Unit=wuye-backup.service
+
+[Install]
+WantedBy=timers.target

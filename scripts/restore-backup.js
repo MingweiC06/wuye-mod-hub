@@ -121,13 +121,19 @@ export async function restoreBackup(options) {
   }
   if (copied.length) log(`恢复文件：${copied.length} 个（${formatBytes(copied.reduce((sum, item) => sum + item.bytes, 0))}）`);
 
+  // 快照把 key 文件放在 secrets/ 下，但服务器是从 DATA_DIR 根目录读取
+  // （admin-code.txt、relay-secret.txt、cf-token.txt），所以恢复时必须还原到根目录，
+  // 而不是照搬 secrets/ 子目录——否则就地恢复后密钥文件会静默失效。
+  const secretTargetPath = (entry) => path.join(targetDir, path.basename(entry.path));
+
   if (options.withSecrets) {
     for (const entry of manifest.secrets || []) {
       const source = path.join(snapshotDir, entry.path);
-      const target = path.join(targetDir, entry.path);
+      const target = secretTargetPath(entry);
       fs.mkdirSync(path.dirname(target), { recursive: true, mode: 0o700 });
       fs.copyFileSync(source, target);
       fs.chmodSync(target, 0o600);
+      log(`恢复密钥文件：${path.relative(targetDir, target)}`);
     }
     if ((manifest.secrets || []).length) log(`恢复密钥文件：${manifest.secrets.length} 个`);
   } else if ((manifest.secrets || []).length) {
@@ -136,14 +142,19 @@ export async function restoreBackup(options) {
 
   // 复核恢复结果：文件哈希 + 数据库完整性 + 逐表行数
   const problems = [];
-  for (const entry of [...(manifest.assets || []), ...(options.withSecrets ? manifest.secrets || [] : [])]) {
-    const file = path.join(targetDir, entry.path);
+  const checks = [
+    ...(manifest.assets || []).map((entry) => ({ entry, file: path.join(targetDir, entry.path) })),
+    ...(options.withSecrets
+      ? (manifest.secrets || []).map((entry) => ({ entry, file: secretTargetPath(entry) }))
+      : []),
+  ];
+  for (const { entry, file } of checks) {
     if (!fs.existsSync(file)) {
-      problems.push(`缺少文件：${entry.path}`);
+      problems.push(`缺少文件：${path.relative(targetDir, file)}`);
       continue;
     }
-    if (fs.statSync(file).size !== entry.bytes) problems.push(`大小不一致：${entry.path}`);
-    if ((await sha256File(file)) !== entry.sha256) problems.push(`哈希不一致：${entry.path}`);
+    if (fs.statSync(file).size !== entry.bytes) problems.push(`大小不一致：${path.relative(targetDir, file)}`);
+    if ((await sha256File(file)) !== entry.sha256) problems.push(`哈希不一致：${path.relative(targetDir, file)}`);
   }
 
   const db = new DatabaseSync(dbTarget, { readOnly: true });

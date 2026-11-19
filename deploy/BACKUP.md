@@ -130,7 +130,9 @@ sudo -u wuye curl -fsS http://127.0.0.1:8080/api/health
 
 注意：
 
-- `--with-secrets` 才会恢复管理码/中继密钥/CF token；不带它时这些文件保持现状；
+- `--with-secrets` 才会恢复管理码/中继密钥/CF token；恢复脚本会把快照 `secrets/` 里的文件
+  还原到**数据目录根**（`admin-code.txt`、`relay-secret.txt`、`cf-token.txt`），因为服务器
+  就是从 `DATA_DIR` 根目录读取它们；不带 `--with-secrets` 时这些文件保持现状；
 - 恢复脚本会删掉目标目录里旧的 `wuye.db-wal` / `wuye.db-shm`（否则 SQLite 会用旧日志
   回放，把恢复后的库又改乱）；
 - `files/` 里**新增**的文件不会被删除（脚本只补缺失/覆盖已有），恢复后需要人工确认
@@ -142,12 +144,21 @@ sudo -u wuye curl -fsS http://127.0.0.1:8080/api/health
 
 ### 5.1 已批准的方案
 
-- 存储：**Backblaze B2，EU Central（欧洲中部）**，与生产（Oracle 美国弗吉尼亚北部）不同厂商、不同大洲；
+- 存储：**Backblaze B2，EU Central（Amsterdam）**，桶 `wuye-prod-backups-2026`（Private）；
+  与生产（Oracle 美国弗吉尼亚北部）不同厂商、不同大洲；
 - 上传方式：**rclone** 同步，不在本项目里自研 S3 签名代码；
+  凭据使用**桶级受限 Application Key**（只授权这一个桶、Read/Write、不勾 List All Bucket Names）；
 - 加密：沿用 `backup.js` 的 **AES-256-GCM + scrypt** 客户端加密，B2 只拿到密文；
 - 口令：由站长用密码管理器保管，并另存一份离线副本（纸质或离线设备）。**丢失口令 = 异地备份不可恢复**；
-- 脚本：`scripts/offsite-sync.sh push` 负责「本地快照 → 加密到 `OFFSITE_DIR` → rclone 同步 → 清理远端旧快照」，
-  `scripts/offsite-sync.sh verify` 负责「下载最新远端快照 → 解密 → SHA-256 → 恢复到临时目录 → 打开数据库确认可读」。
+- 保留期：`OFFSITE_KEEP_DAYS=30`——本地 `OFFSITE_DIR` 与远端 `snapshots/` 都按 30 天清理，
+  再叠加 B2 生命周期规则（见 5.4），实际最长保留约 31–32 天；
+- 脚本：`scripts/offsite-sync.sh push` 按固定顺序执行「生成并加密本地快照 → rclone 同步上传 →
+  `rclone check` 校验远端副本齐全 → 才清理本地过期加密快照 → 再同步远端删除」，
+  上传或校验失败时**不会**清理本地旧快照；`scripts/offsite-sync.sh verify` 负责「下载最新远端快照 →
+  解密 → SHA-256 → 恢复到临时目录 → 打开数据库确认可读」。
+- 失败语义：生产 unit 里显式设置了 `OFFSITE_DIR`，此时若缺 `RCLONE_DEST` 或 `BACKUP_PASSPHRASE`，
+  push 会**直接报错退出（exit 1）**，不会打印「跳过」假装异地备份正常；只有三个变量全都没配
+  （本地开发场景）才跳过并 exit 0。
 
 加密细节（由 `scripts/backup.js` 实现，不需要额外工具）：
 
@@ -158,34 +169,122 @@ sudo -u wuye curl -fsS http://127.0.0.1:8080/api/health
 
 ### 5.2 在服务器上配置（需要你本人操作云账号）
 
-前提：你已在 Backblaze 建好 bucket（建议私有、开启 Object Lock 可选）并创建 application key。
 **我没有、也不应该替你开通账号或使用凭据。** 以下命令都在服务器上执行。
 
+#### 5.2.1 先确认账号区域
+
+Backblaze 控制台 → **Account → My Settings → Data Region**，必须显示 **EU Central**。
+
+Backblaze 的区域在账号创建后**不可更改**，所以不要用「建个桶试试」来试探区域：
+建错了桶只会留下一个废桶。如果这里显示的不是 EU Central，先停下来换账号。
+
+#### 5.2.2 建私有桶
+
+Buckets → **Create a Bucket**：
+
+| 字段 | 值 |
+| --- | --- |
+| Bucket Unique Name | `wuye-prod-backups-2026` |
+| Files in Bucket are | **Private** |
+| Default Encryption | Disabled（加密在客户端做） |
+| Object Lock | Disabled |
+| Region | **EU Central (Amsterdam)** |
+
+建完在桶详情里核对区域 ID（形如 `eu-central-003`；以控制台实际显示为准）。
+
+#### 5.2.3 建桶级受限 Application Key
+
+Account → Application Keys → **Add a New Application Key**：
+
+- Name：`wuye-rclone-prod`
+- **Allow access to Bucket(s)**：只选 `wuye-prod-backups-2026`
+- Type of Access：**Read and Write**
+- **Allow List All Bucket Names：不勾**
+- File name prefix / duration：留空
+
+`keyID`（`005…`）和 `applicationKey`（`K005…`）**只显示一次**，直接存进密码管理器；
+不要贴到聊天、不要写进仓库或服务器上的项目目录。
+
+#### 5.2.4 安装 rclone 并写配置（先由 wuye 创建，再交给 root 收紧）
+
 ```bash
-# 1) 安装 rclone（Ubuntu）
-sudo apt-get install -y rclone
+sudo apt-get update && sudo apt-get install -y rclone ca-certificates
+rclone version            # 受限 key 需要 >= 1.43
 
-# 2) 配置 B2 远端（按提示输入 keyID / applicationKey）
-#    区域选 EU Central（endpoint 形如 https://s3.eu-central-003.backblazeb2.com）
-sudo -u wuye rclone config
-#    建议把配置放到 /etc/wuye/rclone.conf，权限 0640 root:wuye
+# a) 先给 wuye 一个「自己能创建文件」的目录：0770 + root:wuye
+#    如果目录是 root:wuye 0755，wuye 写不进去，rclone config 会直接失败
+sudo install -d -m 0770 -o root -g wuye /etc/wuye
 
-# 3) 备份环境变量（不要写进仓库）
-sudo install -d -m 0750 -o root -g wuye /etc/wuye
-sudo tee /etc/wuye/backup.env >/dev/null <<'EOF'
-BACKUP_PASSPHRASE=请换成你自己的长口令（同时存进密码管理器）
-RCLONE_DEST=b2:wuye-backups/snapshots
+# b) 让 wuye 自己创建并写入配置，umask 077 保证文件是 0600
+sudo -u wuye sh -c 'umask 077; rclone config --config /etc/wuye/rclone.conf'
+
+#   交互答案：n → name: b2 → Storage: b2 → account: <keyID> → key: <applicationKey>
+#            → endpoint 留空 → y → q
+
+# c) 配置写完后收紧：文件 root:wuye 0640，目录改回 0750（wuye 之后不能再自己改配置）
+sudo chown root:wuye /etc/wuye/rclone.conf
+sudo chmod 0640 /etc/wuye/rclone.conf
+sudo chmod 0750 /etc/wuye
+sudo ls -ld /etc/wuye /etc/wuye/rclone.conf      # 期望 drwxr-x--- root:wuye / -rw-r----- root:wuye
+
+# d) 只验证「认证 + 这一个桶的访问」，不要用 `rclone lsd b2:` 列所有桶
+sudo -u wuye rclone --config /etc/wuye/rclone.conf ls b2:wuye-prod-backups-2026
+```
+
+期望：`ls` 无输出（空桶）且退出码 0。
+
+- 报 `401 unauthorized`：`account` 填成了主账号 ID，要填 **Application Key ID**；
+- 报 `403 cap exceeded`：key 没有这个桶的 Read/Write 权限，或 `bucketId` 没绑定；
+- `ls` 能列出别的桶 = 受限 key 建错了（检查是否勾了 List All Bucket Names、是否选了 All Buckets）。
+
+#### 5.2.5 备份环境变量
+
+```bash
+sudo install -o root -g wuye -m 0640 /dev/null /etc/wuye/backup.env
+sudo -e /etc/wuye/backup.env     # 用编辑器写入，别用 tee/echo 把口令留在 shell 历史里
+```
+
+```ini
+DATA_DIR=/opt/wuye/data
+BACKUP_DIR=/opt/wuye/backups
+KEEP=14
+OFFSITE_DIR=/opt/wuye/offsite
+OFFSITE_KEEP_DAYS=30
 RCLONE_CONFIG=/etc/wuye/rclone.conf
-OFFSITE_KEEP_DAYS=90
-EOF
-sudo chown root:wuye /etc/wuye/backup.env
-sudo chmod 0640 /etc/wuye/backup.env
+RCLONE_DEST=b2:wuye-prod-backups-2026/snapshots
+BACKUP_PASSPHRASE=<沿用现有口令>
+```
 
-# 4) 手动跑一次 push（本地快照 + 加密 + 上传）
+#### 5.2.6 本地加密快照会自动清理（顺序：先证明远端有，再删本地）
+
+`offsite-sync.sh push` 现在是五步，**顺序是安全保证的一部分**：
+
+1. `backup.js --offsite`：生成新快照并加密写入 `OFFSITE_DIR`；
+2. `rclone sync` 上传到 `RCLONE_DEST`；
+3. **`rclone check` 校验远端副本存在且完整**（大小/哈希逐个比对）；
+4. 走到这里才**清理本地 `OFFSITE_DIR`**：只删除「直接子目录 + 名字严格匹配 `snapshot-YYYYMMDD-HHmmss` +
+   时间能解析且回读一致 + 年龄超过 `OFFSITE_KEEP_DAYS`」的目录；
+   符号链接、普通文件、名字不合规的目录、`OFFSITE_DIR` 之外的任何路径都不碰；
+   `OFFSITE_DIR` 与 `BACKUP_DIR` 相同时整步跳过（那里的明文快照由 `KEEP` 管）；
+5. 再 `rclone sync` 一次，把远端已删目录镜像删除（B2 只标记为 hidden，后面交给生命周期）。
+
+失败时不会「删了再报错」：
+
+- 第 2 步上传失败 → 直接退出，本地旧快照一条都不删，远端也不删任何对象；
+- 第 3 步校验失败 → 同上，本地旧快照保持原样；
+- 第 5 步失败 → 本地已按保留期清理，远端旧副本暂时保留，下次成功后自动对齐（会打明显错误日志）。
+
+配置问题不静默：生产 unit 里 `OFFSITE_DIR` 是显式设置的，所以缺 `RCLONE_DEST`/`BACKUP_PASSPHRASE`
+会直接报「异地备份已启用但配置不完整」并 exit 1；只有本地开发完全没配异地时才跳过并 exit 0。
+
+#### 5.2.7 首次手动跑一次 + 全链路验证
+
+```bash
+# 本地快照 + 加密 + 上传（走 systemd 时同样会带上 /etc/wuye/backup.env）
 sudo systemctl start wuye-backup.service
-journalctl -u wuye-backup -n 40 --no-pager
+journalctl -u wuye-backup -n 60 --no-pager
 
-# 5) 全链路验证：下载 → 解密 → SHA-256 → 恢复 → 打开数据库
+# 全链路：下载 → 解密 → SHA-256 → 恢复 → 打开数据库
 sudo -u wuye env $(sudo cat /etc/wuye/backup.env | xargs) \
   sh /opt/wuye/scripts/offsite-sync.sh verify
 ```
@@ -199,9 +298,43 @@ sudo -u wuye env $(sudo cat /etc/wuye/backup.env | xargs) \
 2. `offsite-sync.sh verify` 通过：下载、解密、SHA-256、恢复到临时目录、恢复库可查询；
 3. 从异地副本实际恢复到临时目录，用 `DATA_DIR=<临时目录> PORT=8091 node server.js` 起实例，`/api/health` 返回 ok；
 4. 确认异地副本与服务器不在同一台机器、同一块磁盘；
-5. 口令的离线副本已单独保存，并实际用离线副本解密成功一次。
+5. 口令的离线副本已单独保存，并实际用离线副本解密成功一次；
+6. 远端保留期符合预期：`snapshots/` 下对象在上传约 30–32 天后被隐藏并删除（按 5.4 的生命周期规则抽查一次）。
 
-**在这 5 条完成前，异地备份视为「未配置」，本地备份不能作为唯一副本。**
+**在这些条目完成前，异地备份视为「未配置」，本地备份不能作为唯一副本。**
+
+### 5.4 B2 生命周期规则（方案已于 2026-11-19 批准，控制台仍需你手动设置）
+
+先澄清两个容易混淆的点：
+
+- `rclone sync` 删除远端对象时，B2 只把它标记为 **hidden（隐藏版本）**，不会立刻释放空间；
+- **「Keep prior versions 30 days」≠「备份保留 30 天」**：它表示对象被隐藏之后再保留 30 天，
+  实际会变成 60 天。两者不能混为一谈。
+
+目标：`snapshots/` 下的备份 **上传约 30 天后隐藏，隐藏 1 天后删除**。
+
+| 规则 | 建议值 | 由谁负责 |
+| --- | --- | --- |
+| Keep prior versions（隐藏后再保留） | **1 day** | B2 生命周期，每天执行一次 |
+| Files hidden after（按上传时间自动隐藏） | **不设置** | 由 push 的 `rclone sync` 负责隐藏 |
+| 本地上限 | `OFFSITE_KEEP_DAYS=30` + `KEEP=14` 份 | `offsite-sync.sh` / `backup.js` |
+
+实际节奏（timer 每天 18:47 UTC 跑一次）：
+
+1. 第 30 天：push 时本地 `OFFSITE_DIR` 裁掉这个快照目录 → `rclone sync` 把远端同目录删除 → 对象变成 hidden；
+2. 第 31 天：B2 的生命周期任务（每天执行一次）删除该隐藏版本；
+3. 因此实际最长保留约 **31–32 天**（30 天 + 同步延迟最多 1 天 + 生命周期执行最多 1 天），不是 60 天。
+
+补充：
+
+- 生命周期按**上传时间**决定的是「隐藏」这一步；我们不让 B2 自动隐藏，避免它和 sync 互相打架；
+- 生命周期规则作用于整个桶。以后如果同一个桶还要放别的东西，要么拆桶，要么用 prefix 规则；
+- **已批准、不要改的设置**：Keep prior versions = **1 day**、Files hidden after = **不设置**、
+  `OFFSITE_KEEP_DAYS=30`、本地 `KEEP=14`；脚本**不使用** `--b2-hard-delete`，删除一律走
+  「隐藏 → 生命周期回收」，避免一次误删就永久消失；
+- 设置位置：Bucket → Lifecycle Settings → *Keep prior versions for* **1 day**。
+  **这一条还没有替你设置**，需要你在控制台确认后手动保存；
+- 保留期与《隐私政策》第 04 节「备份最多 14 天」的表述目前不一致，隐私政策定稿时需要统一口径。
 
 
 ---

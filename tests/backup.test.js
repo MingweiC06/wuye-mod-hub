@@ -105,8 +105,10 @@ test('restores a snapshot into a fresh directory and checks row counts', async (
   assert.equal(result.tables.ideas, 3);
   assert.ok(fs.existsSync(path.join(restored, 'files', 'mod-1.bin')));
   assert.ok(fs.existsSync(path.join(restored, 'media', 'cover.webp')));
-  // 没有 --with-secrets 时不应恢复密钥文件
+  // 没有 --with-secrets 时不应恢复密钥文件（根目录与 secrets/ 都不该出现）
   assert.equal(fs.existsSync(path.join(restored, 'secrets')), false);
+  assert.equal(fs.existsSync(path.join(restored, 'admin-code.txt')), false);
+  assert.equal(fs.existsSync(path.join(restored, 'relay-secret.txt')), false);
 
   const db = new DatabaseSync(path.join(restored, 'wuye.db'), { readOnly: true });
   try {
@@ -119,7 +121,11 @@ test('restores a snapshot into a fresh directory and checks row counts', async (
 
   const withSecrets = path.join(root, 'restored-secrets');
   await restoreBackup({ snapshot: report.snapshotDir, target: withSecrets, withSecrets: true, log: () => {} });
-  assert.ok(fs.existsSync(path.join(withSecrets, 'secrets', 'admin-code.txt')));
+  // 密钥文件必须还原到数据目录根（服务器从 DATA_DIR 根读取），而不是 secrets/ 子目录
+  assert.ok(fs.existsSync(path.join(withSecrets, 'admin-code.txt')));
+  assert.ok(fs.existsSync(path.join(withSecrets, 'relay-secret.txt')));
+  assert.equal(fs.existsSync(path.join(withSecrets, 'secrets')), false);
+  assert.equal(await sha256File(path.join(withSecrets, 'relay-secret.txt')), await sha256File(path.join(dataDir, 'relay-secret.txt')));
 
   assert.equal(await sha256File(path.join(restored, 'files', 'mod-1.bin')), await sha256File(path.join(dataDir, 'files', 'mod-1.bin')));
 });

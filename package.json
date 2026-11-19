@@ -11,6 +11,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test tests/api.test.js tests/extras.test.js tests/sponsor.test.js tests/shield.test.js",
-    "backup": "node scripts/backup.js"
+    "backup": "node scripts/backup.js",
+    "bump:assets": "node scripts/bump-asset-versions.mjs"
   }
 }

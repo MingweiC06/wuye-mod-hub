@@ -394,3 +394,7 @@ body.vb-dragging { cursor: grabbing; user-select: none; }
 .vb-note-edit span { font-size: 12px; opacity: .8; color: #e8c46a; }
 .vb-note-edit small { opacity: .75; color: inherit; }
 .vb-note-edit textarea { resize: vertical; min-height: 54px; color: #f3e3b5; }
+
+.vb-del { border-color: rgba(255, 107, 107, .4); color: #ff8a8a; }
+.vb-del:hover, .vb-del:focus-visible { background: rgba(255, 107, 107, .14); border-color: #ff6b6b; }
+.vb-back-wish { margin-right: auto; }

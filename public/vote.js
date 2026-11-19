@@ -25,7 +25,7 @@
           ${c.note ? `<p class="vb-note"><span>站长</span>${WY.esc(c.note)}</p>` : ''}
           <div class="vb-meter" aria-hidden="true"><i></i></div>
           <div class="vb-foot">
-            <span class="vb-n"><b>${c.votes}</b> 票<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}</span>
+            <span class="vb-n"><b>${c.votes}</b> 票<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button><button class="vb-pen vb-del" type="button" data-del="${c.id}" aria-label="删除" title="删除这张卡片">🗑</button>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}</span>
             <button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button>
           </div>
         </div>
@@ -143,7 +143,7 @@
         <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
-          <span class="vb-sub">${WY.esc(c.game || '')}${done && !c.votes ? '' : `${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票${done ? '' : `<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>`}`}</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
+          <span class="vb-sub">${WY.esc(c.game || '')}${done && !c.votes ? '' : `${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票${done ? '' : `<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>`}`}<button class="vb-pen vb-del" type="button" data-del="${c.id}" aria-label="删除" title="删除这张卡片">🗑</button></span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
           ${c.note ? `<p class="vb-note"><span>站长</span>${WY.esc(c.note)}</p>` : ''}
           ${done ? `<div class="vb-foot vb-done-foot"><span class="vb-sub vb-done-tag">✓ 已完成${c.videoDate ? ` · ${WY.esc(c.videoDate)} 发布` : ''}</span>${watch ? `<a class="vb-watch" href="${watch}" target="_blank" rel="noopener" aria-label="在抖音看《${WY.esc(c.title)}》">看视频 <span aria-hidden="true">→</span></a>` : ''}</div>` : accepted ? `<div class="vb-foot"><span class="vb-sub vb-acc">★ 已采纳</span><button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button></div>` : `<div class="vb-meter is-build" aria-hidden="true"><i></i></div>${state.admin ? `<div class="vb-foot"><span class="vb-sub">制作中</span><button class="btn btn-primary btn-sm vb-done-btn" type="button" data-done="${c.id}">✓ 完成</button></div>` : '<span class="vb-sub">制作中</span>'}`}
         </div>
@@ -284,6 +284,8 @@
     document.addEventListener('click', (e) => {
       const p = e.target.closest('[data-pen]');
       if (p) editVotes(Number(p.dataset.pen));
+      const d = e.target.closest('[data-del]');
+      if (d) deleteCard(Number(d.dataset.del));
     });
   }
 
@@ -394,6 +396,22 @@
   }
 
   // ✎ on a card: see real vs bot votes and set the bot votes.
+  // Admin: delete a card (and its votes) for good.
+  async function deleteCard(id) {
+    const h = document.querySelector(`[data-id="${id}"] h3, [data-id="${id}"] h4`);
+    const title = h ? h.textContent.trim() : '#' + id;
+    const ok = await WY.confirm({ title: '删除这张卡片？', message: `「${title}」和它的票数会一起删除，无法恢复。只想从投票页移走的话，用 ✎ 里的「退回许愿池」。`, okText: '删除', danger: true });
+    if (!ok) return;
+    try {
+      await WY.api(`/api/admin/ideas/${id}`, { method: 'DELETE' });
+      WY.toast('已删除', 'success');
+      cards.delete(id);
+      await load();
+    } catch (e) {
+      WY.toast(e.message, 'error');
+    }
+  }
+
   async function editVotes(id) {
     let info;
     try {
@@ -412,7 +430,20 @@
         </div>
         <label class="vb-note-edit"><span>站长备注 <small>（金色显示在副标题下面，所有人可见；留空就不显示）</small></span><textarea class="input" rows="2" maxlength="300" data-note placeholder="例如：下个月开做！">${WY.esc(info.note)}</textarea></label>
         <p class="muted dialog-text">真实票是粉丝投的（含评论区），只能往下改，不能超过原来的 ${info.original}；改低后会显示成红色，只有你能看到。机器人票可加可减，总票数不会低于 0。</p>`,
-      footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
+      footer: '<button class="btn btn-ghost vb-back-wish" type="button" data-back>↩ 退回许愿池</button><button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
+    });
+    dlg.footer.querySelector('[data-back]').addEventListener('click', async () => {
+      dlg.close();
+      const ok = await WY.confirm({ title: '退回许愿池？', message: `「${info.title}」会从投票页移走，回到许愿池（票数保留）。`, okText: '退回' });
+      if (!ok) return;
+      try {
+        await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { status: 'wish' } });
+        WY.toast('已退回许愿池', 'success');
+        cards.delete(id);
+        await load();
+      } catch (e) {
+        WY.toast(e.message, 'error');
+      }
     });
     const input = dlg.body.querySelector('[data-bot]');
     const noteIn = dlg.body.querySelector('[data-note]');

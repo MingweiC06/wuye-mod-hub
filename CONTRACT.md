@@ -1,4 +1,4 @@
-﻿# 乌叶MC · 模组许愿池 — 开发契约（CONTRACT）
+# 乌叶MC · 模组许愿池 — 开发契约（CONTRACT）
 
 所有接手页面的人先通读本文件，再动代码。**共享文件不要改**：`public/index.html`、`public/styles.css`、`public/app.js`、`public/home.js`、`lib/*`、`app.js`、`server.js`、`tests/*`。只写分配给你的文件；需要共享样式/脚本改动时先找 Lead。
 
@@ -47,7 +47,10 @@
   <meta name="description" content="...">
   <meta name="theme-color" content="#05070d">
   <meta name="color-scheme" content="dark">
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico?v=20261119a" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png?v=20261119a">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261117c">
   <link rel="stylesheet" href="/YOURPAGE.css?v=1">
   <script src="/app.js?v=20261117c" defer></script>

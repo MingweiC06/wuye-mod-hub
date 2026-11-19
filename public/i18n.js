@@ -45,7 +45,7 @@
 
     // ---- home ----
     '下一位星神，': 'The next Aeon,', '由你点名': 'is your call',
-    '天弓、药王、帝弓、琥珀王之后，下一位该是谁？': 'After the Sky Archer, the Medicine King, the Hunt and the Amber Lord, who’s next?',
+    '天弓、药王、帝弓、琥珀王、阿哈之后，下一位该是谁？': 'After the Sky Archer, the Medicine King, the Hunt, the Amber Lord and Aha, who’s next?',
     '把想看的技能、角色、整活玩法写进许愿池': 'Drop the skill, character or crazy mechanic you want into the wish pool',
     '， 大家投票，票数最高的灵感会被我认真翻牌——说不定就是下一期《技能独特 我来复刻！》。': '. Everyone votes, and the top wishes get my full attention — it might be the next episode of “Unique Skills, Rebuilt!”.',
     '大家投票，票数最高的灵感会被我认真翻牌——说不定就是下一期《技能独特 我来复刻！》。': 'Everyone votes, and the top wishes get my full attention — it might be the next episode of “Unique Skills, Rebuilt!”.',

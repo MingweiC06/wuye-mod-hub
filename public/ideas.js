@@ -307,6 +307,16 @@
   // wish-admin.js (站长) turned a comment into a wish: show it.
   document.addEventListener('wy:wishes-changed', function () { loadIdeas({ reset: true, page: 1 }); });
 
+  // Comment wishes used to copy the comment into both title and description: show it once.
+  function descHtml(idea) {
+    const strip = function (s) { return String(s || '').replace(/（来自抖音评论区）$/, '').trim(); };
+    const desc = strip(idea.description);
+    const tag = idea.fromComment ? '<span class="from-comment">💬 来自抖音评论</span>' : '';
+    const text = desc && desc !== strip(idea.title) ? WY.esc(desc) : '';
+    if (!text && !tag) return '';
+    return '  <p class="desc">' + (tag ? tag + (text ? ' ' : '') : '') + text + '</p>';
+  }
+
   function loadIdeas(options) {
     const reset = Boolean(options && options.reset);
     const page = Math.max(1, Number(options && options.page) || 1);
@@ -398,7 +408,7 @@
       state.admin ? '    <button class="idea-pen" type="button" data-note-id="' + Number(idea.id) + '" title="写乌叶回复" aria-label="写乌叶回复：' + WY.esc(idea.title) + '">✎ ' + (idea.officialReply ? '改回复' : '写回复') + '</button>' : '',
       '  </div>',
       '  <h3><a href="#idea-' + Number(idea.id) + '" data-idea-link="' + Number(idea.id) + '">' + WY.esc(idea.title) + '</a></h3>',
-      '  <p class="desc">' + WY.esc(idea.description) + '</p>',
+      descHtml(idea),
       state.admin && idea.status === 'wish'
         ? '  <div class="idea-admin-acts"><button class="idea-promote" type="button" data-promote-id="' + Number(idea.id) + '">转到投票 →</button>' +
           '<button class="idea-act' + (idea.ownerLiked ? ' is-liked' : '') + '" type="button" data-olike-id="' + Number(idea.id) + '" aria-pressed="' + (idea.ownerLiked ? 'true' : 'false') + '">' + (idea.ownerLiked ? '♥ 已点赞' : '♡ 站长点赞') + '</button>' +
@@ -559,8 +569,14 @@
     if (!idea) return;
     const dlg = WY.dialog({
       title: '乌叶回复',
-      subtitle: idea.title,
-      body: '<p class="muted dialog-text">金色显示在卡片上，所有人可见；留空就不显示。投票页上的「站长备注」也是这一条。</p>' +
+      subtitle: '回复 @' + (idea.author || '匿名玩家') + ' 的许愿',
+      body: '<blockquote class="reply-orig"><strong>' + WY.esc(idea.title) + '</strong>' +
+        (function () {
+          const d = String(idea.description || '').replace(/（来自抖音评论区）$/, '').trim();
+          return d && d !== idea.title.trim() ? '<p>' + WY.esc(d) + '</p>' : '';
+        })() +
+        '<span class="small muted">— ' + WY.esc(idea.author || '匿名玩家') + (idea.fromComment ? ' · 来自抖音评论' : '') + '</span></blockquote>' +
+        '<p class="muted dialog-text">金色显示在卡片上，所有人可见；留空就不显示。投票页上的「站长备注」也是这一条。</p>' +
         '<textarea class="input" rows="3" maxlength="300" data-note placeholder="例如：制作中，敬请期待。">' + WY.esc(idea.officialReply || '') + '</textarea>',
       footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
     });

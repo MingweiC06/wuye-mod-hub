@@ -8,11 +8,11 @@ Wants=network-online.target
 Type=oneshot
 User=wuye
 Group=wuye
-WorkingDirectory=/opt/wuye-backup
+WorkingDirectory=/opt/wuye
 Environment=NODE_ENV=production
 Environment=HOME=/tmp
 EnvironmentFile=/etc/wuye/backup.env
-ExecStart=/bin/sh /opt/wuye-backup/scripts/offsite-sync.sh push
+ExecStart=/bin/sh /opt/wuye/scripts/offsite-sync.sh push
 # Only runs if the push succeeded. The admin overview warns when this is older than 36 h.
 ExecStartPost=/bin/sh -c 'date +%%s > /opt/wuye/backups/.last-offsite-ok'
 Nice=10

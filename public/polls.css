@@ -347,6 +347,7 @@ body.page-polls .poll h3:focus-visible {
   border: 1px dashed rgba(232, 196, 106, .35); border-radius: 10px; color: rgba(232, 196, 106, .6); font-size: 13px;
 }
 .vb-admin .is-drop-over .vb-row { background: rgba(232, 196, 106, .07); box-shadow: inset 0 0 0 1px rgba(232, 196, 106, .55); }
+.vb-admin .vb-grid.is-drop-over { border-radius: 12px; background: rgba(232, 196, 106, .05); box-shadow: 0 0 0 1px rgba(232, 196, 106, .55); }
 .vb-mini.is-dragging, .vb-card.is-dragging { opacity: .25; transition: opacity .15s ease; }
 .vb-mini.is-landing { visibility: hidden; }
 .vb-drag-clone {

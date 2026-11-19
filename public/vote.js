@@ -245,7 +245,7 @@
     document.body.classList.add('vb-admin');
     if (state.data) paint();
     const head = $('vb-building-wrap').querySelector('.vb-split');
-    head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖到另一边，即可在「备选区」和「制作中」之间移动；下方投票区的卡片也可以拖到「备选区」。</p>');
+    head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖到另一边，即可在「备选区」和「制作中」之间移动；下方投票区的卡片也可以拖到「备选区」，「备选区」的卡片也能拖回投票区。</p>');
     for (const status of Object.keys(COLS)) $(COLS[status]).dataset.dropStatus = status;
     $('vb-grid').dataset.dropStatus = 'open';
     document.addEventListener('pointerdown', startDrag);
@@ -295,10 +295,29 @@
     let clone = null;
     let box = null;
     let over = null;
+    let lastX = sx;
+    let lastY = sy;
+    let dx = 0;
+    let dy = 0;
+    let scrollRaf = 0;
+
+    // Holding the card near the top or bottom edge scrolls the page, so far-apart sections are reachable.
+    const autoScroll = () => {
+      scrollRaf = 0;
+      if (!clone) return;
+      const edge = 80;
+      const v = lastY < edge ? -Math.ceil((edge - lastY) / 6) : lastY > innerHeight - edge ? Math.ceil((lastY - innerHeight + edge) / 6) : 0;
+      if (!v) return;
+      window.scrollBy({ top: v, behavior: 'instant' });
+      track();
+      scrollRaf = requestAnimationFrame(autoScroll);
+    };
 
     // Each column counts as a drop zone over the full height of the section (plus some slack below),
     // so an empty or short column is still easy to hit.
     const zoneAt = (x, y) => {
+      const g = $('vb-grid').getBoundingClientRect();
+      if (x >= g.left && x <= g.right && y >= g.top - 60 && y <= g.bottom) return 'open';
       const split = $('vb-building-wrap').querySelector('.vb-split').getBoundingClientRect();
       if (y < split.top - 40 || y > split.bottom + 160) return null;
       for (const status of Object.keys(COLS)) {
@@ -309,8 +328,10 @@
     };
 
     const onMove = (ev) => {
-      const dx = ev.clientX - sx;
-      const dy = ev.clientY - sy;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      dx = ev.clientX - sx;
+      dy = ev.clientY - sy;
       if (!clone) {
         if (Math.hypot(dx, dy) < 6) return;
         box = el.getBoundingClientRect();
@@ -324,23 +345,31 @@
         document.body.classList.add('vb-dragging');
       }
       ev.preventDefault();
+      track();
+      if (!scrollRaf) scrollRaf = requestAnimationFrame(autoScroll);
+    };
+
+    // The clone is position: fixed, so it follows the pointer; drop zones are re-checked after scrolling.
+    const track = () => {
       clone.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${Math.max(-4, Math.min(4, dx / 60))}deg) scale(1.03)`;
-      const z = zoneAt(ev.clientX, ev.clientY);
+      const z = zoneAt(lastX, lastY);
       // Voting cards can only go to 备选区.
-      const target = z && z !== from && (from !== 'open' || z === 'planned') ? z : null;
+      // and only 备选区 cards can go back to voting.
+      const target = z && z !== from && (from !== 'open' || z === 'planned') && (z !== 'open' || from === 'planned') ? z : null;
       if (target !== over) {
-        if (over) $(COLS[over]).parentElement.classList.remove('is-drop-over');
+        if (over) zoneEl(over).classList.remove('is-drop-over');
         over = target;
-        if (over) $(COLS[over]).parentElement.classList.add('is-drop-over');
+        if (over) zoneEl(over).classList.add('is-drop-over');
       }
     };
 
     const onUp = () => {
+      cancelAnimationFrame(scrollRaf);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
       document.body.classList.remove('vb-dragging');
-      if (over) $(COLS[over]).parentElement.classList.remove('is-drop-over');
+      if (over) zoneEl(over).classList.remove('is-drop-over');
       if (!clone) return;
       if (over) moveCard(Number(el.dataset.id), from, over, clone);
       else settleBack(el, clone);
@@ -350,6 +379,8 @@
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
   }
+
+  const zoneEl = (status) => (status === 'open' ? $('vb-grid') : $(COLS[status]).parentElement);
 
   function settleBack(el, clone) {
     const anim = clone.animate([{ transform: clone.style.transform }, { transform: 'none' }], { duration: calm() ? 0 : 320, easing: EASE });
@@ -362,7 +393,7 @@
   const LIST = { building: 'building', planned: 'accepted', open: 'voting' };
 
   function flyInto(id, clone, scope = '') {
-    const target = document.querySelector(`${scope} .vb-mini[data-id="${id}"]`.trim());
+    const target = document.querySelector(`${scope} .vb-mini[data-id="${id}"]`.trim()) || document.querySelector(`#vb-grid .vb-card[data-id="${id}"]`);
     const from = clone.getBoundingClientRect();
     if (!target || calm()) {
       clone.remove();
@@ -399,7 +430,10 @@
       cards.delete(id);
     }
     if (to === 'building') d.building.unshift(item);
-    else {
+    else if (to === 'open') {
+      cards.delete(id);
+      d.voting.push(item);
+    } else {
       d.accepted.push(item);
       d.accepted.sort((a, b) => b.votes - a.votes);
     }
@@ -407,7 +441,7 @@
     flyInto(id, clone);
     try {
       await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { status: to } });
-      WY.toast(to === 'building' ? `「${item.title}」已移到制作中` : from === 'open' ? `「${item.title}」已移到备选区` : `「${item.title}」已移回备选区`, 'success');
+      WY.toast(to === 'open' ? `「${item.title}」已放回投票区` : to === 'building' ? `「${item.title}」已移到制作中` : from === 'open' ? `「${item.title}」已移到备选区` : `「${item.title}」已移回备选区`, 'success');
     } catch (error) {
       WY.toast(error.message || '移动失败，已撤回', 'error');
       await load();

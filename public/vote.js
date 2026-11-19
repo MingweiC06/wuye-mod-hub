@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { sort: 'votes', game: '', data: null };
+  const state = { sort: 'votes', game: '', data: null, admin: false };
 
   const art = (c) =>
     c.image
@@ -136,12 +136,12 @@
   function mini(c, done, accepted) {
     const watch = done && c.video ? `https://www.douyin.com/video/${encodeURIComponent(c.video)}` : '';
     return `
-      <article class="vb-mini${done ? ' is-done' : ''}${watch ? ' has-video' : ''}">
+      <article class="vb-mini${done ? ' is-done' : ''}${watch ? ' has-video' : ''}${state.admin && !done ? ' is-draggable' : ''}" data-id="${c.id}">
         <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           <span class="vb-sub">${WY.esc(c.game || '')}${done && !c.votes ? '' : `${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票`}</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
-          ${done ? `<div class="vb-foot vb-done-foot"><span class="vb-sub vb-done-tag">✓ 已完成${c.videoDate ? ` · ${WY.esc(c.videoDate)} 发布` : ''}</span>${watch ? `<a class="vb-watch" href="${watch}" target="_blank" rel="noopener" aria-label="在抖音看《${WY.esc(c.title)}》">看视频 <span aria-hidden="true">→</span></a>` : ''}</div>` : accepted ? `<div class="vb-foot"><span class="vb-sub vb-acc">★ 已采纳</span><button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button></div>` : '<div class="vb-meter is-build" aria-hidden="true"><i></i></div><span class="vb-sub">制作中</span>'}
+          ${done ? `<div class="vb-foot vb-done-foot"><span class="vb-sub vb-done-tag">✓ 已完成${c.videoDate ? ` · ${WY.esc(c.videoDate)} 发布` : ''}</span>${watch ? `<a class="vb-watch" href="${watch}" target="_blank" rel="noopener" aria-label="在抖音看《${WY.esc(c.title)}》">看视频 <span aria-hidden="true">→</span></a>` : ''}</div>` : accepted ? `<div class="vb-foot"><span class="vb-sub vb-acc">★ 已采纳</span><button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button></div>` : `<div class="vb-meter is-build" aria-hidden="true"><i></i></div>${state.admin ? `<div class="vb-foot"><span class="vb-sub">制作中</span><button class="btn btn-primary btn-sm vb-done-btn" type="button" data-done="${c.id}">✓ 完成</button></div>` : '<span class="vb-sub">制作中</span>'}`}
         </div>
       </article>`;
   }
@@ -149,8 +149,9 @@
   function paint() {
     const d = state.data;
     paintGrid(false);
-    $('vb-building-wrap').hidden = !d.building.length && !d.accepted.length;
-    $('vb-accepted-wrap').hidden = !d.accepted.length;
+    // Admins always see both columns so a card can be dragged into an empty one.
+    $('vb-building-wrap').hidden = !state.admin && !d.building.length && !d.accepted.length;
+    $('vb-accepted-wrap').hidden = !state.admin && !d.accepted.length;
     $('vb-accepted').innerHTML = d.accepted.map((c) => mini(c, false, true)).join('');
     $('vb-building').innerHTML = d.building.map((c) => mini(c, false)).join('');
     $('vb-done-wrap').hidden = !d.done.length;
@@ -226,8 +227,186 @@
         if (b) vote(b);
       });
     }
-    load();
+    load().then(checkAdmin);
   }
+
+  /* ---------- admin: drag cards between 备选区 (planned) and 制作中 (building) ---------- */
+  const COLS = { building: 'vb-building', planned: 'vb-accepted' };
+
+  async function checkAdmin() {
+    try {
+      const r = await fetch('/api/admin/me', { credentials: 'same-origin' });
+      if (!r.ok || !(await r.json()).authed) return;
+    } catch {
+      return;
+    }
+    state.admin = true;
+    document.body.classList.add('vb-admin');
+    if (state.data) paint();
+    const head = $('vb-building-wrap').querySelector('.vb-split');
+    head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖到另一边，即可在「备选区」和「制作中」之间移动。</p>');
+    for (const status of Object.keys(COLS)) $(COLS[status]).dataset.dropStatus = status;
+    document.addEventListener('pointerdown', startDrag);
+    $('vb-building').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-done]');
+      if (b) markDone(Number(b.dataset.done), b);
+    });
+  }
+
+  // 制作中 → 已完成: the card lifts out and flies down into the 已完成 row.
+  async function markDone(id, btn) {
+    const d = state.data;
+    const i = d.building.findIndex((c) => c.id === id);
+    if (i < 0 || btn.disabled) return;
+    btn.disabled = true;
+    const el = btn.closest('.vb-mini');
+    const box = el.getBoundingClientRect();
+    const clone = el.cloneNode(true);
+    clone.classList.add('vb-drag-clone');
+    clone.style.width = `${box.width}px`;
+    clone.style.left = `${box.left}px`;
+    clone.style.top = `${box.top}px`;
+    document.body.appendChild(clone);
+    const [item] = d.building.splice(i, 1);
+    d.done.unshift(item);
+    paint();
+    $('vb-done-wrap').hidden = false;
+    const target = document.querySelector(`#vb-done .vb-mini[data-id="${id}"]`);
+    if (target) target.scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'center' });
+    setTimeout(() => flyInto(id, clone, '#vb-done'), calm() ? 0 : 380);
+    try {
+      await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { status: 'released' } });
+      WY.toast(`「${item.title}」已完成 ✓`, 'success');
+    } catch (error) {
+      WY.toast(error.message || '操作失败，已撤回', 'error');
+      await load();
+    }
+  }
+
+  function startDrag(e) {
+    const el = e.target.closest('.vb-mini.is-draggable');
+    if (!el || e.button !== 0 || e.target.closest('button, a')) return;
+    const from = el.parentElement.dataset.dropStatus;
+    if (!from) return;
+    const sx = e.clientX;
+    const sy = e.clientY;
+    let clone = null;
+    let box = null;
+    let over = null;
+
+    // Each column counts as a drop zone over the full height of the section (plus some slack below),
+    // so an empty or short column is still easy to hit.
+    const zoneAt = (x, y) => {
+      const split = $('vb-building-wrap').querySelector('.vb-split').getBoundingClientRect();
+      if (y < split.top - 40 || y > split.bottom + 160) return null;
+      for (const status of Object.keys(COLS)) {
+        const r = $(COLS[status]).parentElement.getBoundingClientRect();
+        if (x >= r.left - 20 && x <= r.right + 20) return status;
+      }
+      return null;
+    };
+
+    const onMove = (ev) => {
+      const dx = ev.clientX - sx;
+      const dy = ev.clientY - sy;
+      if (!clone) {
+        if (Math.hypot(dx, dy) < 6) return;
+        box = el.getBoundingClientRect();
+        clone = el.cloneNode(true);
+        clone.classList.add('vb-drag-clone');
+        clone.style.width = `${box.width}px`;
+        clone.style.left = `${box.left}px`;
+        clone.style.top = `${box.top}px`;
+        document.body.appendChild(clone);
+        el.classList.add('is-dragging');
+        document.body.classList.add('vb-dragging');
+      }
+      ev.preventDefault();
+      clone.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${Math.max(-4, Math.min(4, dx / 60))}deg) scale(1.03)`;
+      const z = zoneAt(ev.clientX, ev.clientY);
+      const target = z && z !== from ? z : null;
+      if (target !== over) {
+        if (over) $(COLS[over]).parentElement.classList.remove('is-drop-over');
+        over = target;
+        if (over) $(COLS[over]).parentElement.classList.add('is-drop-over');
+      }
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      document.body.classList.remove('vb-dragging');
+      if (over) $(COLS[over]).parentElement.classList.remove('is-drop-over');
+      if (!clone) return;
+      if (over) moveCard(Number(el.dataset.id), from, over, clone);
+      else settleBack(el, clone);
+    };
+
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  }
+
+  function settleBack(el, clone) {
+    const anim = clone.animate([{ transform: clone.style.transform }, { transform: 'none' }], { duration: calm() ? 0 : 320, easing: EASE });
+    anim.onfinish = () => {
+      clone.remove();
+      el.classList.remove('is-dragging');
+    };
+  }
+
+  const LIST = { building: 'building', planned: 'accepted' };
+
+  function flyInto(id, clone, scope = '') {
+    const target = document.querySelector(`${scope} .vb-mini[data-id="${id}"]`.trim());
+    const from = clone.getBoundingClientRect();
+    if (!target || calm()) {
+      clone.remove();
+      return;
+    }
+    const to = target.getBoundingClientRect();
+    target.classList.add('is-landing');
+    clone.style.transform = 'none';
+    clone.style.left = `${from.left}px`;
+    clone.style.top = `${from.top}px`;
+    clone.style.width = `${from.width}px`;
+    const anim = clone.animate(
+      [
+        { transform: 'rotate(0deg) scale(1.03)', offset: 0 },
+        { transform: `translate3d(${to.left - from.left}px, ${to.top - from.top}px, 0) scale(${to.width / from.width})` },
+      ],
+      { duration: 520, easing: EASE, fill: 'forwards' },
+    );
+    anim.onfinish = () => {
+      clone.remove();
+      target.classList.remove('is-landing');
+      target.animate([{ boxShadow: '0 0 0 2px rgba(232,196,106,.9), 0 0 28px rgba(232,196,106,.45)' }, { boxShadow: '0 0 0 0 rgba(232,196,106,0)' }], { duration: 900, easing: 'ease-out' });
+    };
+  }
+
+  async function moveCard(id, from, to, clone) {
+    const d = state.data;
+    const src = d[LIST[from]];
+    const i = src.findIndex((c) => c.id === id);
+    if (i < 0) return clone.remove();
+    const [item] = src.splice(i, 1);
+    if (to === 'building') d.building.unshift(item);
+    else {
+      d.accepted.push(item);
+      d.accepted.sort((a, b) => b.votes - a.votes);
+    }
+    paint();
+    flyInto(id, clone);
+    try {
+      await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { status: to } });
+      WY.toast(to === 'building' ? `「${item.title}」已移到制作中` : `「${item.title}」已移回备选区`, 'success');
+    } catch (error) {
+      WY.toast(error.message || '移动失败，已撤回', 'error');
+      await load();
+    }
+  }
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();
 })();

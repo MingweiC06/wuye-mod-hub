@@ -22,6 +22,7 @@
   ];
   const STATUSES = [
     { key: 'pending', label: '待审核', icon: '◷' },
+    { key: 'wish', label: '许愿中', icon: '✧' },
     { key: 'open', label: '投票中', icon: '☆' },
     { key: 'planned', label: '已采纳', icon: '★' },
     { key: 'building', label: '制作中', icon: '⚒' },
@@ -324,6 +325,7 @@
     params.set('sort', state.sort);
     params.set('page', String(page));
     params.set('pageSize', String(PAGE_SIZE));
+    params.set('pool', '1'); // 许愿池 shows wishes only; voting cards live on the vote page
     if (state.category) params.set('category', state.category);
     if (state.status) params.set('status', state.status);
     if (state.q) params.set('q', state.q);
@@ -381,11 +383,11 @@
     const badgeClass = WY.statusBadgeClass(idea.status);
 
     return [
-      '<article class="' + classes.join(' ') + '" id="idea-' + Number(idea.id) + '" data-idea-id="' + Number(idea.id) + '">',
+      '<article class="' + classes.join(' ') + (idea.status === 'wish' || idea.status === 'pending' ? ' is-wish' : '') + '" id="idea-' + Number(idea.id) + '" data-idea-id="' + Number(idea.id) + '">',
       '  <div class="idea-card-head">',
       '    <div class="badges">',
       '      <span class="badge badge-cyan">' + WY.esc(category.icon) + ' ' + WY.esc(category.label) + '</span>',
-      '      <span class="badge ' + badgeClass + '">' + WY.esc(status.icon) + ' ' + WY.esc(status.label) + '</span>',
+      idea.status === 'wish' ? '' : '      <span class="badge ' + badgeClass + '">' + WY.esc(status.icon) + ' ' + WY.esc(status.label) + '</span>',
       idea.pinned ? '      <span class="badge badge-gold">置顶</span>' : '',
       idea.id === state.newId ? '      <span class="badge badge-gold">刚刚提交</span>' : '',
       '    </div>',
@@ -393,13 +395,14 @@
       '  </div>',
       '  <h3><a href="#idea-' + Number(idea.id) + '" data-idea-link="' + Number(idea.id) + '">' + WY.esc(idea.title) + '</a></h3>',
       '  <p class="desc">' + WY.esc(idea.description) + '</p>',
+      state.admin && idea.status === 'wish' ? '  <button class="idea-promote" type="button" data-promote-id="' + Number(idea.id) + '">转到投票 →</button>' : '',
       idea.officialReply
         ? '  <p class="official-reply"><b>乌叶回复：</b>' + WY.esc(idea.officialReply) + '</p>'
         : '',
       '  <div class="idea-card-foot">',
       '    <span class="idea-author"><b>' + WY.esc(author) + '</b> · <time datetime="' + new Date(createdAt).toISOString() + '" title="' + WY.esc(WY.formatDateTime(createdAt)) + '">' + WY.esc(WY.timeAgo(createdAt)) + '</time></span>',
       '    <button class="idea-vote' + (idea.voted ? ' is-voted' : '') + '" type="button" data-vote-id="' + Number(idea.id) + '" aria-pressed="' + (idea.voted ? 'true' : 'false') + '" aria-label="' + (idea.voted ? '取消投票' : '给这个灵感投票') + '：' + WY.esc(idea.title) + '">',
-      '      <span aria-hidden="true">♥</span><b>' + WY.esc(WY.fmtNumber(idea.votes)) + '</b>',
+      '      <span aria-hidden="true">♥</span>' + (idea.status === 'wish' ? '<small>我也想要</small>' : '') + '<b>' + WY.esc(WY.fmtNumber(idea.votes)) + '</b>',
       '    </button>',
       '  </div>',
       '</article>',
@@ -485,6 +488,12 @@
   /* ---------------- list interactions ---------------- */
 
   function onListClick(event) {
+    const promote = event.target.closest('[data-promote-id]');
+    if (promote) {
+      event.preventDefault();
+      promoteWish(Number(promote.dataset.promoteId));
+      return;
+    }
     const pen = event.target.closest('[data-note-id]');
     if (pen) {
       event.preventDefault();
@@ -544,6 +553,91 @@
         WY.toast(error.message || '保存失败', 'error');
       }
     });
+  }
+
+  // Read a picked image as a data: URL (the CSP allows data: images, not blob:) and shrink it.
+  function shrinkImage(file) {
+    return new Promise(function (resolve, reject) {
+      const img = new Image();
+      img.onload = function () {
+        const k = Math.min(1, 1200 / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * k);
+        cv.height = Math.round(img.height * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        resolve(cv.toDataURL('image/jpeg', 0.88));
+      };
+      img.onerror = function () { reject(new Error('图片读取失败，换一张试试')); };
+      const fr = new FileReader();
+      fr.onload = function () { img.src = fr.result; };
+      fr.onerror = function () { reject(new Error('图片读取失败，换一张试试')); };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  // Admin: 许愿池 → 投票页. Fill in the card (picture, name, game, subtitle, note) and pick a section.
+  function promoteWish(id) {
+    const idea = state.items.find(function (item) { return item.id === id; });
+    if (!idea) return;
+    const dlg = WY.dialog({
+      title: '转到投票',
+      subtitle: '确认后它会离开许愿池，出现在投票页（票数保留）',
+      body: '<form class="vb-add-form" novalidate>' +
+        '<label class="vb-add-pic" tabindex="0"><input type="file" accept="image/png,image/jpeg,image/webp" hidden data-pic><img alt="" hidden data-preview><span data-pic-hint>点这里选图片<br><small>可不选，之后再加</small></span></label>' +
+        '<div class="vb-add-fields">' +
+        '<label><span>名字 *</span><input class="input" name="title" maxlength="40" value="' + WY.esc(idea.title) + '"></label>' +
+        '<label><span>游戏</span><input class="input" name="game" maxlength="40" placeholder="例如：原神" value="' + WY.esc(idea.game || '') + '"></label>' +
+        '<label><span>副标题</span><input class="input" name="description" maxlength="600" value="' + WY.esc(idea.description || '') + '"></label>' +
+        '<label><span>站长备注</span><input class="input" name="note" maxlength="300" placeholder="金色显示在副标题下面（可不填）" value="' + WY.esc(idea.officialReply || '') + '"></label>' +
+        '<label><span>放到</span><select class="input" name="status"><option value="open">投票区</option><option value="planned">备选区</option><option value="building">制作中</option></select></label>' +
+        '</div></form><p class="vb-add-err" data-err></p>',
+      footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>确认转到投票</button>',
+    });
+    const form = dlg.body.querySelector('form');
+    const pic = dlg.body.querySelector('[data-pic]');
+    const preview = dlg.body.querySelector('[data-preview]');
+    const hint = dlg.body.querySelector('[data-pic-hint]');
+    const err = dlg.body.querySelector('[data-err]');
+    let image = '';
+    dlg.body.querySelector('.vb-add-pic').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pic.click(); }
+    });
+    pic.addEventListener('change', function () {
+      if (!pic.files[0]) return;
+      shrinkImage(pic.files[0]).then(function (data) {
+        image = data;
+        preview.src = data;
+        preview.hidden = false;
+        hint.hidden = true;
+      }).catch(function (e) { err.textContent = e.message; });
+    });
+    dlg.footer.querySelector('[data-cancel]').addEventListener('click', function () { dlg.close(); });
+    const ok = dlg.footer.querySelector('[data-ok]');
+    const submit = async function () {
+      const f = form.elements;
+      const title = f.title.value.trim();
+      if (!title) { err.textContent = '请填名字'; f.title.focus(); return; }
+      err.textContent = '';
+      ok.disabled = true;
+      ok.textContent = '转移中…';
+      try {
+        await WY.api('/api/admin/cards/' + id + '/promote', {
+          method: 'POST',
+          body: { title: title, game: f.game.value.trim(), description: f.description.value.trim(), note: f.note.value.trim(), status: f.status.value, image: image },
+        });
+        dlg.close();
+        state.items = state.items.filter(function (item) { return item.id !== id; });
+        state.total = Math.max(0, state.total - 1);
+        renderList();
+        WY.toast('「' + title + '」已转到投票页', 'success');
+      } catch (e) {
+        err.textContent = e.message || '转移失败';
+        ok.disabled = false;
+        ok.textContent = '确认转到投票';
+      }
+    };
+    ok.addEventListener('click', submit);
+    form.addEventListener('submit', function (e) { e.preventDefault(); submit(); });
   }
 
   async function checkAdmin() {

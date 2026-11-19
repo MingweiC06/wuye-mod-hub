@@ -162,7 +162,7 @@
     const list = $('#hot-idea-list');
     if (!list) return;
     try {
-      const data = await WY.api('/api/ideas?sort=hot&pageSize=5');
+      const data = await WY.api('/api/ideas?sort=hot&pageSize=5&pool=1');
       if (!data.items.length) {
         list.innerHTML = '<div class="empty"><span class="empty-icon">✦</span><strong>还没有人许愿</strong>成为第一个写下灵感的人吧。</div>';
         return;

@@ -181,3 +181,32 @@ test('admin can add a card straight onto the vote board', async () => {
   assert.equal((await admin('/api/admin/cards', { method: 'POST', body: { title: 'x', status: 'released' } })).status, 400);
   assert.equal((await a('/api/admin/cards', { method: 'POST', body: { title: '偷偷加' } })).status, 401);
 });
+
+test('许愿池 and the vote page never share a card; 转到投票 moves a wish over', async () => {
+  const fan = client('wish-fan-0001');
+  const sub = await fan('/api/ideas', { method: 'POST', body: { title: '想要一个时间停止技能', description: '按下按键全场静止三秒，冷却三十秒', category: 'gameplay', crossBorderConsent: true, ageConfirm: true } });
+  assert.equal(sub.status, 201);
+  const id = sub.data.idea.id;
+  // admin approves → it becomes a wish
+  assert.equal((await admin(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { status: 'wish' } })).status, 200);
+  const pool = (await a('/api/ideas?pool=1&pageSize=24&sort=new')).data.items;
+  assert.ok(pool.some((x) => x.id === id), 'wish is in the 许愿池');
+  assert.ok(pool.every((x) => x.status === 'wish'), '许愿池 only shows wishes');
+  const inBoard = (b) => [...b.voting, ...b.accepted, ...b.building, ...b.done].some((x) => x.id === id);
+  assert.ok(!inBoard((await a('/api/board')).data), 'wish is not on the vote page');
+  // fans can still +1 it
+  assert.equal((await fan(`/api/ideas/${id}/vote`, { method: 'POST' })).status, 200);
+  // 转到投票
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  assert.equal((await a(`/api/admin/cards/${id}/promote`, { method: 'POST', body: { title: 'x' } })).status, 401);
+  const p = await admin(`/api/admin/cards/${id}/promote`, { method: 'POST', body: { title: '时间停止', game: '原创', description: '全场静止三秒', note: '下期考虑', status: 'open', image: png } });
+  assert.equal(p.status, 200);
+  const board = (await a('/api/board')).data;
+  const card = board.voting.find((x) => x.id === id);
+  assert.ok(card, 'now on the vote page');
+  assert.equal(card.title, '时间停止');
+  assert.equal(card.note, '下期考虑');
+  assert.match(card.image, /^\/media\//);
+  assert.ok(card.votes >= 1, 'votes carried over');
+  assert.ok(!(await a('/api/ideas?pool=1&pageSize=24&sort=new')).data.items.some((x) => x.id === id), 'gone from the 许愿池');
+});

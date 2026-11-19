@@ -12,6 +12,7 @@
 
   const STATUSES = [
     { key: 'pending', label: '待审核' },
+    { key: 'wish', label: '许愿中' },
     { key: 'open', label: '投票中' },
     { key: 'planned', label: '已采纳' },
     { key: 'building', label: '制作中' },
@@ -21,6 +22,7 @@
 
   const STATUS_LABELS = {
     pending: '待审核',
+    wish: '许愿中',
     open: '投票中',
     planned: '已采纳',
     building: '制作中',
@@ -1916,7 +1918,7 @@
         const qid = Number(approve ? quick.dataset.approve : quick.dataset.reject);
         quick.disabled = true;
         try {
-          await adminApi('/api/admin/ideas/' + qid, { method: 'PATCH', body: approve ? { status: 'open' } : { hidden: true } });
+          await adminApi('/api/admin/ideas/' + qid, { method: 'PATCH', body: approve ? { status: 'wish' } : { hidden: true } });
           WY.toast(approve ? '已通过，大家现在可以投票了' : '已拒绝（已隐藏）', 'success');
           state.ideas.loaded = false;
           loadOverview();

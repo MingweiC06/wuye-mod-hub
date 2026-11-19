@@ -13,11 +13,11 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
   <link rel="stylesheet" href="/ideas.css?v=20261119-1321">
-  <link rel="stylesheet" href="/cosmic.css?v=20261120-1">
+  <link rel="stylesheet" href="/cosmic.css?v=20261120-2">
   <link rel="stylesheet" href="/fx.css?v=20261120-2">
   <script src="/device-id.js?v=20261119-1321" defer></script>
   <script src="/app.js?v=20261119-1321" defer></script>
-  <script src="/ideas.js?v=20261120-1" defer></script>
+  <script src="/ideas.js?v=20261120-2" defer></script>
   <script src="/i18n.js?v=20261119-1321"></script>
   <script src="/fx.js?v=20261120-2"></script>
 </head>
@@ -61,8 +61,8 @@
           <p class="eyebrow"><span class="dot"></span>你提灵感，我搓模组</p>
           <h1>许愿池</h1>
           <p class="lead">
-            想看的技能、角色、整活玩法，都写在这里。新灵感会先进入「待审核」，
-            通过后大家就能投票；票数越高，越可能出现在下一期《技能独特 我来复刻！》。
+            想看的技能、角色、整活玩法、想问的问题，都写在这里。新许愿会先进入「待审核」，
+            通过后出现在许愿池，大家可以点「我也想要」；呼声高的会被乌叶挑到<a href="/polls">投票页</a>，进入正式投票。
           </p>
           <div class="page-actions">
             <a class="btn btn-primary" href="#submit">写下我的灵感</a>
@@ -143,7 +143,7 @@
           <p class="form-success" id="idea-form-success" role="status" hidden></p>
 
           <div class="form-foot">
-            <p class="hint">提交后进入审核，通过后大家就能投票。请先搜一搜有没有重复的灵感。</p>
+            <p class="hint">提交后进入审核，通过后出现在许愿池。请先搜一搜有没有重复的许愿。</p>
             <button class="btn btn-primary" id="idea-submit" type="submit">
               <span data-submit-label>提交灵感</span>
             </button>
@@ -161,7 +161,7 @@
           </div>
           <div class="card card-pad side-card">
             <h3>提交之后</h3>
-            <p class="small muted">新灵感会先进入「待审核」，站长看过会标成已采纳 / 制作中。重复的灵感会被合并，去给它投一票同样有效。</p>
+            <p class="small muted">新许愿会先进入「待审核」，通过后出现在下面的许愿池。乌叶会把呼声高的挑到投票页正式投票；重复的许愿会被合并，给它点「我也想要」同样有效。</p>
             <p class="small muted">每个设备都能投票，再点一次就能取消。</p>
             <a class="link-arrow" href="/rules">看完整的许愿规则</a>
           </div>
@@ -173,8 +173,8 @@
       <div class="container">
         <div class="section-head">
           <div>
-            <h2>大家的灵感</h2>
-            <p class="sub">共 <b id="ideas-total">—</b> 条灵感。看到喜欢的就投一票，让它往前排。</p>
+            <h2>大家的许愿</h2>
+            <p class="sub">共 <b id="ideas-total">—</b> 条许愿。想要同一个就点「我也想要」；已经在投票的去<a href="/polls">投票页</a>。</p>
           </div>
           <div class="head-aside">
             <span class="mono small muted-2" id="ideas-shown" aria-live="polite"></span>
@@ -184,14 +184,14 @@
         <div class="filter-bar panel" id="filter-bar" aria-label="筛选灵感">
           <div class="filter-row">
             <div class="seg" id="sort-group" role="group" aria-label="排序方式">
-              <button class="seg-btn is-active" type="button" data-sort="hot" aria-pressed="true">最热</button>
+              <button class="seg-btn is-active" type="button" data-sort="hot" aria-pressed="true">最多人想要</button>
               <button class="seg-btn" type="button" data-sort="new" aria-pressed="false">最新</button>
             </div>
             <div class="filter-search">
               <label class="sr-only" for="filter-q">搜索灵感</label>
               <input class="input" id="filter-q" type="search" placeholder="搜标题 / 描述 / 作者" maxlength="30" autocomplete="off">
             </div>
-            <div class="filter-select">
+            <div class="filter-select" hidden>
               <label class="sr-only" for="filter-status">按状态筛选</label>
               <select class="select" id="filter-status">
                 <option value="">全部状态</option>

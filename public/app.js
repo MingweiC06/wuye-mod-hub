@@ -412,6 +412,13 @@
     try {
       const data = await WY.site();
       WY._site = data;
+      if (data.lockdown && data.lockdown.mode === 'readonly' && !document.querySelector('.lockdown-bar')) {
+        const bar = document.createElement('div');
+        bar.className = 'lockdown-bar';
+        bar.setAttribute('role', 'status');
+        bar.textContent = '🔒 ' + (data.lockdown.message || '网站暂时只能浏览：投票、许愿和评论已暂停，请稍后再来。');
+        document.body.prepend(bar);
+      }
       document.querySelectorAll('[data-site-name]').forEach((node) => {
         node.textContent = data.site.name;
       });

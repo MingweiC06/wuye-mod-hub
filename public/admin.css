@@ -893,3 +893,16 @@
 .tag.tag-primary { background: linear-gradient(135deg, #fff1c1, #e8c46a 50%, #a87a24); color: #1a1408; font-weight: 700; }
 .tag.tag-ask { background: rgba(255, 179, 107, .16); color: #ffb36b; border: 1px solid rgba(255, 179, 107, .45); }
 .admin-primary-ask { margin: 0 0 12px; padding: 10px 14px; border: 1px solid rgba(255, 179, 107, .5); border-radius: 10px; background: rgba(255, 179, 107, .08); color: #ffd2a6; font-size: 13px; }
+
+/* 紧急模式 */
+.admin-lockdown { grid-column: 1 / -1; }
+.lockdown-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 12px 0; }
+.lockdown-mode { display: grid; gap: 4px; text-align: left; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .03); color: inherit; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.lockdown-mode span { font-size: 12px; opacity: .7; line-height: 1.5; }
+.lockdown-mode:hover, .lockdown-mode:focus-visible { border-color: rgba(232, 196, 106, .6); }
+.lockdown-mode[aria-checked="true"] { border-color: #e8c46a; background: rgba(232, 196, 106, .14); }
+.lockdown-mode.is-danger[aria-checked="true"] { border-color: #ff6b6b; background: rgba(255, 107, 107, .14); }
+.lockdown-mode:disabled { opacity: .6; cursor: wait; }
+.lockdown-cf { margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(255, 255, 255, .12); }
+.lockdown-cf h3 { margin: 0 0 6px; font-size: 15px; }
+.lockdown-cf .btn.is-on { border-color: #ff6b6b; color: #ff8a8a; }

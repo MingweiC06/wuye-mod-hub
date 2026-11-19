@@ -13,11 +13,11 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
-  <link rel="stylesheet" href="/admin.css?v=20261120-4">
-  <link rel="stylesheet" href="/cosmic.css?v=20261120-7">
+  <link rel="stylesheet" href="/admin.css?v=20261120-5">
+  <link rel="stylesheet" href="/cosmic.css?v=20261120-8">
   <link rel="stylesheet" href="/fx.css?v=20261120-2">
   <script src="/device-id.js?v=20261119-1321" defer></script>
-  <script src="/app.js?v=20261119-1321" defer></script>
+  <script src="/app.js?v=20261120-1" defer></script>
   <script src="/admin.js?v=20261120-5" defer></script>
   <script src="/admin-files.js?v=20261120-2" defer></script>
   <script src="/admin-channel.js?v=20261120-2" defer></script>
@@ -27,6 +27,7 @@
   <script src="/pattern-pad.js?v=20261120-1" defer></script>
   <script src="/admin-security.js?v=20261120-4" defer></script>
   <script src="/admin-data.js?v=20261119-1321" defer></script>
+  <script src="/admin-lockdown.js?v=20261120-1" defer></script>
   <script src="/fx.js?v=20261120-2"></script>
 </head>
 <body class="page-admin">
@@ -414,6 +415,32 @@
           </div>
 
           <div class="admin-settings-grid">
+            <section class="panel admin-block admin-lockdown" aria-labelledby="lockdown-title">
+              <div class="admin-block-head">
+                <h2 id="lockdown-title">紧急模式</h2>
+                <span class="badge badge-cyan" id="lockdown-badge">—</span>
+              </div>
+              <p class="hint">遇到刷票、刷评论或攻击时使用。你自己（已登录的站长）在任何模式下都能正常使用网站。</p>
+              <div class="lockdown-modes" id="lockdown-modes" role="radiogroup" aria-label="紧急模式">
+                <button class="lockdown-mode" type="button" role="radio" data-mode="off"><strong>正常</strong><span>一切照常</span></button>
+                <button class="lockdown-mode" type="button" role="radio" data-mode="readonly"><strong>🔒 只读</strong><span>粉丝能浏览，投票 / 许愿 / 评论 / 上传全部暂停，顶部显示提示</span></button>
+                <button class="lockdown-mode is-danger" type="button" role="radio" data-mode="maintenance"><strong>⛔ 维护</strong><span>粉丝只能看到「维护中」页面</span></button>
+              </div>
+              <div class="field">
+                <label for="lockdown-message">给粉丝看的提示（可选）</label>
+                <input class="input" id="lockdown-message" maxlength="200" placeholder="例如：遇到刷票，暂停投票一小时。">
+              </div>
+              <div class="lockdown-cf">
+                <h3>超强攻击：Cloudflare「Under Attack」</h3>
+                <p class="hint" id="lockdown-cf-text">只读和维护挡不住大规模流量。真正的洪水攻击要在 Cloudflare 那一层挡住：每个访客先过几秒浏览器检查。</p>
+                <div class="admin-form-actions">
+                  <button class="btn btn-ghost" id="lockdown-cf-btn" type="button" hidden>开启 Under Attack</button>
+                  <a class="btn btn-ghost" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">打开 Cloudflare →</a>
+                </div>
+                <p class="hint small">手动开启：Cloudflare → uniquetalentmap.com → 概览页右侧「Under Attack Mode」开关。</p>
+              </div>
+            </section>
+
             <section class="panel admin-block" aria-labelledby="announcement-title">
               <div class="admin-block-head">
                 <h2 id="announcement-title">站点公告</h2>

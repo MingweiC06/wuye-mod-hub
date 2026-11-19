@@ -15,6 +15,7 @@ import { migrateSponsor } from './lib/sponsor.js';
 import { migrateConsent } from './lib/consent.js';
 import { migrateVisits, recordVisit } from './lib/visits.js';
 import { migrateAdminSecurity } from './lib/admin-security.js';
+import { getLockdown, lockdownRefusal } from './lib/lockdown.js';
 import {
   HttpError,
   RateLimiter,
@@ -164,10 +165,18 @@ export function createApp(options = {}) {
         limiter,
         dataDir,
         secureCookies,
+        shield,
         setCookie(value) {
           res.appendHeader('Set-Cookie', value);
         },
       };
+
+      // 只读 / 维护 lockdown (admin panel → 站点设置 → 紧急模式)
+      const refusal = lockdownRefusal(db, { pathname, method: ctx.method, isAdmin: () => Boolean(checkAdminSession(db, cookies.wy_admin)) });
+      if (refusal) {
+        sendJson(res, refusal.status, { error: { code: refusal.code, message: refusal.message } }, { 'Retry-After': '600', 'Cache-Control': 'no-store' });
+        return;
+      }
 
       const handled = await handleApi(ctx);
       if (!handled) {
@@ -180,6 +189,15 @@ export function createApp(options = {}) {
       res.writeHead(405, { Allow: 'GET, HEAD', 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Method Not Allowed');
       return;
+    }
+
+    // 维护 mode: fans get the 维护中 page instead of any page; assets, media and the admin keep working.
+    if (!pathname.startsWith('/admin') && (pathname === '/' || PUBLIC_PAGES.has(pathname) || pathname.endsWith('.html'))) {
+      if (getLockdown(db).mode === 'maintenance' && !checkAdminSession(db, parseCookies(req.headers.cookie).wy_admin)) {
+        res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '600' });
+        res.end(req.method === 'HEAD' ? undefined : fs.readFileSync(path.join(publicDir, 'maintenance.html')));
+        return;
+      }
     }
 
     // Uploaded covers live in DATA_DIR/media so they survive redeploys.

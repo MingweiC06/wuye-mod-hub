@@ -1731,3 +1731,6 @@ h3 {
 .from-comment { display: inline-block; padding: 1px 9px; margin-right: 6px; border-radius: 999px; font-size: 12px; color: #9fd3ff; background: rgba(110, 180, 255, .12); border: 1px solid rgba(110, 180, 255, .3); }
 .reply-orig { margin: 0 0 12px; padding: 12px 14px; border-left: 3px solid #e8c46a; border-radius: 8px; background: rgba(255, 255, 255, .04); display: grid; gap: 6px; }
 .reply-orig p { margin: 0; white-space: pre-wrap; opacity: .85; max-height: 160px; overflow: auto; }
+
+/* 只读 lockdown notice */
+.lockdown-bar { position: sticky; top: 0; z-index: 200; padding: 10px 16px; text-align: center; font-size: 14px; font-weight: 600; color: #1a1408; background: linear-gradient(90deg, #e8c46a, #fff1c1, #e8c46a); }

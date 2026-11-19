@@ -366,3 +366,6 @@ body.vb-dragging { cursor: grabbing; user-select: none; }
 .vb-votes-edit b { font-size: 22px; color: #f3e3b5; }
 .vb-votes-edit .input { width: 100%; font-size: 18px; }
 @media (max-width: 520px) { .vb-votes-edit { grid-template-columns: 1fr; } }
+.vb-votes-edit .input.is-cut { color: #ff6b6b; border-color: rgba(255, 107, 107, .6); }
+.vb-votes-edit em { font-style: normal; color: #ff6b6b; }
+.vb-cut { color: #ff6b6b !important; }

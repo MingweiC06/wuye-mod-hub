@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { sort: 'votes', game: '', data: null, admin: false };
+  const state = { sort: 'votes', game: '', data: null, admin: false, cuts: {} };
 
   const art = (c) =>
     c.image
@@ -115,6 +115,7 @@
     if (!list.length && !empty) grid.insertAdjacentHTML('afterbegin', '<div class="empty">这个游戏下暂时没有候选。</div>');
     if (list.length && empty) empty.remove();
     meters();
+    markCuts();
     if (!move) return;
     let fresh = 0;
     list.forEach((c) => {
@@ -161,6 +162,28 @@
     $('vb-count').textContent = d.voting.length;
     $('vb-votes').textContent = d.voting.reduce((n, c) => n + c.votes, 0);
     $('vb-voters').textContent = d.voters;
+    markCuts();
+  }
+
+  // Admin only: vote counts whose real votes were lowered show in red.
+  function markCuts() {
+    if (!state.admin) return;
+    document.querySelectorAll('.vb-card[data-id], .vb-mini[data-id]').forEach((el) => {
+      const n = el.querySelector('.vb-n b, .vb-mn');
+      if (!n) return;
+      const cut = state.cuts[el.dataset.id];
+      n.classList.toggle('vb-cut', Boolean(cut));
+      n.title = cut ? `真实票已减 ${cut}` : '';
+    });
+  }
+
+  async function loadCuts() {
+    try {
+      state.cuts = (await WY.api('/api/admin/vote-cuts')).cuts || {};
+      markCuts();
+    } catch {
+      /* not critical */
+    }
   }
 
   function paintGames() {
@@ -243,6 +266,7 @@
     }
     state.admin = true;
     document.body.classList.add('vb-admin');
+    loadCuts();
     if (state.data) paint();
     const head = $('vb-building-wrap').querySelector('.vb-split');
     head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖到另一边，即可在「备选区」和「制作中」之间移动；下方投票区的卡片也可以拖到「备选区」，「备选区」的卡片也能拖回投票区。</p>');
@@ -272,32 +296,48 @@
       title: '改票数',
       subtitle: info.title,
       body: `<div class="vb-votes-edit">
-          <div><span>真实票</span><b>${info.real}</b></div>
-          <label><span>机器人票</span><input class="input" type="number" step="1" min="${-info.real}" value="${info.bot}" data-bot></label>
+          <label><span>真实票 <em data-orig>（原 ${info.original}）</em></span><input class="input" type="number" step="1" min="0" max="${info.original}" value="${info.real}" data-real></label>
+          <label><span>机器人票</span><input class="input" type="number" step="1" value="${info.bot}" data-bot></label>
           <div><span>显示总票数</span><b data-total>${info.total}</b></div>
         </div>
-        <p class="muted dialog-text">真实票是粉丝投的（含评论区）。机器人票可加可减，总票数不会低于 0。</p>`,
+        <p class="muted dialog-text">真实票是粉丝投的（含评论区），只能往下改，不能超过原来的 ${info.original}；改低后会显示成红色，只有你能看到。机器人票可加可减，总票数不会低于 0。</p>`,
       footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
     });
     const input = dlg.body.querySelector('[data-bot]');
+    const realIn = dlg.body.querySelector('[data-real]');
     const total = dlg.body.querySelector('[data-total]');
-    input.addEventListener('input', () => {
+    const refresh = () => {
+      const r = Number(realIn.value);
       const n = Number(input.value);
-      total.textContent = Number.isInteger(n) ? Math.max(0, info.real + n) : '—';
+      if (Number.isInteger(r) && r > info.original) realIn.value = info.original;
+      const real = Math.min(Number(realIn.value), info.original);
+      realIn.classList.toggle('is-cut', real < info.original);
+      dlg.body.querySelector('[data-orig]').hidden = !(real < info.original);
+      total.textContent = Number.isInteger(real) && Number.isInteger(n) ? Math.max(0, real + n) : '—';
+    };
+    realIn.addEventListener('input', refresh);
+    realIn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') save();
     });
+    input.addEventListener('input', refresh);
+    refresh();
     input.focus();
     input.select();
     dlg.footer.querySelector('[data-cancel]').addEventListener('click', () => dlg.close());
     const save = async () => {
       const n = Number(input.value);
-      if (!Number.isInteger(n)) return WY.toast('请填整数', 'error');
+      const real = Number(realIn.value);
+      if (!Number.isInteger(n) || !Number.isInteger(real)) return WY.toast('请填整数', 'error');
+      if (real < 0 || real > info.original) return WY.toast(`真实票只能在 0 到 ${info.original} 之间`, 'error');
+      if (real + n < 0) return WY.toast('总票数不能低于 0', 'error');
       dlg.close();
-      if (n === info.bot) return;
+      if (n === info.bot && real === info.real) return;
       try {
-        await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { addVotes: n - info.bot } });
+        await WY.api(`/api/admin/ideas/${id}/votes`, { method: 'PUT', body: { real, bot: n } });
         WY.toast(`「${info.title}」票数已更新`, 'success');
         cards.delete(id);
         await load();
+        await loadCuts();
       } catch (e) {
         WY.toast(e.message, 'error');
       }

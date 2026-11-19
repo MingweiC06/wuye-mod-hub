@@ -94,6 +94,30 @@ test('admin can add and remove bot votes, never below zero', async () => {
   assert.equal((await a(`/api/admin/ideas/${idea.id}/votes`)).status, 401);
 });
 
+test('admin can lower real votes (never above what fans cast) and set bot votes', async () => {
+  const list = await admin('/api/admin/ideas');
+  const idea = list.data.items.filter((i) => !i.hidden).sort((x, y) => y.votes - x.votes)[0];
+  // give it some real votes from fans
+  for (const dev of ['cut-fan-0001', 'cut-fan-0002', 'cut-fan-0003']) await client(dev)(`/api/ideas/${idea.id}/vote`, { method: 'POST' });
+  const v0 = (await admin(`/api/admin/ideas/${idea.id}/votes`)).data;
+  assert.ok(v0.original >= 1);
+  const put = (body) => admin(`/api/admin/ideas/${idea.id}/votes`, { method: 'PUT', body });
+  assert.equal((await put({ real: v0.original + 1, bot: 0 })).status, 400, 'cannot raise real votes');
+  assert.equal((await put({ real: -1, bot: 0 })).status, 400);
+  assert.equal((await put({ real: 0, bot: -1 })).status, 400, 'total cannot go below zero');
+  const r = await put({ real: v0.original - 1, bot: 10 });
+  assert.equal(r.status, 200);
+  assert.deepEqual([r.data.real, r.data.cut, r.data.bot, r.data.total], [v0.original - 1, 1, 10, v0.original + 9]);
+  const board = (await a('/api/board')).data;
+  const shown = [...board.voting, ...board.accepted, ...board.building].find((c) => c.id === idea.id);
+  if (shown) assert.equal(shown.votes, v0.original + 9);
+  assert.equal((await admin('/api/admin/vote-cuts')).data.cuts[idea.id], 1);
+  assert.equal((await a('/api/admin/vote-cuts')).status, 401);
+  assert.equal((await client('cut-fan-0009')(`/api/admin/ideas/${idea.id}/votes`, { method: 'PUT', body: { real: 0, bot: 0 } })).status, 401);
+  // restore
+  assert.equal((await put({ real: v0.original, bot: 0 })).data.cut, 0);
+});
+
 test('admin can adjust, hide and add names on both leaderboards', async () => {
   const put = (body) => admin('/api/admin/boards', { method: 'PUT', body });
   assert.equal((await put({ board: 'stars', name: '手动加的人', adjust: 500 })).status, 200);

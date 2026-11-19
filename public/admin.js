@@ -558,6 +558,10 @@
       '</td>' +
       '<td class="mono">' +
       WY.fmtNumber(Number(idea.votes) || 0) +
+      (Number(idea.voteAdjust)
+        ? '<span class="admin-time-ago">含机器票 ' + (idea.voteAdjust > 0 ? '+' : '') + WY.fmtNumber(Number(idea.voteAdjust)) + '</span>'
+        : '') +
+      '<button class="btn btn-sm btn-ghost" type="button" data-idea-action="votes" title="加票填正数，减票填负数">调票</button>' +
       '</td>' +
       '<td>' +
       '<select class="select admin-status-select" data-idea-action="status" aria-label="修改灵感 #' +
@@ -817,6 +821,30 @@
     }
   }
 
+  async function adjustVotes(item, button) {
+    if (button.disabled) return;
+    const raw = window.prompt(
+      '「' + item.title + '」现在 ' + (Number(item.votes) || 0) + ' 票（其中机器票 ' + (Number(item.voteAdjust) || 0) +
+        '）。
+加几票？填正数加票，负数减票（例如 50 或 -20）：',
+      '',
+    );
+    if (raw === null || !raw.trim()) return;
+    const delta = Number(raw.trim());
+    if (!Number.isInteger(delta) || !delta) {
+      WY.toast('请填整数，例如 50 或 -20', 'error');
+      return;
+    }
+    setButtonBusy(button, true);
+    try {
+      await patchIdea(item, { addVotes: delta }, delta > 0 ? '已加 ' + delta + ' 票' : '已减 ' + -delta + ' 票');
+    } catch (error) {
+      if (!error.handled) WY.toast((error && error.message) || '调票失败', 'error');
+    } finally {
+      if (button.isConnected) setButtonBusy(button, false);
+    }
+  }
+
   async function deleteIdea(item, button) {
     if (button.disabled) return;
     const ok = await confirmDialog({
@@ -934,6 +962,7 @@
     if (action === 'pin') togglePin(item, button);
     else if (action === 'hide') toggleHide(item, button);
     else if (action === 'reply') openReplyDialog(item);
+    else if (action === 'votes') adjustVotes(item, button);
     else if (action === 'delete') deleteIdea(item, button);
   }
 

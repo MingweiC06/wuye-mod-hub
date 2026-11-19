@@ -70,3 +70,17 @@ test('new wishes wait for approval; one vote per wish per IP', async () => {
   const other = await b(`/api/ideas/${id}/vote`, { method: 'POST' });
   assert.equal(other.status, 409, 'second device on the same IP is locked out');
 });
+
+test('admin can add and remove bot votes, never below zero', async () => {
+  const list = await admin('/api/admin/ideas');
+  const idea = list.data.items.find((i) => !i.hidden);
+  const before = Number(idea.votes);
+  const up = await admin(`/api/admin/ideas/${idea.id}`, { method: 'PATCH', body: { addVotes: 50 } });
+  assert.equal(up.status, 200);
+  assert.equal(up.data.idea.votes, before + 50);
+  const down = await admin(`/api/admin/ideas/${idea.id}`, { method: 'PATCH', body: { addVotes: -1000000 + 1 } });
+  assert.equal(down.status, 400, 'absurd numbers rejected');
+  const floor = await admin(`/api/admin/ideas/${idea.id}`, { method: 'PATCH', body: { addVotes: -99999 } });
+  assert.equal(floor.data.idea.votes, 0);
+  assert.equal((await a(`/api/admin/ideas/${idea.id}`, { method: 'PATCH', body: { addVotes: 5 } })).status, 401);
+});

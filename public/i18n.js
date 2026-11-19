@@ -26,7 +26,7 @@
   };
   const fromUrl = (location.search.match(/[?&]lang=(en|zh)/) || [])[1];
   if (fromUrl) write(fromUrl);
-  const initial = fromUrl || read() || (/^zh/i.test(navigator.language || 'zh') ? 'zh' : 'en');
+  const initial = fromUrl || read() || 'zh'; // Chinese unless the visitor picked EN
 
   const DICT = {
     // ---- chrome / nav ----

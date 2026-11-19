@@ -134,13 +134,14 @@
   }
 
   function mini(c, done, accepted) {
+    const watch = done && c.video ? `https://www.douyin.com/video/${encodeURIComponent(c.video)}` : '';
     return `
-      <article class="vb-mini${done ? ' is-done' : ''}">
+      <article class="vb-mini${done ? ' is-done' : ''}${watch ? ' has-video' : ''}">
         <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           <span class="vb-sub">${WY.esc(c.game || '')}${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
-          ${done ? '' : accepted ? `<div class="vb-foot"><span class="vb-sub vb-acc">★ 已采纳</span><button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button></div>` : '<div class="vb-meter is-build" aria-hidden="true"><i></i></div><span class="vb-sub">制作中</span>'}
+          ${done ? `<div class="vb-foot vb-done-foot"><span class="vb-sub vb-done-tag">✓ 已完成${c.videoDate ? ` · ${WY.esc(c.videoDate)} 发布` : ''}</span>${watch ? `<a class="vb-watch" href="${watch}" target="_blank" rel="noopener" aria-label="在抖音看《${WY.esc(c.title)}》">看视频 <span aria-hidden="true">→</span></a>` : ''}</div>` : accepted ? `<div class="vb-foot"><span class="vb-sub vb-acc">★ 已采纳</span><button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button></div>` : '<div class="vb-meter is-build" aria-hidden="true"><i></i></div><span class="vb-sub">制作中</span>'}
         </div>
       </article>`;
   }

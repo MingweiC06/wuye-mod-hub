@@ -1658,3 +1658,12 @@ h3 {
   .dl-row.has-cover { grid-template-columns: 1fr; }
   .dl-cover { width: 100%; aspect-ratio: 16 / 9; }
 }
+/* 已完成 cards: date + arrow to the video */
+.vb-mini.is-done.has-video { opacity: 1; }
+.vb-mini.is-done.has-video img { filter: none; }
+.vb-done-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.vb-done-tag { color: #d8b56a; }
+.vb-watch { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid rgba(216, 181, 106, .55); border-radius: 999px; color: #f3d996; font-size: 13px; white-space: nowrap; transition: background .25s, color .25s, border-color .25s; }
+.vb-watch span { display: inline-block; transition: transform .3s cubic-bezier(.2, .7, .2, 1); }
+.vb-watch:hover, .vb-watch:focus-visible { background: #d8b56a; color: #1a1408; border-color: #d8b56a; }
+.vb-watch:hover span, .vb-watch:focus-visible span { transform: translateX(4px); }

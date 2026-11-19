@@ -236,6 +236,7 @@
           <span class="hint">${STATE_LABEL[c.status] || c.status} · ${c.votes} 票</span>
           <div class="card-edit">
             <input class="input" list="game-list" value="${WY.esc(c.game)}" placeholder="游戏，如 崩坏：星穹铁道" maxlength="40" data-card-game>
+            <input class="input" value="${c.video ? `https://www.douyin.com/video/${WY.esc(c.video)}` : ''}" placeholder="做好后的抖音视频链接（已完成卡片会显示「看视频 →」）" data-card-video>
             <button class="btn btn-ghost btn-sm" type="button" data-card-save>保存</button>
             ${c.image ? '<button class="btn btn-ghost btn-sm" type="button" data-card-clear>去掉图片</button>' : ''}
           </div>
@@ -277,7 +278,7 @@
   function onCardClick(event) {
     const row = event.target.closest('[data-card]');
     if (!row) return;
-    if (event.target.closest('[data-card-save]')) saveCard(row.dataset.card, { game: row.querySelector('[data-card-game]').value.trim() }, '游戏已保存');
+    if (event.target.closest('[data-card-save]')) saveCard(row.dataset.card, { game: row.querySelector('[data-card-game]').value.trim(), video: row.querySelector('[data-card-video]').value.trim() }, '已保存');
     if (event.target.closest('[data-card-clear]')) saveCard(row.dataset.card, { image: '' }, '图片已去掉');
   }
 

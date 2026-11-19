@@ -843,11 +843,38 @@
     langBtn?.addEventListener('click', () => {
       if (window.WYI18N) window.WYI18N.set(lang() === 'zh' ? 'en' : 'zh');
     });
+    showAdminBadge(box);
     document.addEventListener('wy:lang', () => {
       if (!langBtn) return;
       langBtn.textContent = lang() === 'zh' ? 'EN' : '中';
       langBtn.setAttribute('aria-label', lang() === 'zh' ? 'Switch to English' : '切换到中文');
     });
+  }
+
+  /* Gold verified badge next to the language button, only while the admin is signed in. */
+  const ADMIN_BADGE = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <defs><linearGradient id="wyAdmGold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#fff1c1"/><stop offset=".45" stop-color="#e8c46a"/><stop offset="1" stop-color="#a87a24"/>
+      </linearGradient></defs>
+      <path fill="url(#wyAdmGold)" d="M12 1.6l2.3 1.7 2.8-.4 1.1 2.6 2.6 1.1-.4 2.8 1.7 2.3-1.7 2.3.4 2.8-2.6 1.1-1.1 2.6-2.8-.4L12 22.4l-2.3-1.7-2.8.4-1.1-2.6-2.6-1.1.4-2.8L1.9 12l1.7-2.3-.4-2.8 2.6-1.1 1.1-2.6 2.8.4z"/>
+      <path fill="none" stroke="#1a1408" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" d="M7.4 9.2l4.6 7 4.6-7"/>
+    </svg>`;
+
+  async function showAdminBadge(box) {
+    try {
+      const r = await fetch('/api/admin/me', { credentials: 'same-origin' });
+      if (!r.ok || !(await r.json()).authed) return;
+    } catch {
+      return;
+    }
+    if (box.querySelector('.wy-admin-badge')) return;
+    const a = document.createElement('a');
+    a.className = 'wy-admin-badge';
+    a.href = '/admin';
+    a.title = '站长已登录 · 进入后台';
+    a.setAttribute('aria-label', '站长已登录，进入后台');
+    a.innerHTML = ADMIN_BADGE;
+    box.prepend(a);
   }
 
   // Toasts get a sound too.

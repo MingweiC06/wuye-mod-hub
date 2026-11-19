@@ -12,7 +12,7 @@
   async function setupCollector() {
     const link = $('collector-link');
     try {
-      const code = await (await fetch('/collector.js?v=2')).text();
+      const code = await (await fetch('/collector.js?v=3')).text();
       const href = `javascript:${encodeURIComponent(code.replace(/^\/\*[\s\S]*?\*\/\s*/, ''))}`;
       link.href = href;
       link.addEventListener('click', (event) => {

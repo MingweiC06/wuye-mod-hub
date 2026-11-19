@@ -19,11 +19,16 @@
         cv.width = Math.round(img.width * k);
         cv.height = Math.round(img.height * k);
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        URL.revokeObjectURL(img.src);
         resolve(cv.toDataURL('image/png'));
       };
       img.onerror = () => reject(new Error('图片读取失败'));
-      img.src = URL.createObjectURL(file);
+      // Read as a data: URL — the site's CSP allows data: images but not blob: ones.
+      const fr = new FileReader();
+      fr.onload = () => {
+        img.src = fr.result;
+      };
+      fr.onerror = () => reject(new Error('图片读取失败，换一张试试'));
+      fr.readAsDataURL(file);
     });
   }
 

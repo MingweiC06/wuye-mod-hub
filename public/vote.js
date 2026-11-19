@@ -22,6 +22,7 @@
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           ${c.description ? `<p data-raw>${WY.esc(c.description)}</p>` : ''}
+          ${c.note ? `<p class="vb-note"><span>站长</span>${WY.esc(c.note)}</p>` : ''}
           <div class="vb-meter" aria-hidden="true"><i></i></div>
           <div class="vb-foot">
             <span class="vb-n"><b>${c.votes}</b> 票<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}</span>
@@ -143,6 +144,7 @@
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           <span class="vb-sub">${WY.esc(c.game || '')}${done && !c.votes ? '' : `${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票${done ? '' : `<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>`}`}</span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
+          ${c.note ? `<p class="vb-note"><span>站长</span>${WY.esc(c.note)}</p>` : ''}
           ${done ? `<div class="vb-foot vb-done-foot"><span class="vb-sub vb-done-tag">✓ 已完成${c.videoDate ? ` · ${WY.esc(c.videoDate)} 发布` : ''}</span>${watch ? `<a class="vb-watch" href="${watch}" target="_blank" rel="noopener" aria-label="在抖音看《${WY.esc(c.title)}》">看视频 <span aria-hidden="true">→</span></a>` : ''}</div>` : accepted ? `<div class="vb-foot"><span class="vb-sub vb-acc">★ 已采纳</span><button class="btn ${c.voted ? 'btn-primary' : 'btn-ghost'} btn-sm vb-vote" type="button" data-vote="${c.id}" aria-pressed="${c.voted}">${c.voted ? '已投 ✦' : '投一票'}</button></div>` : `<div class="vb-meter is-build" aria-hidden="true"><i></i></div>${state.admin ? `<div class="vb-foot"><span class="vb-sub">制作中</span><button class="btn btn-primary btn-sm vb-done-btn" type="button" data-done="${c.id}">✓ 完成</button></div>` : '<span class="vb-sub">制作中</span>'}`}
         </div>
       </article>`;
@@ -270,6 +272,8 @@
     if (state.data) paint();
     const head = $('vb-building-wrap').querySelector('.vb-split');
     head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖到另一边，即可在「备选区」和「制作中」之间移动；下方投票区的卡片也可以拖到「备选区」，「备选区」的卡片也能拖回投票区。</p>');
+    head.insertAdjacentHTML('beforebegin', '<div class="vb-add-wrap"><button class="vb-add" type="button" data-add-card><span aria-hidden="true">＋</span> 添加卡片</button></div>');
+    document.querySelector('[data-add-card]').addEventListener('click', () => addCard());
     for (const status of Object.keys(COLS)) $(COLS[status]).dataset.dropStatus = status;
     $('vb-grid').dataset.dropStatus = 'open';
     document.addEventListener('pointerdown', startDrag);
@@ -283,6 +287,112 @@
     });
   }
 
+  // Shrink a picked image to <=1200px JPEG so uploads stay small.
+  function shrinkImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 1200 / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * k);
+        cv.height = Math.round(img.height * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        resolve(cv.toDataURL('image/jpeg', 0.88));
+      };
+      img.onerror = () => reject(new Error('图片读取失败，换一张试试'));
+      // Read as a data: URL — the site's CSP allows data: images but not blob: ones.
+      const fr = new FileReader();
+      fr.onload = () => {
+        img.src = fr.result;
+      };
+      fr.onerror = () => reject(new Error('图片读取失败，换一张试试'));
+      fr.readAsDataURL(file);
+    });
+  }
+
+  // ＋ 添加卡片: image, name, game, subtitle, and which section it goes to.
+  function addCard() {
+    const d = state.data || {};
+    const games = [...new Set([...(d.games || []).map((g) => g.name), ...['voting', 'accepted', 'building'].flatMap((k) => (d[k] || []).map((c) => c.game))].filter(Boolean))];
+    const dlg = WY.dialog({
+      title: '添加卡片',
+      subtitle: '直接加到投票页，不用审核',
+      body: `<form class="vb-add-form" novalidate>
+          <label class="vb-add-pic" tabindex="0"><input type="file" accept="image/png,image/jpeg,image/webp" hidden data-pic><img alt="" hidden data-preview><span data-pic-hint>点这里选图片<br><small>可不选，之后再加</small></span></label>
+          <div class="vb-add-fields">
+            <label><span>名字 *</span><input class="input" name="title" maxlength="40" required placeholder="例如：钟离 · 天动万象"></label>
+            <label><span>游戏</span><input class="input" name="game" maxlength="40" list="vb-add-games" placeholder="例如：原神"><datalist id="vb-add-games">${games.map((g) => `<option value="${WY.esc(g)}">`).join('')}</datalist></label>
+            <label><span>副标题</span><input class="input" name="description" maxlength="200" placeholder="一句话介绍（可不填）"></label>
+            <label><span>站长备注</span><input class="input" name="note" maxlength="300" placeholder="金色显示在副标题下面（可不填）"></label>
+            <label><span>放到</span><select class="input" name="status"><option value="open">投票区</option><option value="planned">备选区</option><option value="building">制作中</option></select></label>
+          </div>
+        </form>
+        <p class="vb-add-err" data-err></p>`,
+      footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>添加</button>',
+    });
+    const form = dlg.body.querySelector('form');
+    const pic = dlg.body.querySelector('[data-pic]');
+    const preview = dlg.body.querySelector('[data-preview]');
+    const hint = dlg.body.querySelector('[data-pic-hint]');
+    const err = dlg.body.querySelector('[data-err]');
+    let image = '';
+    dlg.body.querySelector('.vb-add-pic').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        pic.click();
+      }
+    });
+    pic.addEventListener('change', async () => {
+      if (!pic.files[0]) return;
+      try {
+        image = await shrinkImage(pic.files[0]);
+        preview.src = image;
+        preview.hidden = false;
+        hint.hidden = true;
+      } catch (e) {
+        err.textContent = e.message;
+      }
+    });
+    form.elements.title.focus();
+    dlg.footer.querySelector('[data-cancel]').addEventListener('click', () => dlg.close());
+    const ok = dlg.footer.querySelector('[data-ok]');
+    const submit = async () => {
+      const f = form.elements;
+      const title = f.title.value.trim();
+      if (!title) {
+        err.textContent = '请填名字';
+        f.title.focus();
+        return;
+      }
+      err.textContent = '';
+      ok.disabled = true;
+      ok.textContent = '添加中…';
+      try {
+        const r = await WY.api('/api/admin/cards', {
+          method: 'POST',
+          body: { title, game: f.game.value.trim(), description: f.description.value.trim(), note: f.note.value.trim(), status: f.status.value, image },
+        });
+        dlg.close();
+        WY.toast(`「${title}」已添加`, 'success');
+        await load();
+        const el = document.querySelector(`.vb-card[data-id="${r.id}"], .vb-mini[data-id="${r.id}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'center' });
+          el.animate([{ boxShadow: '0 0 0 2px rgba(232,196,106,.95), 0 0 32px rgba(232,196,106,.5)' }, { boxShadow: '0 0 0 0 rgba(232,196,106,0)' }], { duration: 1600, easing: 'ease-out' });
+        }
+      } catch (e) {
+        err.textContent = e.message || '添加失败';
+        ok.disabled = false;
+        ok.textContent = '添加';
+      }
+    };
+    ok.addEventListener('click', submit);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submit();
+    });
+  }
+
   // ✎ on a card: see real vs bot votes and set the bot votes.
   async function editVotes(id) {
     let info;
@@ -293,17 +403,19 @@
       return;
     }
     const dlg = WY.dialog({
-      title: '改票数',
+      title: '编辑',
       subtitle: info.title,
       body: `<div class="vb-votes-edit">
           <label><span>真实票 <em data-orig>（原 ${info.original}）</em></span><input class="input" type="number" step="1" min="0" max="${info.original}" value="${info.real}" data-real></label>
           <label><span>机器人票</span><input class="input" type="number" step="1" value="${info.bot}" data-bot></label>
           <div><span>显示总票数</span><b data-total>${info.total}</b></div>
         </div>
+        <label class="vb-note-edit"><span>站长备注 <small>（金色显示在副标题下面，所有人可见；留空就不显示）</small></span><textarea class="input" rows="2" maxlength="300" data-note placeholder="例如：下个月开做！">${WY.esc(info.note)}</textarea></label>
         <p class="muted dialog-text">真实票是粉丝投的（含评论区），只能往下改，不能超过原来的 ${info.original}；改低后会显示成红色，只有你能看到。机器人票可加可减，总票数不会低于 0。</p>`,
       footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
     });
     const input = dlg.body.querySelector('[data-bot]');
+    const noteIn = dlg.body.querySelector('[data-note]');
     const realIn = dlg.body.querySelector('[data-real]');
     const total = dlg.body.querySelector('[data-total]');
     const refresh = () => {
@@ -330,11 +442,15 @@
       if (!Number.isInteger(n) || !Number.isInteger(real)) return WY.toast('请填整数', 'error');
       if (real < 0 || real > info.original) return WY.toast(`真实票只能在 0 到 ${info.original} 之间`, 'error');
       if (real + n < 0) return WY.toast('总票数不能低于 0', 'error');
+      const note = noteIn.value.trim();
       dlg.close();
-      if (n === info.bot && real === info.real) return;
+      const votesChanged = n !== info.bot || real !== info.real;
+      const noteChanged = note !== info.note;
+      if (!votesChanged && !noteChanged) return;
       try {
-        await WY.api(`/api/admin/ideas/${id}/votes`, { method: 'PUT', body: { real, bot: n } });
-        WY.toast(`「${info.title}」票数已更新`, 'success');
+        if (votesChanged) await WY.api(`/api/admin/ideas/${id}/votes`, { method: 'PUT', body: { real, bot: n } });
+        if (noteChanged) await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { officialReply: note } });
+        WY.toast(`「${info.title}」已更新`, 'success');
         cards.delete(id);
         await load();
         await loadCuts();

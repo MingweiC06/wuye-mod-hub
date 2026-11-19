@@ -159,3 +159,25 @@ test('admin can delete fan names, sponsorship records and board names', async ()
   assert.equal((await admin(`/api/admin/profiles/${p.id}`, { method: 'DELETE' })).status, 404);
   assert.equal((await fan('/api/admin/profiles/1', { method: 'DELETE' })).status, 401);
 });
+
+test('admin can add a card straight onto the vote board', async () => {
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  const r = await admin('/api/admin/cards', { method: 'POST', body: { title: '新卡测试', game: '原神', description: '一句话', status: 'planned', image: png } });
+  assert.equal(r.status, 200);
+  const board = (await a('/api/board')).data;
+  const c = board.accepted.find((x) => x.id === r.data.id);
+  assert.ok(c, 'shows up in 备选区 right away');
+  assert.equal(c.game, '原神');
+  assert.match(c.image, /^\/media\//);
+  // owner note: set on create, shown on the board, editable later
+  const n = await admin('/api/admin/cards', { method: 'POST', body: { title: '带备注', note: '下个月开做' } });
+  const nb = (await a('/api/board')).data.voting.find((x) => x.id === n.data.id);
+  assert.equal(nb.note, '下个月开做');
+  await admin(`/api/admin/ideas/${n.data.id}`, { method: 'PATCH', body: { officialReply: '已改' } });
+  assert.equal((await admin(`/api/admin/ideas/${n.data.id}/votes`)).data.note, '已改');
+  const v = await admin('/api/admin/cards', { method: 'POST', body: { title: '投票区新卡' } });
+  assert.ok((await a('/api/board')).data.voting.some((x) => x.id === v.data.id));
+  assert.equal((await admin('/api/admin/cards', { method: 'POST', body: { title: '' } })).status, 400);
+  assert.equal((await admin('/api/admin/cards', { method: 'POST', body: { title: 'x', status: 'released' } })).status, 400);
+  assert.equal((await a('/api/admin/cards', { method: 'POST', body: { title: '偷偷加' } })).status, 401);
+});

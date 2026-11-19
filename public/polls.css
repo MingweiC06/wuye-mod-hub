@@ -369,3 +369,28 @@ body.vb-dragging { cursor: grabbing; user-select: none; }
 .vb-votes-edit .input.is-cut { color: #ff6b6b; border-color: rgba(255, 107, 107, .6); }
 .vb-votes-edit em { font-style: normal; color: #ff6b6b; }
 .vb-cut { color: #ff6b6b !important; }
+
+/* admin ＋ 添加卡片 */
+.vb-add-wrap { display: flex; justify-content: flex-end; margin: 0 0 14px; }
+.vb-add { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: 0; border-radius: 999px; cursor: pointer; font-weight: 700; letter-spacing: .08em; color: #1a1408;
+  background: linear-gradient(135deg, #fff1c1, #e8c46a 45%, #a87a24); box-shadow: 0 6px 22px rgba(232, 196, 106, .35), inset 0 1px 0 rgba(255, 255, 255, .6); transition: transform .18s ease, box-shadow .18s ease; }
+.vb-add span { font-size: 18px; line-height: 1; }
+.vb-add:hover, .vb-add:focus-visible { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(232, 196, 106, .55), inset 0 1px 0 rgba(255, 255, 255, .6); }
+.vb-add-form { display: grid; grid-template-columns: 180px 1fr; gap: 16px; }
+.vb-add-pic { position: relative; display: grid; place-items: center; aspect-ratio: 3 / 4; border: 1px dashed rgba(232, 196, 106, .5); border-radius: 12px; cursor: pointer; overflow: hidden; text-align: center; color: rgba(243, 227, 181, .75); font-size: 13px; background: rgba(232, 196, 106, .04); }
+.vb-add-pic:hover, .vb-add-pic:focus-visible { border-color: #e8c46a; background: rgba(232, 196, 106, .09); }
+.vb-add-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.vb-add-fields { display: grid; gap: 10px; align-content: start; }
+.vb-add-fields label { display: grid; gap: 5px; }
+.vb-add-fields span { font-size: 12px; opacity: .75; }
+.vb-add-err { min-height: 1.2em; margin: 10px 0 0; color: #ff6b6b; font-size: 13px; }
+@media (max-width: 560px) { .vb-add-form { grid-template-columns: 1fr; } .vb-add-pic { aspect-ratio: 16 / 9; } }
+
+/* 站长备注: gold note under the subtitle */
+.vb-note { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: #e8c46a; text-shadow: 0 0 12px rgba(232, 196, 106, .25); }
+.vb-note span { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid rgba(232, 196, 106, .55); border-radius: 4px; font-size: 11px; line-height: 17px; vertical-align: 1px; }
+.vb-mini .vb-note { font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vb-note-edit { display: grid; gap: 6px; margin: 4px 0 10px; }
+.vb-note-edit span { font-size: 12px; opacity: .8; color: #e8c46a; }
+.vb-note-edit small { opacity: .75; color: inherit; }
+.vb-note-edit textarea { resize: vertical; min-height: 54px; color: #f3e3b5; }

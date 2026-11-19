@@ -399,3 +399,23 @@ test('.html page URLs redirect to clean URLs and pages carry a canonical link', 
   const sitemap = await fetch(`${base}/sitemap.xml`);
   assert.match(sitemap.headers.get('content-type') || '', /xml/);
 });
+
+test('page visits are counted per day without storing IPs, bots skipped', async () => {
+  const ua = { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0) Chrome/130' };
+  await fetch(`${base}/ideas`, { headers: ua });
+  await fetch(`${base}/ideas`, { headers: ua });
+  await fetch(`${base}/rules`, { headers: { 'user-agent': 'Googlebot/2.1' } });
+  const visitAdmin = makeClient('visit-admin-device-01');
+  const login = await visitAdmin('/api/admin/login', { method: 'POST', body: { code: 'brand-new-admin-code-5678' } });
+  assert.equal(login.status, 200);
+  const r = await visitAdmin('/api/admin/visits');
+  assert.equal(r.status, 200);
+  assert.equal(r.data.days.length, 7);
+  const today = r.data.days[6];
+  assert.ok(today.views >= 2);
+  assert.ok(today.visitors >= 1);
+  const stored = app.db.prepare('SELECT visitor FROM visit_uniques').all();
+  assert.ok(stored.every((row) => /^[0-9a-f]{16}$/.test(row.visitor) && !row.visitor.includes('127')));
+  const anon = await fetch(`${base}/api/admin/visits`);
+  assert.equal(anon.status, 401);
+});

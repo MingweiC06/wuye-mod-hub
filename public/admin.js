@@ -361,6 +361,7 @@
       state.overviewStale = false;
       renderOverview(state.overview);
       renderBackup(data.backup);
+      document.dispatchEvent(new CustomEvent('wy:overview'));
       setSession(data.sessionExpiresAt || state.me.expiresAt, Boolean(data.mustChange));
     } catch (error) {
       if (error && error.handled) return;

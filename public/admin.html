@@ -13,16 +13,17 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
-  <link rel="stylesheet" href="/admin.css?v=20261119-1321">
+  <link rel="stylesheet" href="/admin.css?v=20261120-1">
   <link rel="stylesheet" href="/cosmic.css?v=20261119-1321">
   <link rel="stylesheet" href="/fx.css?v=20261119-1321">
   <script src="/device-id.js?v=20261119-1321" defer></script>
   <script src="/app.js?v=20261119-1321" defer></script>
-  <script src="/admin.js?v=20261120-1" defer></script>
+  <script src="/admin.js?v=20261120-2" defer></script>
   <script src="/admin-files.js?v=20261119-1321" defer></script>
   <script src="/admin-channel.js?v=20261119-1321" defer></script>
   <script src="/admin-sponsor.js?v=20261119-1321" defer></script>
   <script src="/admin-boards.js?v=20261119-1321" defer></script>
+  <script src="/admin-visits.js?v=20261120-1" defer></script>
   <script src="/admin-data.js?v=20261119-1321" defer></script>
   <script src="/fx.js?v=20261119-1321"></script>
 </head>
@@ -136,6 +137,17 @@
                 <div class="skeleton skeleton-row"></div>
                 <div class="skeleton skeleton-row"></div>
               </div>
+            </section>
+
+            <section class="panel admin-block admin-visits" aria-labelledby="visits-title">
+              <div class="admin-block-head">
+                <h2 id="visits-title">访问统计（近 7 天）</h2>
+                <span class="badge badge-cyan" id="visits-today">—</span>
+              </div>
+              <p class="hint">只统计次数，不保存 IP；同一访客每天算 1 人，搜索引擎和机器人不计入。</p>
+              <div class="visits-days" id="visits-days"></div>
+              <h3 class="visits-sub">各页面浏览量</h3>
+              <ol class="visits-pages" id="visits-pages"></ol>
             </section>
 
             <section class="panel admin-block" aria-labelledby="audit-title">

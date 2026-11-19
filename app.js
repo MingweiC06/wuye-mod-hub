@@ -13,6 +13,7 @@ import { migrateExtras, seedExtras } from './lib/extras.js';
 import { migrateMods } from './lib/mods.js';
 import { migrateSponsor } from './lib/sponsor.js';
 import { migrateConsent } from './lib/consent.js';
+import { migrateVisits, recordVisit } from './lib/visits.js';
 import {
   HttpError,
   RateLimiter,
@@ -59,6 +60,7 @@ export function createApp(options = {}) {
   migrateMods(db);
   migrateSponsor(db);
   migrateConsent(db);
+  migrateVisits(db);
   seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
@@ -205,7 +207,16 @@ export function createApp(options = {}) {
       res.end();
       return;
     }
-    if (PUBLIC_PAGES.has(pathname)) res.setHeader('Link', `<${CANONICAL_ORIGIN}${pathname}>; rel="canonical"`);
+    if (PUBLIC_PAGES.has(pathname)) {
+      res.setHeader('Link', `<${CANONICAL_ORIGIN}${pathname}>; rel="canonical"`);
+      if (req.method === 'GET') {
+        try {
+          recordVisit(db, secret, { path: pathname, ip, userAgent: String(req.headers['user-agent'] || '') });
+        } catch {
+          // counting must never break the page
+        }
+      }
+    }
 
     let target = pathname;
     if (PAGE_REWRITES.has(target)) target = PAGE_REWRITES.get(target);

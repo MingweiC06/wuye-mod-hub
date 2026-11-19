@@ -108,6 +108,7 @@
     list.forEach((c, i) => {
       const el = cardEl(c);
       grid.insertBefore(el, anchor);
+      el.classList.toggle('is-draggable', state.admin);
       setRank(el, i);
     });
     const empty = grid.querySelector('.empty');
@@ -244,8 +245,9 @@
     document.body.classList.add('vb-admin');
     if (state.data) paint();
     const head = $('vb-building-wrap').querySelector('.vb-split');
-    head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖到另一边，即可在「备选区」和「制作中」之间移动。</p>');
+    head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖到另一边，即可在「备选区」和「制作中」之间移动；下方投票区的卡片也可以拖到「备选区」。</p>');
     for (const status of Object.keys(COLS)) $(COLS[status]).dataset.dropStatus = status;
+    $('vb-grid').dataset.dropStatus = 'open';
     document.addEventListener('pointerdown', startDrag);
     $('vb-building').addEventListener('click', (e) => {
       const b = e.target.closest('[data-done]');
@@ -284,7 +286,7 @@
   }
 
   function startDrag(e) {
-    const el = e.target.closest('.vb-mini.is-draggable');
+    const el = e.target.closest('.vb-mini.is-draggable, .vb-card.is-draggable');
     if (!el || e.button !== 0 || e.target.closest('button, a')) return;
     const from = el.parentElement.dataset.dropStatus;
     if (!from) return;
@@ -324,7 +326,8 @@
       ev.preventDefault();
       clone.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${Math.max(-4, Math.min(4, dx / 60))}deg) scale(1.03)`;
       const z = zoneAt(ev.clientX, ev.clientY);
-      const target = z && z !== from ? z : null;
+      // Voting cards can only go to 备选区.
+      const target = z && z !== from && (from !== 'open' || z === 'planned') ? z : null;
       if (target !== over) {
         if (over) $(COLS[over]).parentElement.classList.remove('is-drop-over');
         over = target;
@@ -356,7 +359,7 @@
     };
   }
 
-  const LIST = { building: 'building', planned: 'accepted' };
+  const LIST = { building: 'building', planned: 'accepted', open: 'voting' };
 
   function flyInto(id, clone, scope = '') {
     const target = document.querySelector(`${scope} .vb-mini[data-id="${id}"]`.trim());
@@ -391,6 +394,10 @@
     const i = src.findIndex((c) => c.id === id);
     if (i < 0) return clone.remove();
     const [item] = src.splice(i, 1);
+    if (from === 'open') {
+      cards.get(id)?.classList.remove('is-dragging');
+      cards.delete(id);
+    }
     if (to === 'building') d.building.unshift(item);
     else {
       d.accepted.push(item);
@@ -400,7 +407,7 @@
     flyInto(id, clone);
     try {
       await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { status: to } });
-      WY.toast(to === 'building' ? `「${item.title}」已移到制作中` : `「${item.title}」已移回备选区`, 'success');
+      WY.toast(to === 'building' ? `「${item.title}」已移到制作中` : from === 'open' ? `「${item.title}」已移到备选区` : `「${item.title}」已移回备选区`, 'success');
     } catch (error) {
       WY.toast(error.message || '移动失败，已撤回', 'error');
       await load();

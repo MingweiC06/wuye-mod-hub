@@ -189,6 +189,7 @@
     });
 
     els.list.addEventListener('click', onListClick);
+    checkAdmin();
 
     if (els.categoryPicker) {
       els.categoryPicker.addEventListener('click', function (event) {
@@ -388,6 +389,7 @@
       idea.pinned ? '      <span class="badge badge-gold">置顶</span>' : '',
       idea.id === state.newId ? '      <span class="badge badge-gold">刚刚提交</span>' : '',
       '    </div>',
+      state.admin ? '    <button class="idea-pen" type="button" data-note-id="' + Number(idea.id) + '" title="写乌叶回复" aria-label="写乌叶回复：' + WY.esc(idea.title) + '">✎ ' + (idea.officialReply ? '改回复' : '写回复') + '</button>' : '',
       '  </div>',
       '  <h3><a href="#idea-' + Number(idea.id) + '" data-idea-link="' + Number(idea.id) + '">' + WY.esc(idea.title) + '</a></h3>',
       '  <p class="desc">' + WY.esc(idea.description) + '</p>',
@@ -483,6 +485,12 @@
   /* ---------------- list interactions ---------------- */
 
   function onListClick(event) {
+    const pen = event.target.closest('[data-note-id]');
+    if (pen) {
+      event.preventDefault();
+      editNote(Number(pen.dataset.noteId));
+      return;
+    }
     const voteButton = event.target.closest('[data-vote-id]');
     if (voteButton) {
       event.preventDefault();
@@ -507,6 +515,46 @@
       window.history.replaceState(null, '', '#idea-' + id);
       revealIdea(id, true);
     }
+  }
+
+  // Admin: write or change the 乌叶回复 shown on a card.
+  function editNote(id) {
+    const idea = state.items.find(function (item) { return item.id === id; });
+    if (!idea) return;
+    const dlg = WY.dialog({
+      title: '乌叶回复',
+      subtitle: idea.title,
+      body: '<p class="muted dialog-text">金色显示在卡片上，所有人可见；留空就不显示。投票页上的「站长备注」也是这一条。</p>' +
+        '<textarea class="input" rows="3" maxlength="300" data-note placeholder="例如：制作中，敬请期待。">' + WY.esc(idea.officialReply || '') + '</textarea>',
+      footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
+    });
+    const input = dlg.body.querySelector('[data-note]');
+    input.focus();
+    dlg.footer.querySelector('[data-cancel]').addEventListener('click', function () { dlg.close(); });
+    dlg.footer.querySelector('[data-ok]').addEventListener('click', async function () {
+      const value = input.value.trim();
+      dlg.close();
+      if (value === (idea.officialReply || '')) return;
+      try {
+        await WY.api('/api/admin/ideas/' + id, { method: 'PATCH', body: { officialReply: value } });
+        idea.officialReply = value;
+        renderList();
+        WY.toast(value ? '回复已保存' : '回复已清除', 'success');
+      } catch (error) {
+        WY.toast(error.message || '保存失败', 'error');
+      }
+    });
+  }
+
+  async function checkAdmin() {
+    try {
+      const r = await fetch('/api/admin/me', { credentials: 'same-origin' });
+      if (!r.ok || !(await r.json()).authed) return;
+    } catch (error) {
+      return;
+    }
+    state.admin = true;
+    if (state.items.length) renderList();
   }
 
   function highlightCard(card) {

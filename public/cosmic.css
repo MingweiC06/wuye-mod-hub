@@ -1668,3 +1668,8 @@ h3 {
 .vb-watch span { display: inline-block; transition: transform .3s cubic-bezier(.2, .7, .2, 1); }
 .vb-watch:hover, .vb-watch:focus-visible { background: #d8b56a; color: #1a1408; border-color: #d8b56a; }
 .vb-watch:hover span, .vb-watch:focus-visible span { transform: translateX(4px); }
+
+/* admin ✎ on 许愿池 cards */
+.idea-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.idea-pen { flex: none; padding: 3px 10px; border: 1px solid rgba(232, 196, 106, .45); border-radius: 999px; background: rgba(232, 196, 106, .06); color: #e8c46a; font-size: 12px; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+.idea-pen:hover, .idea-pen:focus-visible { background: rgba(232, 196, 106, .16); border-color: #e8c46a; }

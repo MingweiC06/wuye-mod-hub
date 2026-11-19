@@ -390,12 +390,18 @@
       idea.status === 'wish' ? '' : '      <span class="badge ' + badgeClass + '">' + WY.esc(status.icon) + ' ' + WY.esc(status.label) + '</span>',
       idea.pinned ? '      <span class="badge badge-gold">置顶</span>' : '',
       idea.id === state.newId ? '      <span class="badge badge-gold">刚刚提交</span>' : '',
+      idea.ownerLiked ? '      <span class="owner-like" title="乌叶也想要这个">♥ 乌叶也想要</span>' : '',
       '    </div>',
       state.admin ? '    <button class="idea-pen" type="button" data-note-id="' + Number(idea.id) + '" title="写乌叶回复" aria-label="写乌叶回复：' + WY.esc(idea.title) + '">✎ ' + (idea.officialReply ? '改回复' : '写回复') + '</button>' : '',
       '  </div>',
       '  <h3><a href="#idea-' + Number(idea.id) + '" data-idea-link="' + Number(idea.id) + '">' + WY.esc(idea.title) + '</a></h3>',
       '  <p class="desc">' + WY.esc(idea.description) + '</p>',
-      state.admin && idea.status === 'wish' ? '  <button class="idea-promote" type="button" data-promote-id="' + Number(idea.id) + '">转到投票 →</button>' : '',
+      state.admin && idea.status === 'wish'
+        ? '  <div class="idea-admin-acts"><button class="idea-promote" type="button" data-promote-id="' + Number(idea.id) + '">转到投票 →</button>' +
+          '<button class="idea-act' + (idea.ownerLiked ? ' is-liked' : '') + '" type="button" data-olike-id="' + Number(idea.id) + '" aria-pressed="' + (idea.ownerLiked ? 'true' : 'false') + '">' + (idea.ownerLiked ? '♥ 已点赞' : '♡ 站长点赞') + '</button>' +
+          '<button class="idea-act" type="button" data-edit-id="' + Number(idea.id) + '">编辑</button>' +
+          '<button class="idea-act is-danger" type="button" data-del-id="' + Number(idea.id) + '">删除</button></div>'
+        : '',
       idea.officialReply
         ? '  <p class="official-reply"><b>乌叶回复：</b>' + WY.esc(idea.officialReply) + '</p>'
         : '',
@@ -488,6 +494,24 @@
   /* ---------------- list interactions ---------------- */
 
   function onListClick(event) {
+    const olike = event.target.closest('[data-olike-id]');
+    if (olike) {
+      event.preventDefault();
+      toggleOwnerLike(Number(olike.dataset.olikeId), olike);
+      return;
+    }
+    const editBtn = event.target.closest('[data-edit-id]');
+    if (editBtn) {
+      event.preventDefault();
+      editWish(Number(editBtn.dataset.editId));
+      return;
+    }
+    const delBtn = event.target.closest('[data-del-id]');
+    if (delBtn) {
+      event.preventDefault();
+      deleteWish(Number(delBtn.dataset.delId));
+      return;
+    }
     const promote = event.target.closest('[data-promote-id]');
     if (promote) {
       event.preventDefault();
@@ -573,6 +597,81 @@
       fr.onerror = function () { reject(new Error('图片读取失败，换一张试试')); };
       fr.readAsDataURL(file);
     });
+  }
+
+  // Admin: the owner's heart (shown to everyone as 「♥ 乌叶也想要」).
+  async function toggleOwnerLike(id, btn) {
+    const idea = state.items.find(function (item) { return item.id === id; });
+    if (!idea || btn.disabled) return;
+    btn.disabled = true;
+    const next = !idea.ownerLiked;
+    try {
+      await WY.api('/api/admin/ideas/' + id, { method: 'PATCH', body: { ownerLiked: next } });
+      idea.ownerLiked = next;
+      renderList();
+      WY.toast(next ? '已点赞：粉丝会看到「乌叶也想要」' : '已取消点赞', 'success');
+    } catch (e) {
+      WY.toast(e.message || '操作失败', 'error');
+      btn.disabled = false;
+    }
+  }
+
+  // Admin: edit a wish's title, description, the fan's name and category.
+  function editWish(id) {
+    const idea = state.items.find(function (item) { return item.id === id; });
+    if (!idea) return;
+    const cats = CATEGORIES.map(function (c) {
+      return '<option value="' + c.key + '"' + (c.key === idea.category ? ' selected' : '') + '>' + WY.esc(c.icon + ' ' + c.label) + '</option>';
+    }).join('');
+    const dlg = WY.dialog({
+      title: '编辑许愿',
+      subtitle: '改完立刻生效',
+      body: '<form class="vb-add-fields wish-edit" novalidate>' +
+        '<label><span>标题 *</span><input class="input" name="title" maxlength="40" value="' + WY.esc(idea.title) + '"></label>' +
+        '<label><span>描述</span><textarea class="input" name="description" rows="4" maxlength="600">' + WY.esc(idea.description || '') + '</textarea></label>' +
+        '<label><span>许愿人昵称</span><input class="input" name="author" maxlength="16" value="' + WY.esc(idea.author || '') + '" placeholder="匿名玩家"></label>' +
+        '<label><span>分类</span><select class="input" name="category">' + cats + '</select></label>' +
+        '</form><p class="vb-add-err" data-err></p>',
+      footer: '<button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
+    });
+    const form = dlg.body.querySelector('form');
+    const err = dlg.body.querySelector('[data-err]');
+    form.elements.title.focus();
+    dlg.footer.querySelector('[data-cancel]').addEventListener('click', function () { dlg.close(); });
+    const ok = dlg.footer.querySelector('[data-ok]');
+    ok.addEventListener('click', async function () {
+      const f = form.elements;
+      const body = { title: f.title.value.trim(), description: f.description.value.trim(), author: f.author.value.trim(), category: f.category.value };
+      if (!body.title) { err.textContent = '请填标题'; return; }
+      ok.disabled = true;
+      try {
+        await WY.api('/api/admin/ideas/' + id, { method: 'PATCH', body: body });
+        Object.assign(idea, body, { author: body.author || '匿名玩家' });
+        dlg.close();
+        renderList();
+        WY.toast('已保存', 'success');
+      } catch (e) {
+        err.textContent = e.message || '保存失败';
+        ok.disabled = false;
+      }
+    });
+  }
+
+  // Admin: delete a wish for good.
+  async function deleteWish(id) {
+    const idea = state.items.find(function (item) { return item.id === id; });
+    if (!idea) return;
+    const ok = await WY.confirm({ title: '删除这条许愿？', message: '「' + idea.title + '」和它的「我也想要」会一起删除，无法恢复。', okText: '删除', danger: true });
+    if (!ok) return;
+    try {
+      await WY.api('/api/admin/ideas/' + id, { method: 'DELETE' });
+      state.items = state.items.filter(function (item) { return item.id !== id; });
+      state.total = Math.max(0, state.total - 1);
+      renderList();
+      WY.toast('已删除', 'success');
+    } catch (e) {
+      WY.toast(e.message || '删除失败', 'error');
+    }
   }
 
   // Admin: 许愿池 → 投票页. Fill in the card (picture, name, game, subtitle, note) and pick a section.

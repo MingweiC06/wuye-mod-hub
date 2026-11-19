@@ -209,4 +209,19 @@ test('许愿池 and the vote page never share a card; 转到投票 moves a wish 
   assert.match(card.image, /^\/media\//);
   assert.ok(card.votes >= 1, 'votes carried over');
   assert.ok(!(await a('/api/ideas?pool=1&pageSize=24&sort=new')).data.items.some((x) => x.id === id), 'gone from the 许愿池');
+  // edit + delete a wish
+  const w = await admin('/api/admin/cards', { method: 'POST', body: { title: '待编辑' } });
+  await admin(`/api/admin/ideas/${w.data.id}`, { method: 'PATCH', body: { status: 'wish' } });
+  const ed = await admin(`/api/admin/ideas/${w.data.id}`, { method: 'PATCH', body: { title: '编辑后', description: '新的描述内容', author: '小明', category: 'mob' } });
+  assert.equal(ed.status, 200);
+  const got = (await a('/api/ideas?pool=1&pageSize=24&sort=new')).data.items.find((x) => x.id === w.data.id);
+  assert.deepEqual([got.title, got.description, got.author, got.category], ['编辑后', '新的描述内容', '小明', 'mob']);
+  assert.equal((await admin(`/api/admin/ideas/${w.data.id}`, { method: 'PATCH', body: { title: '' } })).status, 400);
+  assert.equal((await a(`/api/admin/ideas/${w.data.id}`, { method: 'PATCH', body: { title: '偷改' } })).status, 401);
+  // owner heart
+  assert.equal((await admin(`/api/admin/ideas/${w.data.id}`, { method: 'PATCH', body: { ownerLiked: true } })).status, 200);
+  assert.equal((await a('/api/ideas?pool=1&pageSize=24&sort=new')).data.items.find((x) => x.id === w.data.id).ownerLiked, true);
+  assert.equal((await a(`/api/admin/ideas/${w.data.id}`, { method: 'PATCH', body: { ownerLiked: false } })).status, 401);
+  assert.equal((await admin(`/api/admin/ideas/${w.data.id}`, { method: 'DELETE' })).status, 200);
+  assert.ok(!(await a('/api/ideas?pool=1&pageSize=24&sort=new')).data.items.some((x) => x.id === w.data.id));
 });

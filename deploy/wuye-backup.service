@@ -1,37 +1,30 @@
 [Unit]
-# 乌叶MC · 模组许愿池 — 数据备份（数据库 + 上传文件 + 媒体文件）
-# 安装与恢复流程见 deploy/BACKUP.md
-Description=Wuye data backup (SQLite + files + media)
-Documentation=file:///opt/wuye/deploy/BACKUP.md
-After=local-fs.target
+# 乌叶MC — daily encrypted backup: snapshot -> encrypt (v2) -> upload to B2 -> check -> prune
+Description=Wuye data backup + encrypted offsite to B2
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=wuye
 Group=wuye
-WorkingDirectory=/opt/wuye
+WorkingDirectory=/opt/wuye-backup
 Environment=NODE_ENV=production
-Environment=DATA_DIR=/opt/wuye/data
-Environment=BACKUP_DIR=/opt/wuye/backups
-Environment=KEEP=14
-Environment=OFFSITE_DIR=/opt/wuye/offsite
-# 启用加密异地备份：把 BACKUP_PASSPHRASE / RCLONE_DEST / RCLONE_CONFIG 写进 /etc/wuye/backup.env（0600）。
-# 未配置时 offsite-sync.sh 会打印「跳过」并正常退出，本地备份不受影响。
-EnvironmentFile=-/etc/wuye/backup.env
-ExecStart=/usr/bin/node /opt/wuye/scripts/backup.js
-ExecStartPost=/bin/sh /opt/wuye/scripts/offsite-sync.sh push
+Environment=HOME=/tmp
+EnvironmentFile=/etc/wuye/backup.env
+ExecStart=/bin/sh /opt/wuye-backup/scripts/offsite-sync.sh push
+# Only runs if the push succeeded. The admin overview warns when this is older than 36 h.
+ExecStartPost=/bin/sh -c 'date +%%s > /opt/wuye/backups/.last-offsite-ok'
 Nice=10
 IOSchedulingClass=idle
 TimeoutStartSec=30min
 SyslogIdentifier=wuye-backup
-
-# 收紧权限：整机只读，只有 data/ 与 backups/ 可写（backups/ 不存在时忽略）
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateDevices=true
-ReadWritePaths=/opt/wuye/data -/opt/wuye/backups -/opt/wuye/offsite
-
+ReadOnlyPaths=/opt/wuye/data
+ReadWritePaths=/opt/wuye/backups /opt/wuye/offsite-v2
 StandardOutput=journal
 StandardError=journal

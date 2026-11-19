@@ -4,9 +4,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApp } from '../app.js';
+import { setSponsorConfig } from '../lib/sponsor.js';
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wuye-sponsor-'));
 const app = createApp({ dataDir, adminCode: 'test-admin-code-1234' });
+setSponsorConfig(app.db, { wechat: '/media/test-wechat.png' }); // the sponsor form only accepts methods that have a QR
 await new Promise((r) => app.server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${app.server.address().port}`;
 test.after(async () => { await app.close(); fs.rmSync(dataDir, { recursive: true, force: true }); });
@@ -99,4 +101,9 @@ test('admin can adjust, hide and add names on both leaderboards', async () => {
   const view = (await admin('/api/admin/boards')).data;
   assert.ok(view.sponsors.list.find((r) => r.name === '星穹旅人').real === 66);
   assert.equal((await a('/api/admin/boards')).status, 401);
+});
+
+test('sponsor form is refused for a method without a QR code', async () => {
+  const r = await a('/api/sponsor', { method: 'POST', body: { method: 'alipay', amount: 10, crossBorderConsent: true, ageConfirm: true } });
+  assert.equal(r.status, 400);
 });

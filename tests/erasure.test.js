@@ -4,10 +4,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createApp } from '../app.js';
+import { setSponsorConfig } from '../lib/sponsor.js';
 import { DEMO_BRACKET, SEED_IDEAS, SEED_POLLS } from './fixtures/demo.js';
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wuye-erasure-test-'));
 const app = createApp({ dataDir, adminCode: 'test-admin-code-1234', demo: { ideas: SEED_IDEAS, polls: SEED_POLLS, bracket: DEMO_BRACKET } });
+setSponsorConfig(app.db, { wechat: '/media/test-wechat.png' }); // the sponsor form only accepts methods that have a QR
 
 await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${app.server.address().port}`;

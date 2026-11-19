@@ -22,6 +22,15 @@
     ].filter((q) => q[2]);
     if (qrs.length) $('sp-qrs').innerHTML = qrs.map(([k, label, src]) => `<figure class="sp-qr sp-${k}"><img src="${WY.esc(src)}" alt="${label}收款码" loading="lazy"><figcaption>${label}</figcaption></figure>`).join('');
     if (c.note) $('sp-note').textContent = c.note;
+    // No QR uploaded yet → nothing to pay with, so don't offer "我已赞助". Only offer methods that have a QR.
+    const form = $('sp-form');
+    form.hidden = !qrs.length;
+    const have = new Set(qrs.map((q) => q[0]));
+    form.querySelectorAll('input[name="method"]').forEach((r) => {
+      r.disabled = !have.has(r.value);
+      r.closest('label').hidden = r.disabled;
+    });
+    if (qrs.length && !have.has(form.method.value)) form.querySelector(`input[name="method"][value="${qrs[0][0]}"]`).checked = true;
     showMethod();
     me = data.me;
     paintAnon();

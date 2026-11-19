@@ -40,6 +40,11 @@ const PAGE_REWRITES = new Map([
   ['/leaderboard', '/leaderboard.html'],
 ]);
 
+// Public pages search engines should index, by clean URL. One canonical host avoids duplicate content
+// across wuye.* / wuyecn.* and the `.html` variants.
+const CANONICAL_ORIGIN = String(process.env.CANONICAL_ORIGIN || 'https://wuye.uniquetalentmap.com').replace(/\/+$/, '');
+const PUBLIC_PAGES = new Set(['/', '/ideas', '/polls', '/rules', '/privacy', '/downloads', '/sponsor', '/leaderboard']);
+
 export function createApp(options = {}) {
   const dataDir = path.resolve(options.dataDir || path.join(ROOT, 'data'));
   const publicDir = path.resolve(options.publicDir || DEFAULT_PUBLIC);
@@ -192,6 +197,16 @@ export function createApp(options = {}) {
       res.setHeader('Content-Security-Policy', csp.replace("frame-ancestors 'none'", `frame-ancestors 'self' ${frameOrigins.join(' ')}`));
     }
 
+    // `/ideas.html` → `/ideas`, `/index.html` → `/` (301), so each page has exactly one URL.
+    const clean = pathname === '/index.html' ? '/' : pathname.replace(/\.html$/, '');
+    if (clean !== pathname && PUBLIC_PAGES.has(clean) && (req.method === 'GET' || req.method === 'HEAD')) {
+      const q = req.url.indexOf('?');
+      res.writeHead(301, { Location: clean + (q >= 0 ? req.url.slice(q) : '') });
+      res.end();
+      return;
+    }
+    if (PUBLIC_PAGES.has(pathname)) res.setHeader('Link', `<${CANONICAL_ORIGIN}${pathname}>; rel="canonical"`);
+
     let target = pathname;
     if (PAGE_REWRITES.has(target)) target = PAGE_REWRITES.get(target);
     // The dashboard itself is only served to a signed-in admin; everyone else gets the sign-in page.
@@ -207,7 +222,7 @@ export function createApp(options = {}) {
     if (target.endsWith('/')) target += 'index.html';
 
     // Only allow real files inside public/, and only known asset/page extensions.
-    if (!/\.(html|css|js|mjs|json|txt|svg|png|jpe?g|webp|ico|woff2|m4a|mp3)$/i.test(target)) {
+    if (!/\.(html|css|js|mjs|json|txt|xml|svg|png|jpe?g|webp|ico|woff2|m4a|mp3)$/i.test(target)) {
       notFoundPage(res, publicDir);
       return;
     }

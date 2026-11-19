@@ -360,6 +360,7 @@
       state.overview = data || {};
       state.overviewStale = false;
       renderOverview(state.overview);
+      renderBackup(data.backup);
       setSession(data.sessionExpiresAt || state.me.expiresAt, Boolean(data.mustChange));
     } catch (error) {
       if (error && error.handled) return;
@@ -379,6 +380,20 @@
     els.statToday.textContent = String(Number(stats.todayIdeas) || 0);
     renderPending(Array.isArray(data.pending) ? data.pending : []);
     renderAudit(Array.isArray(data.audit) ? data.audit : []);
+  }
+
+  // Daily backup runs ~02:47 Beijing time; warn if the last good one is older than 36 h (or never happened).
+  function renderBackup(backup) {
+    const el = document.getElementById('backup-warn');
+    if (!el) return;
+    const lastOk = backup && backup.lastOk;
+    const stale = backup && (!lastOk || Date.now() - lastOk > 36 * 3600_000);
+    el.hidden = !stale;
+    if (stale) {
+      el.textContent = lastOk
+        ? `⚠ 异地备份已超过 36 小时没有成功（上次成功：${new Date(lastOk).toLocaleString()}）。请检查服务器备份任务。`
+        : '⚠ 还没有成功的异地备份记录。请检查服务器备份任务。';
+    }
   }
 
   function renderOverviewError(message) {

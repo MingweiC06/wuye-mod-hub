@@ -385,3 +385,17 @@ test('static assets are served, traversal is blocked', async () => {
   const hidden = await fetch(`${base}/../data/admin-code.txt`);
   assert.notEqual(hidden.status, 200);
 });
+
+test('.html page URLs redirect to clean URLs and pages carry a canonical link', async () => {
+  const r = await fetch(`${base}/ideas.html?x=1`, { redirect: 'manual' });
+  assert.equal(r.status, 301);
+  assert.equal(r.headers.get('location'), '/ideas?x=1');
+  const home = await fetch(`${base}/index.html`, { redirect: 'manual' });
+  assert.equal(home.headers.get('location'), '/');
+  const page = await fetch(`${base}/rules`);
+  assert.match(page.headers.get('link') || '', /<https:\/\/wuye\.uniquetalentmap\.com\/rules>; rel="canonical"/);
+  const robots = await fetch(`${base}/robots.txt`);
+  assert.equal(robots.status, 200);
+  const sitemap = await fetch(`${base}/sitemap.xml`);
+  assert.match(sitemap.headers.get('content-type') || '', /xml/);
+});

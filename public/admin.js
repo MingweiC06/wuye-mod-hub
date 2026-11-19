@@ -54,7 +54,7 @@
     'admin.export': '导出 CSV',
   };
 
-  const TAB_NAMES = ['overview', 'ideas', 'polls', 'settings', 'channel', 'files'];
+  const TAB_NAMES = ['overview', 'ideas', 'polls', 'settings', 'channel', 'files', 'sponsor', 'boards'];
   const PAGE_SIZE = 50;
   const DEFAULT_ANNOUNCEMENT = '暂无公告，先去看看大家的许愿吧。';
 
@@ -322,7 +322,7 @@
       if (!state.polls.loaded || opts.force) loadPolls();
       return;
     }
-    if (name === 'channel' || name === 'files') {
+    if (name === 'channel' || name === 'files' || name === 'sponsor' || name === 'boards') {
       document.dispatchEvent(new CustomEvent('wy:' + name));
       return;
     }
@@ -556,13 +556,14 @@
       '<td>' +
       WY.esc(idea.author || '匿名玩家') +
       '</td>' +
-      '<td class="mono">' +
+      '<td><div class="admin-votes"><b class="mono">' +
       WY.fmtNumber(Number(idea.votes) || 0) +
+      '</b>' +
       (Number(idea.voteAdjust)
-        ? '<span class="admin-time-ago">含机器票 ' + (idea.voteAdjust > 0 ? '+' : '') + WY.fmtNumber(Number(idea.voteAdjust)) + '</span>'
+        ? '<span class="admin-votes-bot">含机器票 ' + (idea.voteAdjust > 0 ? '+' : '') + WY.fmtNumber(Number(idea.voteAdjust)) + '</span>'
         : '') +
       '<button class="btn btn-sm btn-ghost" type="button" data-idea-action="votes" title="加票填正数，减票填负数">调票</button>' +
-      '</td>' +
+      '</div></td>' +
       '<td>' +
       '<select class="select admin-status-select" data-idea-action="status" aria-label="修改灵感 #' +
       id +

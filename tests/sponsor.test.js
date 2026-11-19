@@ -84,3 +84,19 @@ test('admin can add and remove bot votes, never below zero', async () => {
   assert.equal(floor.data.idea.votes, 0);
   assert.equal((await a(`/api/admin/ideas/${idea.id}`, { method: 'PATCH', body: { addVotes: 5 } })).status, 401);
 });
+
+test('admin can adjust, hide and add names on both leaderboards', async () => {
+  const put = (body) => admin('/api/admin/boards', { method: 'PUT', body });
+  assert.equal((await put({ board: 'stars', name: '手动加的人', adjust: 500 })).status, 200);
+  assert.equal((await put({ board: 'sponsors', name: '神秘老板', adjust: 999 })).status, 200);
+  let lb = (await a('/api/leaderboard')).data;
+  assert.deepEqual(lb.stars[0], { rank: 1, name: '手动加的人', points: 500 });
+  assert.equal(lb.sponsors[0].name, '神秘老板');
+  assert.ok(!/999/.test(JSON.stringify(lb.sponsors)), 'sponsor amounts stay private');
+  await put({ board: 'sponsors', name: '星穹旅人', hidden: true });
+  lb = (await a('/api/leaderboard')).data;
+  assert.ok(!lb.sponsors.some((s) => s.name === '星穹旅人'));
+  const view = (await admin('/api/admin/boards')).data;
+  assert.ok(view.sponsors.list.find((r) => r.name === '星穹旅人').real === 66);
+  assert.equal((await a('/api/admin/boards')).status, 401);
+});

@@ -140,5 +140,5 @@
     loadProfiles().catch((e) => WY.toast(e.message, 'error'));
   }
 
-  document.addEventListener('wy:channel', open);
+  document.addEventListener('wy:sponsor', open);
 })();

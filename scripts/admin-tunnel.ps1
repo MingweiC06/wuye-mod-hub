@@ -1,6 +1,6 @@
-# 打开后台（本地模式）：建立 SSH 隧道，然后在浏览器打开 http://localhost:8080/admin
-# 关掉这个窗口 = 关掉隧道。
+# Wuye admin (local-only): opens an SSH tunnel, then the admin at http://localhost:8080/admin
+# Close this window to close the tunnel. (ASCII only: Windows PowerShell 5.1 misreads UTF-8 without BOM.)
 $key = Join-Path $HOME '.ssh\wuye_azure_ed25519'
-Start-Process 'http://localhost:8080/admin'
-Write-Host '隧道已连接。后台地址：http://localhost:8080/admin   （关闭此窗口即断开）'
-ssh -i $key -N -L 8080:127.0.0.1:8080 ubuntu@141.148.35.139
+Write-Host 'Tunnel connecting... Admin: http://localhost:8080/admin   (close this window to disconnect)'
+Start-Job { Start-Sleep 3; Start-Process 'http://localhost:8080/admin' } | Out-Null
+ssh -i $key -N -o ServerAliveInterval=30 -L 8080:127.0.0.1:8080 ubuntu@141.148.35.139

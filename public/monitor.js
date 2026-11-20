@@ -190,6 +190,7 @@
         })
         .join('');
       box.innerHTML = `<div class="mon-map-stage"><svg class="mon-svg" id="mon-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="访客大致位置地图"><g class="mon-land">${world}</g>${dots}</svg>
+        <aside class="mon-pop" id="mon-pop" hidden aria-live="polite"></aside>
         <div class="mon-zoom" role="group" aria-label="地图缩放"><button type="button" data-zoom="in" aria-label="放大">＋</button><button type="button" data-zoom="out" aria-label="缩小">－</button><button type="button" data-zoom="fit" title="缩放到所有访客">看全部访客</button><button type="button" data-zoom="reset" title="回到全世界">全世界</button></div></div>
         <p class="muted small">滚轮或 ＋／－ 缩放，按住拖动平移。</p>
         <p class="muted small">点是城市级估算位置（约 10 公里精度），同一地点合并为一个点，越大人越多。无法定位的 IP：${data.unknown} 个。地图由本站自己绘制，不向任何地图服务发送数据。</p>
@@ -206,7 +207,9 @@
   const clampView = () => {
     view.w = Math.min(W, Math.max(W / 40, view.w));
     const h = (view.w * H) / W;
-    view.x = Math.min(W - view.w, Math.max(0, view.x));
+    // A little slack past the left/right edges so a spot near the edge can still be moved clear of the side panel.
+    const slack = view.w < W ? view.w * 0.45 : 0;
+    view.x = Math.min(W - view.w + slack, Math.max(-slack, view.x));
     view.y = Math.min(H - h, Math.max(0, view.y));
   };
   function applyView() {
@@ -301,8 +304,46 @@
     const p = ($('mon-map')._points || [])[i];
     if (!p) return;
     $('mon-map').querySelectorAll('.mon-dot').forEach((d) => d.classList.toggle('is-active', d.dataset.pt === String(i)));
-    $('mon-map-info').innerHTML = `<b>${p.flag || '📍'} ${WY.esc(p.label)}</b> <span class="muted small">${p.count} 位访客 · ${p.events} 条记录</span><div class="mon-map-ids">${p.visitors.map((id) => `<button class="mon-goto" type="button" data-goto="${id}">#${id}</button>`).join('')}</div>`;
+    const who = (v) =>
+      v.isAdmin ? '<span class="badge badge-gold">站长</span>' : v.name ? `<span class="badge badge-green">${WY.esc(v.name)}</span>` : v.anonymous ? '<span class="badge badge-muted">无 Cookie</span>' : '';
+    const people = p.visitors
+      .map(
+        (v) => `<li class="mon-pop-v">
+          <div class="mon-pop-vh"><b class="mono">#${v.id}</b><span class="${v.note ? '' : 'muted'}">${v.note ? WY.esc(v.note) : '未命名'}</span>${who(v)}${v.flags ? `<span class="badge badge-rose">⚠ ${v.flags}</span>` : ''}</div>
+          <div class="muted small">${WY.esc(v.device)} · <span class="mono">${WY.esc(v.ip)}</span></div>
+          <div class="small">${v.visits} 次访问 · ${v.events} 条记录</div>
+          <div class="small">最近 ${timeHtml(v.lastSeen)}</div>
+          <button class="btn btn-ghost btn-sm mon-goto" type="button" data-goto="${v.id}">查看记录 →</button>
+        </li>`,
+      )
+      .join('');
+    const pop = $('mon-pop');
+    pop.innerHTML = `<div class="mon-pop-head"><div><div class="mon-pop-place">${p.flag || '📍'} ${WY.esc(p.label)}</div>
+        <div class="muted small">${p.count} 位访客 · ${p.events} 条记录 · 约 ${p.lat}, ${p.lon}</div></div>
+        <button class="mon-pop-x" type="button" data-pop-close aria-label="关闭">×</button></div>
+      ${p.orgs && p.orgs.length ? `<div class="mon-pop-org small"><span class="muted">网络：</span>${p.orgs.map((o) => WY.esc(o)).join('、')}</div>` : ''}
+      <ol class="mon-pop-list">${people}</ol>
+      <p class="muted small">城市级估算，不是住址。</p>`;
+    pop.hidden = false;
+    pop.classList.remove('is-in');
+    void pop.offsetWidth;
+    pop.classList.add('is-in');
+    $('mon-map-info').textContent = '';
+    // Keep the clicked spot visible: on wide screens the panel covers the right side, so glide it to the left third.
+    if (matchMedia('(min-width: 641px)').matches) {
+      const [x, y] = px(p.lon, p.lat);
+      const h = (view.w * H) / W;
+      animateTo(x - view.w * 0.3, y - h / 2, view.w);
+    }
   }
+  function closePop() {
+    const pop = $('mon-pop');
+    if (pop) pop.hidden = true;
+    $('mon-map').querySelectorAll('.mon-dot.is-active').forEach((d) => d.classList.remove('is-active'));
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePop();
+  });
 
   $('mon-map-btn').addEventListener('click', () => {
     const box = $('mon-map');
@@ -312,6 +353,10 @@
     if (open) loadMap();
   });
   $('mon-map').addEventListener('click', (e) => {
+    if (e.target.closest('[data-pop-close]')) {
+      closePop();
+      return;
+    }
     const z = e.target.closest('[data-zoom]');
     if (z) {
       const c = [view.x + view.w / 2, view.y + (view.w * H) / W / 2];

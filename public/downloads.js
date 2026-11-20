@@ -16,7 +16,7 @@
       <article class="dl-row${mod.image ? ' has-cover' : ''}" data-mod="${mod.id}">
         ${mod.image ? `<div class="dl-cover"><img src="${WY.esc(mod.image)}" alt="" loading="lazy"></div>` : '<div class="dl-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></div>'}
         <div class="dl-main">
-          <h3 data-raw>${WY.esc(mod.name)}</h3>
+          <h3><span data-raw>${WY.esc(mod.name)}</span>${WY.newBadge(mod.createdAt, 'in-title')}</h3>
           <div class="dl-meta">${meta.map((m) => `<span>${WY.esc(m)}</span>`).join('')}<span>${fmtSize(mod.size)}</span><span>${mod.downloads} 次下载</span></div>
           ${mod.description ? `<p data-raw>${WY.esc(mod.description)}</p>` : ''}
           <code class="dl-hash" title="SHA-256">${WY.esc(mod.sha256.slice(0, 16))}…</code>

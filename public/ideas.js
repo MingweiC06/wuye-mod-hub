@@ -405,6 +405,7 @@
       '      <span class="badge badge-cyan">' + WY.esc(category.icon) + ' ' + WY.esc(category.label) + '</span>',
       idea.status === 'wish' ? '' : '      <span class="badge ' + badgeClass + '">' + WY.esc(status.icon) + ' ' + WY.esc(status.label) + '</span>',
       idea.pinned ? '      <span class="badge badge-gold">置顶</span>' : '',
+      WY.newBadge(idea.statusAt || idea.createdAt),
       idea.id === state.newId ? '      <span class="badge badge-gold">刚刚提交</span>' : '',
       idea.ownerLiked ? '      <span class="owner-like" title="乌叶也想要这个">♥ 乌叶也想要</span>' : '',
       '    </div>',

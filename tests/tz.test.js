@@ -153,3 +153,22 @@ test('monitor API: ISO UTC output, zone-aware date filter, category filter, sess
   assert.equal((await call('/api/monitor/audit?zone=bj&from=2020-01-01&to=2020-01-02')).data.total, 0);
   assert.equal((await call('/api/monitor/subjects?from=2026-02-30')).status, 400);
 });
+
+test('新加入: status_at marks ideas added or moved after tracking began', async (t) => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wuye-new-'));
+  const app = createApp({ dataDir, adminCode: 'test-admin-code-1234', monitorCode: 'monitor-pass-5678-xyz' });
+  t.after(async () => {
+    await app.close();
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  });
+  const { createIdea, updateIdea } = await import('../lib/db.js');
+  const db = app.db;
+  const idea = createIdea(db, { title: '测试新卡片标题', description: '', category: 'mob', author: 'x' });
+  const at = () => Number(db.prepare('SELECT status_at FROM ideas WHERE id = ?').get(idea.id).status_at);
+  assert.equal(at(), 0, 'a brand-new idea falls back to created_at');
+  updateIdea(db, idea.id, { status: 'open' });
+  const moved = at();
+  assert.ok(Date.now() - moved < 5000, 'moving to the vote board starts the 新加入 clock');
+  updateIdea(db, idea.id, { status: 'open', title: '改个标题也不重置' });
+  assert.equal(at(), moved, 'same status does not restart it');
+});

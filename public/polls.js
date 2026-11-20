@@ -159,7 +159,7 @@
       <article class="poll${showResults ? ' is-result' : ''}${voted ? ' is-voted' : ''}" data-poll-id="${poll.id}">
         <div class="poll-head">
           <div>
-            <h3 id="${pollTitleId(poll)}">${WY.esc(poll.title)}</h3>
+            <h3 id="${pollTitleId(poll)}">${WY.esc(poll.title)}${WY.newBadge(poll.createdAt, 'in-title')}</h3>
             ${poll.description ? `<p class="poll-desc">${WY.esc(poll.description)}</p>` : ''}
           </div>
           <span class="badge badge-cyan">进行中</span>

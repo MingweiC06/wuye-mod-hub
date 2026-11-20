@@ -66,6 +66,11 @@
     return date.toISOString().slice(0, 16).replace('T', ' ');
   };
 
+  /** 新加入 badge for anything that appeared in the last 7 days. */
+  WY.NEW_DAYS = 7;
+  WY.isNew = (ms) => Number(ms) > 0 && Date.now() - Number(ms) < WY.NEW_DAYS * 86400000;
+  WY.newBadge = (ms, extra) => (WY.isNew(ms) ? '<span class="new-badge' + (extra ? ' ' + extra : '') + '">新加入</span>' : '');
+
   WY.timeAgo = function timeAgo(timestamp) {
     const seconds = Math.max(0, (Date.now() - Number(timestamp)) / 1000);
     if (seconds < 60) return '刚刚';

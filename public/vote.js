@@ -18,7 +18,7 @@
   function card(c) {
     return `
       <article class="vb-card${c.voted ? ' is-voted' : ''}" data-id="${c.id}">
-        <div class="vb-art">${art(c)}${c.game ? `<span class="vb-game">${WY.esc(c.game)}</span>` : ''}</div>
+        <div class="vb-art">${art(c)}${c.game ? `<span class="vb-game">${WY.esc(c.game)}</span>` : ''}${WY.newBadge(c.statusAt, 'on-art')}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           ${c.description ? `<p data-raw>${WY.esc(c.description)}</p>` : ''}
@@ -48,7 +48,7 @@
     const by = {
       votes: (a, b) => b.votes - a.votes || b.mentions - a.mentions || b.createdAt - a.createdAt,
       mentions: (a, b) => b.mentions - a.mentions || b.votes - a.votes,
-      new: (a, b) => b.createdAt - a.createdAt,
+      new: (a, b) => b.statusAt - a.statusAt || b.createdAt - a.createdAt,
       game: (a, b) => (a.game === '') - (b.game === '') || a.game.localeCompare(b.game, 'zh') || b.votes - a.votes,
     }[state.sort];
     return list.sort(by);
@@ -140,7 +140,7 @@
     const watch = done && c.video ? `https://www.douyin.com/video/${encodeURIComponent(c.video)}` : '';
     return `
       <article class="vb-mini${done ? ' is-done' : ''}${watch ? ' has-video' : ''}${state.admin && !done ? ' is-draggable' : ''}" data-id="${c.id}">
-        <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}</div>
+        <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}${WY.newBadge(c.statusAt, 'on-art')}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           <span class="vb-sub">${WY.esc(c.game || '')}${done && !c.votes ? '' : `${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票${done ? '' : `<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>`}`}<button class="vb-pen vb-del" type="button" data-del="${c.id}" aria-label="删除" title="删除这张卡片">🗑</button></span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}

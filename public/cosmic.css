@@ -1998,3 +1998,12 @@ h3 {
 .lb-lead { margin-top: 14px; font-size: 15px; }
 .lb-stats { margin-top: 26px; }
 .lb-stats dd { text-shadow: none; font-size: 26px; }
+
+/* ---- 新加入 badge (everything added in the last 7 days) ---- */
+.new-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .08em; line-height: 1.6;
+  color: #1a1206; background: linear-gradient(135deg, #fff1c8, #f3d996 45%, #d9a441); box-shadow: 0 0 12px rgba(243, 217, 150, .55); white-space: nowrap; vertical-align: middle; }
+.new-badge::before { content: '✦'; font-size: 9px; }
+.new-badge.on-art { position: absolute; top: 10px; right: 10px; z-index: 2; animation: newPulse 2.4s ease-in-out infinite; }
+.new-badge.in-title { margin-left: 8px; font-family: var(--font, inherit); }
+@keyframes newPulse { 50% { box-shadow: 0 0 20px rgba(243, 217, 150, .9); } }
+@media (prefers-reduced-motion: reduce) { .new-badge.on-art { animation: none; } }

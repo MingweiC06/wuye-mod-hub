@@ -276,7 +276,11 @@
     document.querySelector('[data-add-card]').addEventListener('click', () => addCard());
     for (const status of Object.keys(COLS)) $(COLS[status]).dataset.dropStatus = status;
     $('vb-grid').dataset.dropStatus = 'open';
-    document.addEventListener('pointerdown', startDrag);
+    // Soft page navigation re-runs this script, so drop the previous visit's document listeners first.
+    if (window.__vbPage) window.__vbPage.abort();
+    window.__vbPage = new AbortController();
+    const signal = window.__vbPage.signal;
+    document.addEventListener('pointerdown', startDrag, { signal });
     $('vb-building').addEventListener('click', (e) => {
       const b = e.target.closest('[data-done]');
       if (b) markDone(Number(b.dataset.done), b);
@@ -286,7 +290,7 @@
       if (p) editVotes(Number(p.dataset.pen));
       const d = e.target.closest('[data-del]');
       if (d) deleteCard(Number(d.dataset.del));
-    });
+    }, { signal });
   }
 
   // Shrink a picked image to <=1200px JPEG so uploads stay small.

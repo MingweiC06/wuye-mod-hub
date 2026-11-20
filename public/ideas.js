@@ -219,7 +219,7 @@
 
     if (window.__wyIdeasHash) window.removeEventListener('hashchange', window.__wyIdeasHash);
     window.__wyIdeasHash = focusHash;
-    window.addEventListener('hashchange', focusHash);
+    window.addEventListener('hashchange', focusHash, { signal: window.__ideasPage.signal });
   }
 
   /* ---------------- URL <-> filter state ---------------- */
@@ -305,7 +305,10 @@
   }
 
   // wish-admin.js (站长) turned a comment into a wish: show it.
-  document.addEventListener('wy:wishes-changed', function () { loadIdeas({ reset: true, page: 1 }); });
+  // Soft page navigation re-runs this script, so drop the previous visit's global listeners first.
+  if (window.__ideasPage) window.__ideasPage.abort();
+  window.__ideasPage = new AbortController();
+  document.addEventListener('wy:wishes-changed', function () { loadIdeas({ reset: true, page: 1 }); }, { signal: window.__ideasPage.signal });
 
   // Comment wishes used to copy the comment into both title and description: show it once.
   function descHtml(idea) {

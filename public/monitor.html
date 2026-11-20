@@ -13,12 +13,12 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
-  <link rel="stylesheet" href="/admin.css?v=20261120-8">
+  <link rel="stylesheet" href="/admin.css?v=20261120-10">
   <link rel="stylesheet" href="/cosmic.css?v=20261120-8">
   <link rel="stylesheet" href="/fx.css?v=20261120-2">
   <script src="/device-id.js?v=20261119-1321" defer></script>
   <script src="/app.js?v=20261120-2" defer></script>
-  <script src="/monitor.js?v=20261120-2" defer></script>
+  <script src="/monitor.js?v=20261120-3" defer></script>
   <script src="/fx.js?v=20261120-2"></script>
 </head>
 <body class="page-admin page-monitor">
@@ -93,6 +93,8 @@
 
         <div class="metric-grid mon-metrics" id="mon-metrics" aria-label="近 24 小时"></div>
 
+        <p class="muted small mon-credit">IP 位置为估算，来自本地 DB-IP Lite 数据库（IP Geolocation by <a href="https://db-ip.com" target="_blank" rel="noopener">DB-IP</a>，CC BY 4.0）。</p>
+
         <form class="panel admin-block mon-filter" id="mon-filter" novalidate>
           <div class="field"><label for="f-q">编号 / 昵称</label><input class="input" id="f-q" name="q" maxlength="40" placeholder="#12、昵称或你起的名字"></div>
           <div class="field"><label for="f-ip">IP</label><input class="input mono" id="f-ip" name="ip" maxlength="45" placeholder="完整 IP"></div>
@@ -104,6 +106,15 @@
             <button class="btn btn-ghost btn-sm" type="reset">清空</button>
           </div>
         </form>
+
+        <section class="panel admin-block" aria-labelledby="mon-map-title">
+          <div class="admin-block-head">
+            <h2 id="mon-map-title">访客地图</h2>
+            <button class="btn btn-ghost btn-sm" id="mon-map-btn" type="button">显示地图</button>
+          </div>
+          <p class="hint" id="mon-geo-status">位置数据：—</p>
+          <div class="mon-map" id="mon-map" hidden></div>
+        </section>
 
         <section class="panel admin-block" aria-labelledby="mon-list-title">
           <div class="admin-block-head">

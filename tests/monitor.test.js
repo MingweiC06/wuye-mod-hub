@@ -177,3 +177,63 @@ test('monitor: staging mode stores synthetic IPs only', async (t) => {
   assert.ok(items.length >= 1);
   for (const u of items) assert.match(u.ip, /^198\.18\.\d+\.\d+$/);
 });
+
+test('geo: special addresses are labelled, never located; map and geo are admin-only', async (t) => {
+  const { createGeo } = await import('../lib/geo.js');
+  const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'wuye-geo-'));
+  t.after(() => fs.rmSync(empty, { recursive: true, force: true }));
+  const geo = createGeo(empty);
+  for (const ip of ['10.0.0.5', '192.168.1.2', '198.18.4.4', '203.0.113.9', '2001:db8::1', '::1']) {
+    const g = geo.lookup(ip);
+    assert.equal(g.found, false, ip);
+    assert.ok(g.note, ip);
+    assert.equal(g.lat, null);
+  }
+  const none = geo.lookup('8.8.8.8');
+  assert.equal(none.found, false);
+  assert.match(none.note, /还没有地理位置数据库/);
+  assert.equal(none.vpnProxy, null);
+  assert.equal(none.connectionType, null);
+
+  const { app, dataDir, base } = await start();
+  t.after(async () => {
+    await app.close();
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  });
+  const FAN = client(base, 'fan-device-00077');
+  await FAN('/ideas');
+  await settle();
+  assert.equal((await FAN('/api/monitor/map')).status, 404);
+  const ADMIN = client(base, 'admin-device-077');
+  await ADMIN('/api/admin/login', { method: 'POST', body: { code: CODE } });
+  assert.equal((await ADMIN('/api/monitor/map')).status, 401);
+  await ADMIN('/api/monitor/unlock', { method: 'POST', body: { code: MON } });
+  const map = await ADMIN('/api/monitor/map');
+  assert.equal(map.status, 200);
+  assert.ok(!map.text.includes('127.0.0.1'), 'the map never carries IPs');
+  const list = (await ADMIN('/api/monitor/subjects')).data.items;
+  assert.ok(list[0].place && typeof list[0].place.label === 'string');
+  const tl = (await ADMIN(`/api/monitor/subjects/${list[0].id}`)).data;
+  assert.ok(tl.ips[0].geo && 'vpnProxy' in tl.ips[0].geo);
+  assert.equal(typeof tl.ips[0].sessions, 'number');
+});
+
+// Real database checks: only when the DB-IP files are available locally (GEO_TEST_DIR). Lookups are offline.
+test('geo: DB-IP Lite returns real data for known public servers', { skip: !process.env.GEO_TEST_DIR }, async () => {
+  const { createGeo } = await import('../lib/geo.js');
+  const geo = createGeo('', { dir: process.env.GEO_TEST_DIR });
+  const g = geo.lookup('8.8.8.8');
+  assert.equal(g.found, true);
+  assert.equal(g.countryCode, 'US');
+  assert.equal(g.asn, 'AS15169');
+  assert.ok(g.lat != null && Math.abs(g.lat * 10 - Math.round(g.lat * 10)) < 1e-9, 'rounded to 0.1°');
+  const cn = geo.lookup('114.114.114.114');
+  assert.equal(cn.countryCode, 'CN');
+  assert.equal(cn.country, '中国');
+  assert.ok(cn.region && /[\u4e00-\u9fff]/.test(cn.region), 'Chinese province name');
+  assert.equal(geo.lookup('2001:4860:4860::8888').asn, 'AS15169');
+  assert.equal(geo.lookup('::ffff:8.8.4.4').countryCode, 'US');
+  assert.equal(cn.district, null);
+  assert.equal(cn.postalCode, null);
+  assert.equal(cn.vpnProxy, null);
+});

@@ -18,6 +18,7 @@ import { migrateAdminSecurity } from './lib/admin-security.js';
 import { getLockdown, lockdownRefusal } from './lib/lockdown.js';
 import { createMonitor, loadMonitorKey, migrateMonitor, monitorConfigured, sanitizeClicks, setMonitorCode } from './lib/monitor.js';
 import { handleMonitor } from './lib/monitor-api.js';
+import { createGeo, migrateGeo } from './lib/geo.js';
 import {
   HttpError,
   RateLimiter,
@@ -67,6 +68,7 @@ export function createApp(options = {}) {
   migrateVisits(db);
   migrateAdminSecurity(db);
   migrateMonitor(db);
+  migrateGeo(db);
   seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
@@ -74,6 +76,8 @@ export function createApp(options = {}) {
   // 安全监控: off only when explicitly disabled. Staging sets syntheticIps so no real IP is ever stored there.
   const monitor = options.monitor === false ? null : createMonitor(db, { secret, key: loadMonitorKey(dataDir), synthetic: Boolean(options.syntheticIps) });
   if (monitor && options.monitorCode && !monitorConfigured(db)) setMonitorCode(db, options.monitorCode);
+  // IP location estimates from local DB-IP Lite files in DATA_DIR/geo (or GEO_DIR). Nothing is sent out.
+  if (monitor) monitor.geo = createGeo(dataDir, { dir: options.geoDir });
   const shield = createShield({
     token: options.cfApiToken,
     zoneId: options.cfZoneId,

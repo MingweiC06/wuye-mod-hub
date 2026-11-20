@@ -1,6 +1,7 @@
 // Staging / local preview only: fills 安全监控 with synthetic visitors.
-// IPs come from the reserved documentation ranges (192.0.2.x, 198.51.100.x, 203.0.113.x, 2001:db8::/32),
-// so no real person's address is ever shown.  Run:  DATA_DIR=... node scripts/seed-monitor-demo.mjs
+// IPs are either reserved documentation ranges (192.0.2.x, 198.51.100.x, 203.0.113.x, 2001:db8::/32: no location,
+// tests the "unknown" display) or well-known public DNS servers owned by companies (Google, 114DNS, Cloudflare, …),
+// so locations are real database results but no real person's address is ever shown.  Run:  DATA_DIR=... node scripts/seed-monitor-demo.mjs
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
@@ -27,17 +28,17 @@ const UA = {
 };
 
 const people = [
-  { note: '', ua: UA.iphone, ips: ['203.0.113.24'], events: [
+  { note: '', ua: UA.iphone, ips: ['114.114.114.114'], events: [
     [-26, 'page', '打开「首页」'], [-25.98, 'page', '打开「许愿池」'], [-25.95, 'action', '提交许愿'], [-25.9, 'page', '打开「投票」'], [-25.88, 'action', '给卡片 #3 投票'],
     [-2, 'page', '打开「首页」'], [-1.97, 'page', '打开「下载」'], [-1.95, 'action', '粉丝验证'], [-1.94, 'click', '点击「下载」 · 卡片 #2（下载）'], [-1.93, 'download', '下载模组文件 #2'], [-1.9, 'page', '打开「赞助」'], [-1.89, 'click', '点击「抖音主页」 → www.douyin.com（赞助）'] ] },
   // Same phone after clearing cookies: same IP + identical browser string → 「可能是同一人」.
-  { note: '', ua: UA.iphone, ips: ['203.0.113.24'], events: [
+  { note: '', ua: UA.iphone, ips: ['114.114.114.114'], events: [
     [-0.8, 'page', '打开「投票」'], [-0.79, 'click', '点击「票数最高」（投票）'], [-0.78, 'click', '点击「投一票」 · 卡片 #3（投票）'], [-0.78, 'action', '给卡片 #3 投票'] ] },
   // Someone else on the same school / mobile network: same IP, different browser.
-  { note: '', ua: UA.android, ips: ['203.0.113.24'], events: [ [-6, 'page', '打开「排行榜」'], [-5.99, 'click', '点击「本周」（排行榜）'] ] },
-  { note: '', ua: UA.android, ips: ['198.51.100.7', '198.51.100.88'], events: [
+  { note: '', ua: UA.android, ips: ['114.114.114.114'], events: [ [-6, 'page', '打开「排行榜」'], [-5.99, 'click', '点击「本周」（排行榜）'] ] },
+  { note: '', ua: UA.android, ips: ['202.96.134.133', '8.8.8.8'], events: [
     [-30, 'page', '打开「投票」'], [-29.99, 'action', '给卡片 #1 投票'], [-5, 'security', 'IP 地址变化', 'ip_change', 1], [-5, 'page', '打开「投票」', '', 1], [-4.99, 'action', '取消卡片 #1 的投票', '', 1], [-4.98, 'action', '给卡片 #4 投票', '', 1] ] },
-  { note: '可疑：试后台', ua: UA.win, ips: ['192.0.2.55'], events: [
+  { note: '可疑：试后台', ua: UA.win, ips: ['149.112.112.112'], events: [
     [-3, 'page', '打开「首页」'], [-2.99, 'admin', '打开后台页面'], [-2.98, 'security', '站长登录失败', 'login_failed'], [-2.97, 'security', '站长登录失败', 'login_failed'], [-2.96, 'security', '站长登录失败', 'login_failed'],
     [-2.95, 'security', '请求过于频繁被限流：POST /api/admin/login', 'rate_limited'], [-2.9, 'security', '未授权访问后台接口：GET /api/admin/overview', 'denied'] ] },
   { note: '', anon: true, ua: UA.curl, ips: ['2001:db8::4f2a'], events: [
@@ -46,7 +47,7 @@ const people = [
     [-50, 'admin', '打开后台页面'], [-49.99, 'login', '站长登录成功'], [-0.5, 'page', '打开「投票」'], [-0.2, 'login', '站长退出登录'] ] },
 ];
 for (let i = 0; i < 9; i += 1) {
-  people.push({ note: '', ua: [UA.iphone, UA.android, UA.win][i % 3], ips: [`203.0.113.${100 + i}`], events: [
+  people.push({ note: '', ua: [UA.iphone, UA.android, UA.win][i % 3], ips: [['1.1.1.1', '9.9.9.9', '223.5.5.5', '180.76.76.76', '119.29.29.29', '208.67.222.222', '203.0.113.' + (100 + i), '2001:4860:4860::8888', '168.95.1.1'][i]], events: [
     [-(i * 7 + 3), 'page', '打开「首页」'], [-(i * 7 + 2.98), 'page', ['打开「许愿池」', '打开「排行榜」', '打开「投票」'][i % 3]] ] });
 }
 

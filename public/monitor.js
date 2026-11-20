@@ -102,10 +102,104 @@
     loadList();
   }
 
+  /* ---------------- map ---------------- */
+  let world = null;
+  const W = 960;
+  const H = 480;
+  const px = (lon, lat) => [((lon + 180) / 360) * W, ((90 - lat) / 180) * H];
+
+  function worldPaths(topo) {
+    const [sx, sy] = topo.transform.scale;
+    const [tx, ty] = topo.transform.translate;
+    const arcs = topo.arcs.map((arc) => {
+      let x = 0;
+      let y = 0;
+      return arc.map(([dx, dy]) => {
+        x += dx;
+        y += dy;
+        return px(x * sx + tx, y * sy + ty);
+      });
+    });
+    const ring = (ids) => {
+      const pts = [];
+      for (const i of ids) {
+        const a = i < 0 ? arcs[~i].slice().reverse() : arcs[i];
+        pts.push(...(pts.length ? a.slice(1) : a));
+      }
+      let d = '';
+      let prev = null;
+      for (const [x, y] of pts) {
+        d += `${!prev || Math.abs(x - prev[0]) > W / 2 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
+        prev = [x, y];
+      }
+      return d + 'Z';
+    };
+    return topo.objects.countries.geometries
+      .map((g) => (g.type === 'Polygon' ? g.arcs.map(ring).join('') : g.type === 'MultiPolygon' ? g.arcs.map((p) => p.map(ring).join('')).join('') : ''))
+      .filter(Boolean)
+      .map((d) => `<path d="${d}"/>`)
+      .join('');
+  }
+
+  async function loadMap() {
+    const box = $('mon-map');
+    box.innerHTML = '<div class="skeleton skeleton-poll"></div>';
+    try {
+      if (!world) world = worldPaths(await (await fetch('/assets/world-110m.json', { credentials: 'same-origin' })).json());
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(state.filter)) if (v) params.set(k, v);
+      const data = await api(`/api/monitor/map?${params}`);
+      const max = Math.max(1, ...data.points.map((p) => p.count));
+      const dots = data.points
+        .map((p, i) => {
+          const [x, y] = px(p.lon, p.lat);
+          const r = (3 + Math.sqrt(p.count / max) * 9).toFixed(1);
+          return `<circle class="mon-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" data-pt="${i}" tabindex="0"><title>${WY.esc(p.label)} · ${p.count} 位访客</title></circle>`;
+        })
+        .join('');
+      box.innerHTML = `<svg class="mon-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="访客大致位置地图"><g class="mon-land">${world}</g>${dots}</svg>
+        <p class="muted small">点是城市级估算位置（约 10 公里精度），同一地点合并为一个点，越大人越多。无法定位的 IP：${data.unknown} 个。地图由本站自己绘制，不向任何地图服务发送数据。</p>
+        <div class="mon-map-info" id="mon-map-info">${data.points.length ? '点一个点查看那里的访客。' : '筛选范围内没有可定位的访客。'}</div>`;
+      box._points = data.points;
+    } catch (e) {
+      box.innerHTML = `<p class="empty">${WY.esc(e.message || '地图加载失败')}</p>`;
+    }
+  }
+
+  function showPoint(i) {
+    const p = ($('mon-map')._points || [])[i];
+    if (!p) return;
+    $('mon-map').querySelectorAll('.mon-dot').forEach((d) => d.classList.toggle('is-active', d.dataset.pt === String(i)));
+    $('mon-map-info').innerHTML = `<b>${p.flag || '📍'} ${WY.esc(p.label)}</b> <span class="muted small">${p.count} 位访客 · ${p.events} 条记录</span><div class="mon-map-ids">${p.visitors.map((id) => `<button class="mon-goto" type="button" data-goto="${id}">#${id}</button>`).join('')}</div>`;
+  }
+
+  $('mon-map-btn').addEventListener('click', () => {
+    const box = $('mon-map');
+    const open = box.hidden;
+    box.hidden = !open;
+    $('mon-map-btn').textContent = open ? '收起地图' : '显示地图';
+    if (open) loadMap();
+  });
+  $('mon-map').addEventListener('click', (e) => {
+    const d = e.target.closest('[data-pt]');
+    if (d) showPoint(Number(d.dataset.pt));
+    const g = e.target.closest('[data-goto]');
+    if (g) setFilter({ q: `#${g.dataset.goto}` });
+  });
+  $('mon-map').addEventListener('keydown', (e) => {
+    const d = e.target.closest('[data-pt]');
+    if (d && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      showPoint(Number(d.dataset.pt));
+    }
+  });
+
   async function loadSummary() {
     try {
       const s = await api('/api/monitor/summary');
       $('mon-keep').textContent = s.retentionDays;
+      const g = s.geo;
+      $('mon-geo-status').textContent = g && g.city ? `位置数据：DB-IP Lite ${g.cityBuilt} 版（本地数据库，不外传 IP）` : '位置数据：服务器上还没有安装数据库';
       const m = [
         [s.subjects24h, '近 24 小时访客'],
         [s.loginFailed, '登录失败'],
@@ -120,6 +214,39 @@
     } catch {}
   }
 
+  const NA = '<span class="mon-na">数据源不提供</span>';
+  function placeHtml(p) {
+    if (!p || !p.label) return '';
+    return `<span class="mon-place${p.found ? '' : ' is-none'}" title="根据 IP 估算的大致位置，不是住址">${p.found ? `<span class="mon-flag" aria-hidden="true">${p.flag || '📍'}</span>` : ''}${WY.esc(p.label)}</span>`;
+  }
+
+  function geoDetails(g) {
+    if (!g) return '';
+    const v = (x) => (x == null || x === '' ? NA : WY.esc(String(x)));
+    if (!g.found) return `<p class="muted small">${WY.esc(g.note || '没有位置数据')}</p>`;
+    const rows = [
+      ['国家 / 地区', `${g.flag ? g.flag + ' ' : ''}${v(g.country)}${g.countryCode ? ` <span class="muted small">${g.countryCode}</span>` : ''}`],
+      ['省 / 州', v(g.region)],
+      ['城市', v(g.city)],
+      ['区县', NA],
+      ['邮编', NA],
+      ['大致坐标', g.lat != null ? `${g.lat}, ${g.lon} <span class="muted small">（城市中心附近，约 10 公里精度，不是住址）</span>` : NA],
+      ['网络运营者 / ASN', g.org || g.asn ? `${v(g.org)}${g.asn ? ` <span class="mono">${g.asn}</span>` : ''}` : NA],
+      ['ISP', `${NA} <span class="muted small">（以网络运营者为准）</span>`],
+      ['连接类型', '<span class="mon-na">未知（数据源不提供）</span>'],
+      ['VPN / 代理', '<span class="mon-na">未知（数据源不提供）</span>'],
+      ['准确度', v(g.accuracy)],
+      ['数据来源', `${v(g.provider)} · IP Geolocation by <a href="https://db-ip.com" target="_blank" rel="noopener">DB-IP</a>`],
+      ['最近查询', fmt(g.updatedAt)],
+    ];
+    return `<dl class="mon-geo">${rows.map(([k, val]) => `<div><dt>${k}</dt><dd>${val}</dd></div>`).join('')}</dl>`;
+  }
+
+  function geoPlace(g) {
+    if (!g) return null;
+    return { flag: g.flag, found: g.found, label: g.found ? [g.city, g.region !== g.city ? g.region : null, g.country].filter(Boolean).join(', ') : g.note };
+  }
+
   function rowHtml(u) {
     const who = u.isAdmin ? '<span class="badge badge-gold">站长</span>' : u.name ? `<span class="badge badge-green">${WY.esc(u.name)}</span>` : u.anonymous ? '<span class="badge badge-muted">无 Cookie</span>' : '<span class="badge badge-muted">匿名访客</span>';
     const warn = u.flags ? `<span class="badge badge-rose" title="只是线索，不代表一定有恶意">⚠ ${u.flags} 条提示</span>` : '';
@@ -127,7 +254,7 @@
       <div class="mon-row-main">
         <div class="mon-who"><b class="mono">#${u.id}</b><span class="mon-note${u.note ? '' : ' is-empty'}">${u.note ? WY.esc(u.note) : '未命名'}</span><button class="vb-pen mon-note-edit" type="button" data-note="${u.id}" aria-label="给这个访客起昵称" title="起个昵称（只有你能看到）">✎</button>${who}${warn}<span class="muted small">${WY.esc(u.device)}</span></div>
         <dl class="mon-facts">
-          <div><dt>IP</dt><dd class="mono">${WY.esc(u.ip)}${u.ipCount > 1 ? ` <span class="muted small">（共 ${u.ipCount} 个）</span>` : ''}${u.sharedIp ? `<button class="mon-shared" type="button" data-ip="${WY.esc(u.ip)}" title="同一个 IP 可能是学校、公司或同一个手机网络">同 IP 还有 ${u.sharedIp} 位</button>` : ''}</dd></div>
+          <div><dt>IP</dt><dd class="mono">${WY.esc(u.ip)}${u.ipCount > 1 ? ` <span class="muted small">（共 ${u.ipCount} 个）</span>` : ''}${u.sharedIp ? `<button class="mon-shared" type="button" data-ip="${WY.esc(u.ip)}" title="同一个 IP 可能是学校、公司或同一个手机网络">同 IP 还有 ${u.sharedIp} 位</button>` : ''}${placeHtml(u.place)}</dd></div>
           <div><dt>首次</dt><dd>${fmt(u.firstSeen)}</dd></div>
           <div><dt>最近</dt><dd>${fmt(u.lastSeen)}</dd></div>
           <div><dt>访问</dt><dd>${u.visits} 次 · ${u.events} 条记录</dd></div>
@@ -161,8 +288,13 @@
 
   function timelineHtml(d, id) {
     const ips = d.ips
-      .map((x) => `<li><span class="badge badge-cyan">${x.tag}</span><b class="mono">${WY.esc(x.ip)}</b><span class="muted small">${fmt(x.firstSeen)} → ${fmt(x.lastSeen)}</span></li>`)
+      .map(
+        (x) => `<li class="mon-iph"><details><summary><span class="badge badge-cyan">${x.tag}</span><b class="mono">${WY.esc(x.ip)}</b>${placeHtml(geoPlace(x.geo))}${x.geo && x.geo.org ? `<span class="muted small">${WY.esc(x.geo.org)}</span>` : ''}<span class="muted small">${x.sessions} 次访问 · ${fmt(x.firstSeen)} → ${fmt(x.lastSeen)}</span><span class="mon-more">详细位置 ▾</span></summary>${geoDetails(x.geo)}</details></li>`,
+      )
       .join('');
+    const obs = (d.observations || []).length
+      ? `<div class="mon-obs"><h3>位置观察</h3><ul>${d.observations.map((o) => `<li>${WY.esc(o)}</li>`).join('')}</ul><p class="muted small">这是观察，不是可疑行为的证据：换手机网络、出差、开关 VPN 都会这样。</p></div>`
+      : '';
     let lastDay = '';
     const items = d.events
       .map((e) => {
@@ -177,7 +309,7 @@
       .map((o) => `<li><button class="mon-goto" type="button" data-goto="${o.id}">#${o.id}${o.note ? ` ${WY.esc(o.note)}` : ''}</button>${o.likelySame ? '<span class="badge badge-gold">可能是同一人</span>' : '<span class="badge badge-muted">同 IP</span>'}${o.name ? `<span class="badge badge-green">${WY.esc(o.name)}</span>` : ''}<span class="muted small">${WY.esc(o.device)} · 最近 ${fmt(o.lastSeen)}</span></li>`)
       .join('');
     const relBox = rel ? `<div class="mon-tl-ips"><h3>相关访客</h3><p class="muted small">「可能是同一人」= 同 IP 且浏览器完全相同，或同一个昵称（例如清了 Cookie 又回来）。只是推测。</p><ul>${rel}</ul></div>` : '';
-    return `<div class="mon-tl-ips"><h3>用过的 IP</h3><ul>${ips}</ul></div>${relBox}
+    return `<div class="mon-tl-ips"><h3>IP 与位置记录</h3><p class="muted small">位置是根据 IP 估算的大致城市，不是真实住址；点一条 IP 看详细信息。</p><ul>${ips}</ul></div>${obs}${relBox}
       <p class="muted small mon-ua">浏览器标识：<span class="mono">${WY.esc(d.userAgent || '—')}</span></p>
       <ol class="mon-events">${items || '<li class="empty">没有活动记录。</li>'}</ol>
       <div class="mon-tl-foot"><span class="muted small">只显示网站实际记录的事件（最近 300 条）。不记录任何表单内容。</span><button class="btn btn-danger btn-sm" type="button" data-delete="${id}">删除此访客的全部记录</button></div>`;
@@ -279,6 +411,7 @@
     state.filter = f;
     state.page = 1;
     loadList();
+    if (!$('mon-map').hidden) loadMap();
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -288,6 +421,7 @@
     state.filter = { q: f.get('q').trim(), ip: f.get('ip').trim(), from: f.get('from'), to: f.get('to'), flagged: f.get('flagged') ? '1' : '' };
     state.page = 1;
     loadList();
+    if (!$('mon-map').hidden) loadMap();
   });
   $('mon-filter').addEventListener('reset', () => {
     state.filter = {};

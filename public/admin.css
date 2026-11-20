@@ -968,3 +968,32 @@
 
 /* 安全监控 entry in the admin tab bar: a link to its own page, not a panel */
 .tab.tab-link { text-decoration: none; margin-left: auto; color: #e8c46a; }
+
+/* 安全监控: IP locations + map */
+.mon-place { display: block; margin-top: 3px; font-family: var(--font); font-size: 12px; color: var(--muted); }
+.mon-place.is-none { color: var(--muted-2); font-style: italic; }
+.mon-flag { margin-right: 4px; }
+.mon-na { color: var(--muted-2); font-style: italic; }
+.mon-iph details { border: 1px solid var(--line); padding: 6px 10px; }
+.mon-iph details[open] { border-color: rgba(232, 196, 106, .4); }
+.mon-iph summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; cursor: pointer; list-style: none; }
+.mon-iph summary::-webkit-details-marker { display: none; }
+.mon-iph summary .mon-place { display: inline; margin: 0; font-size: 13px; color: inherit; }
+.mon-more { margin-left: auto; font-size: 12px; color: #e8c46a; }
+.mon-geo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; margin: 10px 0 4px; }
+.mon-geo div { display: grid; grid-template-columns: 7.5em 1fr; gap: 8px; font-size: 13px; }
+.mon-geo dt { color: var(--muted-2); font-size: 12px; }
+.mon-geo dd { margin: 0; overflow-wrap: anywhere; }
+.mon-geo a, .mon-credit a { color: #e8c46a; }
+.mon-obs { border-left: 2px solid rgba(232, 196, 106, .6); padding: 6px 0 6px 12px; }
+.mon-obs h3 { margin: 0 0 4px; font-size: 13px; }
+.mon-obs ul { margin: 0 0 4px; padding-left: 18px; font-size: 13px; }
+.mon-credit { margin: -6px 0 0; }
+.mon-map { margin-top: 10px; }
+.mon-svg { display: block; width: 100%; height: auto; background: rgba(255, 255, 255, .015); border: 1px solid var(--line); }
+.mon-land path { fill: rgba(232, 196, 106, .08); stroke: rgba(232, 196, 106, .28); stroke-width: .5; }
+.mon-dot { fill: rgba(232, 196, 106, .55); stroke: #e8c46a; stroke-width: 1; cursor: pointer; transition: fill .15s ease; }
+.mon-dot:hover, .mon-dot:focus-visible, .mon-dot.is-active { fill: #ff8a8a; stroke: #ff6b6b; outline: none; }
+.mon-map-info { margin-top: 8px; font-size: 13px; }
+.mon-map-ids { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+@media (max-width: 600px) { .mon-geo { grid-template-columns: 1fr; } .mon-more { margin-left: 0; } }

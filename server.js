@@ -16,6 +16,7 @@
  *   SHIELD_RPM      每分钟请求数超过多少算攻击（默认 1500）
  *   SHIELD_CALM_MIN 平静多少分钟后自动关闭（默认 30）
  *   MONITOR_CODE    首次启动时设置「安全监控」口令（>=10 位）；之后用 scripts/set-monitor-code.mjs 修改
+ *   GEO_DIR         IP 地理位置数据库目录（默认 DATA_DIR/geo；dbip-city-lite.mmdb + dbip-asn-lite.mmdb）
  *   SYNTHETIC_IPS   置 1 时（仅预览/测试环境）把真实 IP 换成 198.18.x.x 假地址再记录
  */
 import fs from 'node:fs';
@@ -55,6 +56,7 @@ const app = createApp({
   shieldCalmMinutes: process.env.SHIELD_CALM_MIN,
   monitorCode: process.env.MONITOR_CODE,
   syntheticIps: process.env.SYNTHETIC_IPS === '1',
+  geoDir: process.env.GEO_DIR,
 });
 
 app.server.listen(PORT, HOST, () => {

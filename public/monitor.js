@@ -186,17 +186,91 @@
         .map((p, i) => {
           const [x, y] = px(p.lon, p.lat);
           const r = (3 + Math.sqrt(p.count / max) * 9).toFixed(1);
-          return `<circle class="mon-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" data-pt="${i}" tabindex="0"><title>${WY.esc(p.label)} · ${p.count} 位访客</title></circle>`;
+          return `<circle class="mon-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" data-r="${r}" data-pt="${i}" tabindex="0"><title>${WY.esc(p.label)} · ${p.count} 位访客</title></circle>`;
         })
         .join('');
-      box.innerHTML = `<svg class="mon-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="访客大致位置地图"><g class="mon-land">${world}</g>${dots}</svg>
+      box.innerHTML = `<div class="mon-map-stage"><svg class="mon-svg" id="mon-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="访客大致位置地图"><g class="mon-land">${world}</g>${dots}</svg>
+        <div class="mon-zoom" role="group" aria-label="地图缩放"><button type="button" data-zoom="in" aria-label="放大">＋</button><button type="button" data-zoom="out" aria-label="缩小">－</button><button type="button" data-zoom="fit" title="缩放到所有访客">看全部访客</button><button type="button" data-zoom="reset" title="回到全世界">全世界</button></div></div>
+        <p class="muted small">滚轮或 ＋／－ 缩放，按住拖动平移。</p>
         <p class="muted small">点是城市级估算位置（约 10 公里精度），同一地点合并为一个点，越大人越多。无法定位的 IP：${data.unknown} 个。地图由本站自己绘制，不向任何地图服务发送数据。</p>
         <div class="mon-map-info" id="mon-map-info">${data.points.length ? '点一个点查看那里的访客。' : '筛选范围内没有可定位的访客。'}</div>`;
       box._points = data.points;
+      applyView();
     } catch (e) {
       box.innerHTML = `<p class="empty">${WY.esc(e.message || '地图加载失败')}</p>`;
     }
   }
+
+  /* zoom & pan: only the SVG viewBox changes; dots keep their on-screen size */
+  const view = { x: 0, y: 0, w: W };
+  const clampView = () => {
+    view.w = Math.min(W, Math.max(W / 40, view.w));
+    const h = (view.w * H) / W;
+    view.x = Math.min(W - view.w, Math.max(0, view.x));
+    view.y = Math.min(H - h, Math.max(0, view.y));
+  };
+  function applyView() {
+    const svg = $('mon-svg');
+    if (!svg) return;
+    clampView();
+    svg.setAttribute('viewBox', `${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${((view.w * H) / W).toFixed(2)}`);
+    const k = W / view.w;
+    for (const c of svg.querySelectorAll('.mon-dot')) c.setAttribute('r', (Number(c.dataset.r) / Math.sqrt(k)).toFixed(2));
+  }
+  function zoomAt(factor, cx, cy) {
+    // cx, cy: map coordinates that stay under the cursor
+    const nw = Math.min(W, Math.max(W / 40, view.w / factor));
+    view.x = cx - ((cx - view.x) * nw) / view.w;
+    view.y = cy - ((cy - view.y) * nw) / view.w;
+    view.w = nw;
+    applyView();
+  }
+  function toMap(svg, clientX, clientY) {
+    const r = svg.getBoundingClientRect();
+    return [view.x + ((clientX - r.left) / r.width) * view.w, view.y + ((clientY - r.top) / r.height) * ((view.w * H) / W)];
+  }
+  function fitPoints() {
+    const pts = ($('mon-map')._points || []).map((p) => px(p.lon, p.lat));
+    if (!pts.length) return;
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    const pad = 30;
+    const w = Math.max(Math.max(...xs) - Math.min(...xs) + pad * 2, ((Math.max(...ys) - Math.min(...ys) + pad * 2) * W) / H, W / 12);
+    view.w = w;
+    view.x = (Math.min(...xs) + Math.max(...xs)) / 2 - w / 2;
+    view.y = (Math.min(...ys) + Math.max(...ys)) / 2 - (w * H) / W / 2;
+    applyView();
+  }
+  $('mon-map').addEventListener('wheel', (e) => {
+    const svg = e.target.closest('#mon-svg');
+    if (!svg) return;
+    e.preventDefault();
+    const [cx, cy] = toMap(svg, e.clientX, e.clientY);
+    zoomAt(e.deltaY < 0 ? 1.25 : 0.8, cx, cy);
+  }, { passive: false });
+  let drag = null;
+  $('mon-map').addEventListener('pointerdown', (e) => {
+    const svg = e.target.closest('#mon-svg');
+    if (!svg || e.target.closest('[data-pt]')) return;
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false };
+    svg.setPointerCapture(e.pointerId);
+    svg.classList.add('is-drag');
+  });
+  $('mon-map').addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const svg = $('mon-svg');
+    const r = svg.getBoundingClientRect();
+    view.x = drag.vx - ((e.clientX - drag.x) / r.width) * view.w;
+    view.y = drag.vy - ((e.clientY - drag.y) / r.height) * ((view.w * H) / W);
+    applyView();
+  });
+  const endDrag = () => {
+    drag = null;
+    const svg = $('mon-svg');
+    if (svg) svg.classList.remove('is-drag');
+  };
+  $('mon-map').addEventListener('pointerup', endDrag);
+  $('mon-map').addEventListener('pointercancel', endDrag);
 
   function showPoint(i) {
     const p = ($('mon-map')._points || [])[i];
@@ -213,6 +287,20 @@
     if (open) loadMap();
   });
   $('mon-map').addEventListener('click', (e) => {
+    const z = e.target.closest('[data-zoom]');
+    if (z) {
+      const c = [view.x + view.w / 2, view.y + (view.w * H) / W / 2];
+      if (z.dataset.zoom === 'in') zoomAt(1.6, ...c);
+      else if (z.dataset.zoom === 'out') zoomAt(1 / 1.6, ...c);
+      else if (z.dataset.zoom === 'fit') fitPoints();
+      else {
+        view.x = 0;
+        view.y = 0;
+        view.w = W;
+        applyView();
+      }
+      return;
+    }
     const d = e.target.closest('[data-pt]');
     if (d) showPoint(Number(d.dataset.pt));
     const g = e.target.closest('[data-goto]');
@@ -225,6 +313,34 @@
       showPoint(Number(d.dataset.pt));
     }
   });
+
+  /* ---------------- refresh ---------------- */
+  let autoTimer = 0;
+  async function refreshAll(auto) {
+    const btn = $('mon-refresh');
+    btn.disabled = true;
+    const tasks = [loadSummary(), loadLog()];
+    // An automatic refresh never collapses a timeline you have open.
+    if (!auto || !document.querySelector('.mon-row.is-open')) tasks.push(loadList());
+    if (!$('mon-map').hidden) tasks.push(loadMap());
+    await Promise.allSettled(tasks);
+    btn.disabled = false;
+    $('mon-updated').textContent = `更新于 ${T.inZone(Date.now(), 'bj').time}`;
+  }
+  $('mon-refresh').addEventListener('click', () => refreshAll(false));
+  $('mon-auto').addEventListener('change', (e) => {
+    clearInterval(autoTimer);
+    if (e.target.checked) autoTimer = setInterval(() => refreshAll(true), 60_000);
+    try {
+      localStorage.setItem('wy_mon_auto', e.target.checked ? '1' : '');
+    } catch {}
+  });
+  try {
+    if (localStorage.getItem('wy_mon_auto')) {
+      $('mon-auto').checked = true;
+      autoTimer = setInterval(() => refreshAll(true), 60_000);
+    }
+  } catch {}
 
   async function loadSummary() {
     try {

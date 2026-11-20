@@ -13,13 +13,13 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
-  <link rel="stylesheet" href="/admin.css?v=20261121-1">
+  <link rel="stylesheet" href="/admin.css?v=20261121-3">
   <link rel="stylesheet" href="/cosmic.css?v=20261121-14">
   <link rel="stylesheet" href="/fx.css?v=20261120-2">
   <script src="/device-id.js?v=20261119-1321" defer></script>
   <script src="/app.js?v=20261120-2" defer></script>
   <script src="/tz.js?v=20261121-1" defer></script>
-  <script src="/monitor.js?v=20261121-1" defer></script>
+  <script src="/monitor.js?v=20261121-2" defer></script>
   <script src="/fx.js?v=20261121-1"></script>
 </head>
 <body class="page-admin page-monitor">
@@ -87,6 +87,9 @@
             <p class="admin-session">自动上锁：<b id="mon-left">—</b> · 记录保留 <b id="mon-keep">90</b> 天 · 提示只是线索，不代表对方一定有恶意</p>
           </div>
           <div class="admin-welcome-actions">
+            <button class="btn btn-ghost btn-sm" id="mon-refresh" type="button">↻ 刷新</button>
+            <label class="check mon-auto"><input type="checkbox" id="mon-auto"> 每分钟自动刷新</label>
+            <span class="muted small" id="mon-updated"></span>
             <a class="btn btn-ghost btn-sm" href="/admin">返回后台</a>
             <button class="btn btn-danger btn-sm" id="mon-lock-btn" type="button">立即上锁</button>
           </div>

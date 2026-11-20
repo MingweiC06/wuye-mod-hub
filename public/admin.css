@@ -1024,3 +1024,16 @@
   .mon-ev-time { min-width: 0; }
   .tz-line { white-space: normal; }
 }
+
+/* ---- map zoom / refresh ---- */
+.mon-map-stage { position: relative; }
+.mon-svg { touch-action: none; cursor: grab; user-select: none; }
+.mon-svg.is-drag { cursor: grabbing; }
+.mon-svg .mon-land path { vector-effect: non-scaling-stroke; }
+.mon-zoom { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 4px; }
+.mon-zoom button { min-width: 36px; height: 32px; padding: 0 10px; border: 1px solid rgba(232, 196, 106, .4); border-radius: 8px; background: rgba(10, 8, 18, .85); color: #e8c46a; font-size: 13px; cursor: pointer; }
+.mon-zoom button:hover { background: rgba(232, 196, 106, .15); }
+.mon-zoom [data-zoom="in"], .mon-zoom [data-zoom="out"] { font-size: 18px; line-height: 1; }
+.mon-auto { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+#mon-refresh:disabled { opacity: .5; }
+.mon-zoom { top: auto; right: auto; bottom: 10px; left: 10px; flex-direction: row; flex-wrap: wrap; }

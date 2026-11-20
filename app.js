@@ -19,6 +19,7 @@ import { getLockdown, lockdownRefusal } from './lib/lockdown.js';
 import { createMonitor, loadMonitorKey, migrateMonitor, monitorConfigured, sanitizeClicks, setMonitorCode } from './lib/monitor.js';
 import { handleMonitor } from './lib/monitor-api.js';
 import { createGeo, migrateGeo } from './lib/geo.js';
+import { migrateGuard, netHash } from './lib/guard.js';
 import {
   HttpError,
   RateLimiter,
@@ -69,6 +70,7 @@ export function createApp(options = {}) {
   migrateAdminSecurity(db);
   migrateMonitor(db);
   migrateGeo(db);
+  migrateGuard(db);
   seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
@@ -192,6 +194,8 @@ export function createApp(options = {}) {
         cookies,
         ip,
         ipHash,
+        netHash: netHash(secret, ip),
+        geo: monitor ? monitor.geo : null,
         voterKey,
         secret,
         limiter,

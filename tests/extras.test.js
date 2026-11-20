@@ -77,8 +77,10 @@ test('bracket voting and advancing', async () => {
   assert.equal(b.matches.length, 4);
   const m = b.matches[0];
   await fan(`/api/bracket/matches/${m.id}/vote`, { method: 'POST', body: { pick: 'b' } });
+  // A second device on the same network can't vote again (防刷票).
   const r = await fan2(`/api/bracket/matches/${m.id}/vote`, { method: 'POST', body: { pick: 'b' } });
-  assert.equal(r.data.bracket.matches[0].votesB, 2);
+  assert.equal(r.status, 409);
+  assert.equal((await fan('/api/bracket')).data.bracket.matches[0].votesB, 1);
   const adv = await admin(`/api/admin/bracket/${b.id}/advance`, { method: 'POST' });
   assert.equal(adv.data.bracket.round, 2);
   assert.equal(adv.data.bracket.matches.find((x) => x.round === 2).a, m.b);

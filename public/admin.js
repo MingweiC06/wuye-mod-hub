@@ -1776,7 +1776,7 @@
     if (!state.me || els.exportBtn.disabled) return;
     setButtonBusy(els.exportBtn, true, '导出中…');
     try {
-      const response = await fetch('/api/admin/export.csv', { credentials: 'same-origin' });
+      const response = await fetch('/api/admin/export.csv', { credentials: 'same-origin', headers: { 'X-Device-Id': WY.deviceId } });
       if (response.status === 401) {
         expireSession();
         return;

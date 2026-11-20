@@ -8,6 +8,7 @@
  *   HOST            默认 0.0.0.0
  *   DATA_DIR        数据目录（默认 ./data）
  *   ADMIN_CODE      首次启动时设置管理码（>=10 位）；不设置则自动生成
+ *   ADMIN_LOCAL_ONLY 置 1 时后台只能从服务器本机访问（SSH 隧道：ssh -L 8080:127.0.0.1:8080 …，再开 http://localhost:8080/admin）
  *   TRUST_PROXY     置 1 时信任 X-Forwarded-For（部署在 Nginx 后面时使用）
  *   COOKIE_SECURE   置 1 时 Cookie 只走 HTTPS（生产环境建议开启）
  *   NODE_ENV        production 时隐藏详细错误
@@ -49,6 +50,7 @@ const app = createApp({
   adminCode: process.env.ADMIN_CODE,
   trustProxy: process.env.TRUST_PROXY === '1',
   secureCookies: process.env.COOKIE_SECURE === '1',
+  adminLocalOnly: process.env.ADMIN_LOCAL_ONLY === '1',
   cfApiToken: process.env.CF_API_TOKEN || readToken(),
   relaySecret: process.env.RELAY_SECRET || readRelaySecret(),
   cfZoneId: process.env.CF_ZONE_ID,

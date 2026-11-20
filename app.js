@@ -57,6 +57,10 @@ export function createApp(options = {}) {
   const publicDir = path.resolve(options.publicDir || DEFAULT_PUBLIC);
   const trustProxy = Boolean(options.trustProxy);
   const secureCookies = Boolean(options.secureCookies);
+  // 后台本地化: with ADMIN_LOCAL_ONLY the admin (pages, scripts, APIs) only answers requests made on the
+  // server itself — i.e. through an SSH tunnel. Anything that came through Caddy / Cloudflare / the China relay gets 404.
+  const adminLocalOnly = Boolean(options.adminLocalOnly);
+  const ADMIN_PATH = /^\/(admin(\/.*|\.html|\.js|\.css|-login(\.html|\.js)?|-channel\.js)?|monitor(\.html|\.js)?|api\/(admin|monitor)(\/.*)?)$/;
   const relaySecret = String(options.relaySecret || '');
 
   fs.mkdirSync(dataDir, { recursive: true });
@@ -114,6 +118,17 @@ export function createApp(options = {}) {
     const relayIp = relayed ? String(req.headers['x-wuye-client-ip'] || '').trim() : '';
     const ip = relayIp && /^[0-9a-fA-F:.]{3,45}$/.test(relayIp) ? relayIp : clientIp(req, trustProxy);
     const host = relayed && req.headers['x-wuye-host'] ? String(req.headers['x-wuye-host']) : String(req.headers.host || '');
+    const isLocal =
+      !relayed &&
+      !req.headers['x-forwarded-for'] &&
+      !req.headers['cf-connecting-ip'] &&
+      /^(127\.\d+\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+)$/.test(String(req.socket?.remoteAddress || '')) &&
+      /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(String(req.headers.host || ''));
+    if (adminLocalOnly && !isLocal && ADMIN_PATH.test(pathname)) {
+      if (pathname.startsWith('/api/')) sendJson(res, 404, { error: { code: 'not_found', message: '接口不存在' } });
+      else notFoundPage(res, publicDir);
+      return;
+    }
 
     // 安全监控: one record per finished request (route + status only, never bodies).
     const reqCookies = parseCookies(req.headers.cookie);
@@ -166,13 +181,13 @@ export function createApp(options = {}) {
         vid = randomHex(16);
         res.appendHeader(
           'Set-Cookie',
-          serializeCookie('wy_vid', vid, { maxAge: vidMaxAge, secure: secureCookies, sameSite: 'Lax' }),
+          serializeCookie('wy_vid', vid, { maxAge: vidMaxAge, secure: secureCookies && !isLocal, sameSite: 'Lax' }),
         );
       } else if (req.method !== 'GET' && req.method !== 'HEAD') {
         // 滑动续期：只在实际提交（投票/许愿/赞助…）时续期，读取页面不下发多余的 Set-Cookie。
         res.appendHeader(
           'Set-Cookie',
-          serializeCookie('wy_vid', vid, { maxAge: vidMaxAge, secure: secureCookies, sameSite: 'Lax' }),
+          serializeCookie('wy_vid', vid, { maxAge: vidMaxAge, secure: secureCookies && !isLocal, sameSite: 'Lax' }),
         );
       }
       const deviceHeader = String(req.headers['x-device-id'] || '');
@@ -200,7 +215,9 @@ export function createApp(options = {}) {
         secret,
         limiter,
         dataDir,
-        secureCookies,
+        // Through the tunnel the page is plain http://localhost, so the admin cookie can't be Secure there.
+        secureCookies: secureCookies && !isLocal,
+        isLocal,
         shield,
         setCookie(value) {
           res.appendHeader('Set-Cookie', value);
@@ -292,7 +309,7 @@ export function createApp(options = {}) {
       // Give first-time visitors the anonymous visitor cookie on the page itself, so their timeline starts here.
       if (monitor && !seen.vid && req.method === 'GET') {
         seen.vid = randomHex(16);
-        res.appendHeader('Set-Cookie', serializeCookie('wy_vid', seen.vid, { maxAge: 180 * 24 * 3600, secure: secureCookies, sameSite: 'Lax' }));
+        res.appendHeader('Set-Cookie', serializeCookie('wy_vid', seen.vid, { maxAge: 180 * 24 * 3600, secure: secureCookies && !isLocal, sameSite: 'Lax' }));
       }
       res.setHeader('Link', `<${CANONICAL_ORIGIN}${pathname}>; rel="canonical"`);
       if (req.method === 'GET') {

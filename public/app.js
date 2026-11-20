@@ -453,7 +453,10 @@
       });
       document.dispatchEvent(new CustomEvent('wy:site', { detail: data }));
     } catch (error) {
-      console.warn('[WY] site payload failed:', error.message);
+      // Only developers (and the admin tunnel) see this; fans' consoles stay clean.
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        console.warn('[WY] site payload failed:', error.message);
+      }
     }
   }
 

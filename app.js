@@ -16,6 +16,8 @@ import { migrateConsent } from './lib/consent.js';
 import { migrateVisits, recordVisit } from './lib/visits.js';
 import { migrateAdminSecurity } from './lib/admin-security.js';
 import { getLockdown, lockdownRefusal } from './lib/lockdown.js';
+import { createMonitor, loadMonitorKey, migrateMonitor, monitorConfigured, setMonitorCode } from './lib/monitor.js';
+import { handleMonitor } from './lib/monitor-api.js';
 import {
   HttpError,
   RateLimiter,
@@ -64,10 +66,14 @@ export function createApp(options = {}) {
   migrateConsent(db);
   migrateVisits(db);
   migrateAdminSecurity(db);
+  migrateMonitor(db);
   seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);
   const limiter = new RateLimiter();
+  // 安全监控: off only when explicitly disabled. Staging sets syntheticIps so no real IP is ever stored there.
+  const monitor = options.monitor === false ? null : createMonitor(db, { secret, key: loadMonitorKey(dataDir), synthetic: Boolean(options.syntheticIps) });
+  if (monitor && options.monitorCode && !monitorConfigured(db)) setMonitorCode(db, options.monitorCode);
   const shield = createShield({
     token: options.cfApiToken,
     zoneId: options.cfZoneId,
@@ -102,6 +108,25 @@ export function createApp(options = {}) {
     const relayIp = relayed ? String(req.headers['x-wuye-client-ip'] || '').trim() : '';
     const ip = relayIp && /^[0-9a-fA-F:.]{3,45}$/.test(relayIp) ? relayIp : clientIp(req, trustProxy);
     const host = relayed && req.headers['x-wuye-host'] ? String(req.headers['x-wuye-host']) : String(req.headers.host || '');
+
+    // 安全监控: one record per finished request (route + status only, never bodies).
+    const reqCookies = parseCookies(req.headers.cookie);
+    const seen = { vid: /^[a-f0-9]{32}$/.test(reqCookies.wy_vid || '') ? reqCookies.wy_vid : '', voterKey: '' };
+    if (monitor) {
+      res.on('finish', () => {
+        monitor.record({
+          vid: seen.vid,
+          ip,
+          ua: String(req.headers['user-agent'] || ''),
+          method: req.method === 'HEAD' ? 'GET' : req.method,
+          pathname,
+          status: res.statusCode,
+          isApi: pathname.startsWith('/api/'),
+          voterKey: seen.voterKey,
+          isAdmin: () => Boolean(checkAdminSession(db, reqCookies.wy_admin)),
+        });
+      });
+    }
 
     if (pathname.startsWith('/api/')) {
       if (!['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) {
@@ -149,6 +174,8 @@ export function createApp(options = {}) {
       // partner-site iframe, where third-party cookies are often blocked.
       const voterKey = device ? hmacHex(secret, `v2:d:${device}`) : hmacHex(secret, `v1:${vid}:-`);
       const ipHash = sha256(`${secret}:${ip}`).slice(0, 16);
+      seen.vid = vid;
+      seen.voterKey = voterKey;
 
       const ctx = {
         req,
@@ -178,6 +205,7 @@ export function createApp(options = {}) {
         return;
       }
 
+      if (await handleMonitor(ctx, monitor)) return;
       const handled = await handleApi(ctx);
       if (!handled) {
         sendJson(res, 404, { error: { code: 'not_found', message: '接口不存在' } });
@@ -227,7 +255,27 @@ export function createApp(options = {}) {
       res.end();
       return;
     }
+    // The private 安全监控 page: only for a signed-in admin; for everyone else it does not exist.
+    if (pathname === '/monitor.html') {
+      notFoundPage(res, publicDir);
+      return;
+    }
+    if (pathname === '/admin/monitor') {
+      if (!monitor || !checkAdminSession(db, reqCookies.wy_admin)) {
+        notFoundPage(res, publicDir);
+        return;
+      }
+      res.setHeader('Cache-Control', 'no-store');
+      if (!serveStatic(req, res, publicDir, '/monitor.html')) notFoundPage(res, publicDir);
+      return;
+    }
+
     if (PUBLIC_PAGES.has(pathname)) {
+      // Give first-time visitors the anonymous visitor cookie on the page itself, so their timeline starts here.
+      if (monitor && !seen.vid && req.method === 'GET') {
+        seen.vid = randomHex(16);
+        res.appendHeader('Set-Cookie', serializeCookie('wy_vid', seen.vid, { maxAge: 180 * 24 * 3600, secure: secureCookies, sameSite: 'Lax' }));
+      }
       res.setHeader('Link', `<${CANONICAL_ORIGIN}${pathname}>; rel="canonical"`);
       if (req.method === 'GET') {
         try {

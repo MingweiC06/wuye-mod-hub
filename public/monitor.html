@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>安全监控 | 乌叶MC · 模组许愿池</title>
+  <meta name="description" content="站长专用。">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#05070d">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="/favicon.ico?v=20261119a" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png?v=20261119a">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
+  <link rel="stylesheet" href="/styles.css?v=20261119-1321">
+  <link rel="stylesheet" href="/admin.css?v=20261120-6">
+  <link rel="stylesheet" href="/cosmic.css?v=20261120-8">
+  <link rel="stylesheet" href="/fx.css?v=20261120-2">
+  <script src="/device-id.js?v=20261119-1321" defer></script>
+  <script src="/app.js?v=20261120-1" defer></script>
+  <script src="/monitor.js?v=20261120-1" defer></script>
+  <script src="/fx.js?v=20261120-2"></script>
+</head>
+<body class="page-admin page-monitor">
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/" aria-label="乌叶MC 模组许愿池首页">
+        <span class="brand-avatar"><img src="/assets/avatar.jpg" alt="" width="42" height="42"></span>
+        <span class="brand-text"><strong>乌叶MC</strong><small>MOD WISH POOL</small></span>
+      </a>
+      <nav class="nav" id="site-nav" aria-label="主导航">
+        <a href="/" data-nav="home">首页</a>
+        <a href="/ideas" data-nav="ideas">许愿池</a>
+        <a href="/polls" data-nav="polls">投票</a>
+        <a href="/downloads" data-nav="downloads">下载</a>
+        <a href="/leaderboard" data-nav="leaderboard">排行榜</a>
+        <a href="/sponsor" data-nav="sponsor">赞助</a>
+        <a href="/rules" data-nav="rules">规则</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn btn-ghost btn-sm" href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener" data-douyin-link>抖音主页</a>
+        <a class="btn btn-primary btn-sm" href="/ideas#submit">我要许愿</a>
+      </div>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="展开导航" aria-expanded="false" aria-controls="site-nav"><span></span></button>
+    </div>
+  </header>
+
+  <div class="ticker" aria-label="站点公告">
+    <div class="container ticker-inner">
+      <span class="ticker-label"><span class="dot"></span>公告</span>
+      <div class="ticker-track"><span data-announcement>本站是乌叶MC 的粉丝许愿池：写下你想看的模组，投票让它成真。</span></div>
+    </div>
+  </div>
+
+  <main id="main" class="admin-main">
+    <div class="container mon">
+      <div class="admin-boot" id="mon-boot">
+        <div class="skeleton skeleton-poll" aria-label="正在加载"></div>
+      </div>
+
+      <section class="auth-wrap" id="mon-lock" hidden aria-labelledby="mon-lock-title">
+        <div class="auth-card">
+          <p class="eyebrow"><span class="dot"></span>站长专用 · 第二道锁</p>
+          <h1 id="mon-lock-title">安全监控</h1>
+          <p class="lead">这里能看到访客的 IP 和活动记录，所以除了管理码，还要再输入一次<strong>监控口令</strong>。解锁 30 分钟后自动上锁，每次解锁和查看都会记进「最近操作」。</p>
+          <form id="mon-unlock" novalidate>
+            <div class="field">
+              <label for="mon-code">监控口令</label>
+              <input class="input" id="mon-code" type="password" maxlength="128" autocomplete="off" required>
+            </div>
+            <p class="admin-form-error" id="mon-error" role="alert" aria-live="polite"></p>
+            <button class="btn btn-primary btn-block" type="submit">解锁</button>
+          </form>
+          <p class="admin-security-note" id="mon-unset" hidden>还没有设置监控口令。在服务器上运行 <code>node scripts/set-monitor-code.mjs</code> 设置后再来。</p>
+          <div class="admin-login-foot"><a class="link-arrow" href="/admin">返回后台</a></div>
+        </div>
+      </section>
+
+      <div id="mon-view" hidden>
+        <div class="admin-welcome panel mon-head">
+          <div class="admin-welcome-copy">
+            <p class="eyebrow"><span class="dot"></span>站长专用</p>
+            <h1>安全监控</h1>
+            <p class="admin-session">自动上锁：<b id="mon-left">—</b> · 记录保留 <b id="mon-keep">90</b> 天 · 提示只是线索，不代表对方一定有恶意</p>
+          </div>
+          <div class="admin-welcome-actions">
+            <a class="btn btn-ghost btn-sm" href="/admin">返回后台</a>
+            <button class="btn btn-danger btn-sm" id="mon-lock-btn" type="button">立即上锁</button>
+          </div>
+        </div>
+
+        <div class="metric-grid mon-metrics" id="mon-metrics" aria-label="近 24 小时"></div>
+
+        <form class="panel admin-block mon-filter" id="mon-filter" novalidate>
+          <div class="field"><label for="f-q">编号 / 昵称</label><input class="input" id="f-q" name="q" maxlength="40" placeholder="#12、昵称或你起的名字"></div>
+          <div class="field"><label for="f-ip">IP</label><input class="input mono" id="f-ip" name="ip" maxlength="45" placeholder="完整 IP"></div>
+          <div class="field"><label for="f-from">从</label><input class="input" id="f-from" name="from" type="date"></div>
+          <div class="field"><label for="f-to">到</label><input class="input" id="f-to" name="to" type="date"></div>
+          <label class="check mon-flag"><input type="checkbox" name="flagged"> 只看有提示的</label>
+          <div class="mon-filter-actions">
+            <button class="btn btn-primary btn-sm" type="submit">筛选</button>
+            <button class="btn btn-ghost btn-sm" type="reset">清空</button>
+          </div>
+        </form>
+
+        <section class="panel admin-block" aria-labelledby="mon-list-title">
+          <div class="admin-block-head">
+            <h2 id="mon-list-title">访客列表</h2>
+            <span class="badge badge-cyan" id="mon-total">—</span>
+          </div>
+          <ol class="mon-list" id="mon-list"></ol>
+          <div class="mon-pager" id="mon-pager"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="/assets/avatar.jpg" alt="" width="46" height="46">
+          <div>
+            <strong>乌叶MC · 模组许愿池</strong>
+            <p>粉丝自发许愿与投票站，用爱发电，与官方无关。站内建议会由乌叶MC 本人定期查看。</p>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>逛逛</h4>
+          <a href="/ideas">许愿池</a>
+          <a href="/polls">投票中心</a>
+          <a href="/rules">许愿规则</a>
+          <a href="/admin">站长入口</a>
+        </div>
+        <div class="footer-col">
+          <h4>找到我</h4>
+          <a href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener" data-douyin-link>抖音 @乌叶MC</a>
+          <a href="https://www.douyin.com/user/MS4wLjABAAAADIlgVrgWvO3O5qS-WyI6QsyeNgt5k9V6OB8n3bMzNfxxDvQAH4icm1ZxptcTuA43" target="_blank" rel="noopener">抖音号 27276177171</a>
+          <span class="muted-2 small">合作 / 问题请走抖音私信</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span data-year>2026</span> 乌叶MC · 模组许愿池</span>
+        <span class="mono">MADE WITH BLOCKS &amp; STARLIGHT · 非官方粉丝站</span>
+      </div>
+    </div>
+  </footer>
+
+  <noscript>
+    <div class="container noscript-note">安全监控需要 JavaScript 才能登录和操作，请开启后再访问。</div>
+  </noscript>
+</body>
+</html>

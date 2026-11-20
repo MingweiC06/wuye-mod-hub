@@ -87,7 +87,8 @@ test('privacy page v2 explains cross-border, retention, minors and processor ide
   assert.match(html, /7 个工作日/);
   assert.match(html, /不满 14 周岁/);
   assert.match(html, /以「乌叶MC」身份个人运营/);
-  assert.match(html, /版本 v2/);
+  assert.match(html, /版本 v3/);
+  assert.match(html, /90 天后自动删除/);
   assert.match(html, /href="#cross-border"/);
 });
 

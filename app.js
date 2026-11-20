@@ -20,6 +20,7 @@ import { createMonitor, loadMonitorKey, migrateMonitor, monitorConfigured, sanit
 import { handleMonitor } from './lib/monitor-api.js';
 import { createGeo, migrateGeo } from './lib/geo.js';
 import { migrateGuard, netHash } from './lib/guard.js';
+import { startHousekeeping } from './lib/housekeeping.js';
 import {
   HttpError,
   RateLimiter,
@@ -75,6 +76,8 @@ export function createApp(options = {}) {
   migrateMonitor(db);
   migrateGeo(db);
   migrateGuard(db);
+  // Daily: unused uploaded images + 操作记录 older than a year.
+  if (options.housekeeping !== false) startHousekeeping(db, dataDir);
   seedExtras(db, options.demo);
   const admin = ensureAdminCode(db, dataDir, options.adminCode);
   const secret = getSecret(db);

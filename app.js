@@ -231,6 +231,17 @@ export function createApp(options = {}) {
         return;
       }
 
+      // 接口总限次: every network gets at most 240 API calls and 40 writes a minute, on top of each
+      // endpoint's own limit. The admin (signed in, or through the SSH tunnel) is never throttled.
+      if (!isLocal) {
+        const write = ctx.method !== 'GET';
+        const over = [limiter.hit(`api:${ip}`, 240, 60_000), write ? limiter.hit(`apiw:${ip}`, 40, 60_000) : { ok: true }].find((r) => !r.ok);
+        if (over && !checkAdminSession(db, cookies.wy_admin)) {
+          sendJson(res, 429, { error: { code: 'rate_limited', message: '操作太频繁啦，休息一下再来～' } }, { 'Retry-After': String(over.retryAfter || 60), 'Cache-Control': 'no-store' });
+          return;
+        }
+      }
+
       // In-page click tracker (public/app.js): batches of button / link labels for 安全监控.
       if (pathname === '/api/t' && ctx.method === 'POST') {
         const ok = limiter.hit(`t:${seen.vid || ip}`, 30, 60_000).ok;

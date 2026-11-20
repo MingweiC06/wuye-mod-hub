@@ -30,3 +30,11 @@ test('ADMIN_LOCAL_ONLY: works through an SSH tunnel (localhost), with a cookie u
   assert.equal(r.status, 200);
   assert.ok(!/;\s*Secure/i.test(r.headers.get('set-cookie')), 'no Secure flag on http://localhost');
 });
+
+test('接口总限次: one network gets at most 40 writes a minute', async () => {
+  const h = { 'X-Forwarded-For': '198.51.100.7', Host: 'wuye.uniquetalentmap.com', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+  let last;
+  for (let i = 0; i < 41; i += 1) last = await fetch(`${base}/api/me/forget`, { method: 'POST', headers: { ...h, 'X-Device-Id': `dev-${i}-abcdef` }, body: '{}' });
+  assert.equal(last.status, 429);
+  assert.ok(Number(last.headers.get('retry-after')) > 0);
+});

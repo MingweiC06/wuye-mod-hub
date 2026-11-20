@@ -113,6 +113,12 @@
     tick();
   };
 
+  /** Runs fn(el) only if the element exists, so one missing element never stops a whole render (白块). */
+  WY.setEl = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) fn(el);
+  };
+
   WY.debounce = function debounce(fn, wait = 250) {
     let timer = null;
     return function debounced(...args) {

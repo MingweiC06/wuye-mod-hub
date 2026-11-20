@@ -7,21 +7,22 @@
   let me = null;
 
   function paintMine(list) {
-    $('sp-mine-wrap').hidden = !list.length;
-    $('sp-mine').innerHTML = list
+    list = list || [];
+    WY.setEl('sp-mine-wrap', (el) => (el.hidden = !list.length));
+    WY.setEl('sp-mine', (el) => (el.innerHTML = list
       .map((s) => `<li><span>${new Date(s.createdAt).toLocaleDateString()}</span><span>${s.anonymous ? '匿名' : '署名'}</span><b class="is-${s.status}">${STATUS[s.status] || s.status}</b></li>`)
-      .join('');
+      .join('')));
   }
 
   async function load() {
     const data = await WY.api('/api/sponsor');
-    const c = data.config;
+    const c = data.config || {};
     const qrs = [
       ['wechat', '微信', c.wechat],
       ['alipay', '支付宝', c.alipay],
     ].filter((q) => q[2]);
-    if (qrs.length) $('sp-qrs').innerHTML = qrs.map(([k, label, src]) => `<figure class="sp-qr sp-${k}"><img src="${WY.esc(src)}" alt="${label}收款码" loading="lazy"><figcaption>${label}</figcaption></figure>`).join('');
-    if (c.note) $('sp-note').textContent = c.note;
+    if (qrs.length) WY.setEl('sp-qrs', (el) => (el.innerHTML = qrs.map(([k, label, src]) => `<figure class="sp-qr sp-${k}"><img src="${WY.esc(src)}" alt="${label}收款码" loading="lazy"><figcaption>${label}</figcaption></figure>`).join('')));
+    if (c.note) WY.setEl('sp-note', (el) => (el.textContent = c.note));
     // No QR uploaded yet → nothing to pay with, so don't offer "我已赞助". Only offer methods that have a QR.
     const form = $('sp-form');
     form.hidden = !qrs.length;

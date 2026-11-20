@@ -35,18 +35,19 @@
   }
   const rest = (rows, tail) => rows.filter((r) => r.rank > 3).map((r) => `<li class="lb-row${mine(r.name)}">${rank(r)}<span class="lb-name"${r.anonymous ? '' : ' data-raw'}>${r.anonymous ? '匿名' : WY.esc(r.name)}</span>${tail(r)}</li>`).join('');
 
-  function paint(data) {
-    $('lb-n-sponsors').textContent = String(data.sponsors.length);
-    $('lb-n-stars').textContent = String(data.stars.length);
-    $('lb-n-points').textContent = data.stars.reduce((n, r) => n + (Number(r.points) || 0), 0).toLocaleString();
+  function paint(raw) {
+    const data = { ...raw, sponsors: (raw && raw.sponsors) || [], stars: (raw && raw.stars) || [] };
+    WY.setEl('lb-n-sponsors', (el) => (el.textContent = String(data.sponsors.length)));
+    WY.setEl('lb-n-stars', (el) => (el.textContent = String(data.stars.length)));
+    WY.setEl('lb-n-points', (el) => (el.textContent = data.stars.reduce((n, r) => n + (Number(r.points) || 0), 0).toLocaleString()));
     const sTail = (r) => (r.times > 1 ? `<small class="lb-sub">赞助 ${r.times} 次</small>` : '');
-    $('lb-sponsor-list').innerHTML = data.sponsors.length
+    WY.setEl('lb-sponsor-list', (el) => (el.innerHTML = data.sponsors.length
       ? podium(data.sponsors, (r) => (r.times > 1 ? `赞助 ${r.times} 次` : '感谢支持')) + rest(data.sponsors, sTail)
-      : '<li class="empty">还没有赞助记录，成为第一个吧。</li>';
+      : '<li class="empty">还没有赞助记录，成为第一个吧。</li>'));
     const pTail = (r) => `<b class="lb-pts">${r.points} ✦</b>`;
-    $('lb-star-list').innerHTML = data.stars.length
+    WY.setEl('lb-star-list', (el) => (el.innerHTML = data.stars.length
       ? podium(data.stars, (r) => `${r.points} ✦`) + rest(data.stars, pTail)
-      : '<li class="empty">还没有人上榜，起个名字去投票吧。</li>';
+      : '<li class="empty">还没有人上榜，起个名字去投票吧。</li>'));
   }
 
   async function load() {

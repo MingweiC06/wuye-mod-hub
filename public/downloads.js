@@ -35,19 +35,21 @@
 
   function render(data) {
     isFan = Boolean(data.fan);
-    $('gate').hidden = isFan;
-    $('welcome').hidden = !isFan;
-    if (isFan) $('welcome-name').textContent = data.fan.nickname;
-    $('mods').innerHTML = data.mods.length ? data.mods.map(row).join('') : empty('mod');
-    $('modpacks').innerHTML = data.modpacks.length ? data.modpacks.map(row).join('') : empty('modpack');
+    const mods = data.mods || [];
+    const packs = data.modpacks || [];
+    WY.setEl('gate', (el) => (el.hidden = isFan));
+    WY.setEl('welcome', (el) => (el.hidden = !isFan));
+    if (isFan) WY.setEl('welcome-name', (el) => (el.textContent = data.fan.nickname || ''));
+    WY.setEl('mods', (el) => (el.innerHTML = mods.length ? mods.map(row).join('') : empty('mod')));
+    WY.setEl('modpacks', (el) => (el.innerHTML = packs.length ? packs.map(row).join('') : empty('modpack')));
   }
 
   async function load() {
     try {
       render(await WY.api('/api/mods'));
     } catch (error) {
-      $('mods').innerHTML = `<div class="empty">${WY.esc(error.message)}</div>`;
-      $('modpacks').innerHTML = '';
+      WY.setEl('mods', (el) => (el.innerHTML = `<div class="empty">${WY.esc(error.message)}</div>`));
+      WY.setEl('modpacks', (el) => (el.innerHTML = ''));
     }
   }
 

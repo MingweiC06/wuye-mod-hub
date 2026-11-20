@@ -13,13 +13,14 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png?v=20261119a">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=20261119a">
   <link rel="stylesheet" href="/styles.css?v=20261119-1321">
-  <link rel="stylesheet" href="/admin.css?v=20261120-10">
+  <link rel="stylesheet" href="/admin.css?v=20261121-1">
   <link rel="stylesheet" href="/cosmic.css?v=20261120-8">
   <link rel="stylesheet" href="/fx.css?v=20261120-2">
   <script src="/device-id.js?v=20261119-1321" defer></script>
   <script src="/app.js?v=20261120-2" defer></script>
-  <script src="/monitor.js?v=20261120-3" defer></script>
-  <script src="/fx.js?v=20261120-2"></script>
+  <script src="/tz.js?v=20261121-1" defer></script>
+  <script src="/monitor.js?v=20261121-1" defer></script>
+  <script src="/fx.js?v=20261121-1"></script>
 </head>
 <body class="page-admin page-monitor">
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -91,6 +92,14 @@
           </div>
         </div>
 
+        <div class="mon-tz" id="mon-tz" role="group" aria-label="时间显示方式">
+          <span class="muted small">时间显示：</span>
+          <button class="btn btn-ghost btn-sm" type="button" data-tz-mode="dual" aria-pressed="true">🇨🇳 北京 + 🇺🇸 美东</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-tz-mode="bj" aria-pressed="false">只看北京时间</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-tz-mode="et" aria-pressed="false">只看美东时间</button>
+          <span class="muted small">美东时间自动切换 EST / EDT（夏令时）。只改变显示，不改动任何记录。</span>
+        </div>
+
         <div class="metric-grid mon-metrics" id="mon-metrics" aria-label="近 24 小时"></div>
 
         <p class="muted small mon-credit">IP 位置为估算，来自本地 DB-IP Lite 数据库（IP Geolocation by <a href="https://db-ip.com" target="_blank" rel="noopener">DB-IP</a>，CC BY 4.0）。</p>
@@ -98,8 +107,10 @@
         <form class="panel admin-block mon-filter" id="mon-filter" novalidate>
           <div class="field"><label for="f-q">编号 / 昵称</label><input class="input" id="f-q" name="q" maxlength="40" placeholder="#12、昵称或你起的名字"></div>
           <div class="field"><label for="f-ip">IP</label><input class="input mono" id="f-ip" name="ip" maxlength="45" placeholder="完整 IP"></div>
-          <div class="field"><label for="f-from">从</label><input class="input" id="f-from" name="from" type="date"></div>
-          <div class="field"><label for="f-to">到</label><input class="input" id="f-to" name="to" type="date"></div>
+          <div class="field"><label for="f-zone">日期按</label><select class="input" id="f-zone" name="zone"><option value="bj">🇨🇳 北京时间</option><option value="et">🇺🇸 美东时间</option></select></div>
+          <div class="field"><label for="f-kind">类别</label><select class="input" id="f-kind" name="kind"><option value="">全部</option><option value="page">页面</option><option value="click">点击</option><option value="action">操作</option><option value="download">下载</option><option value="login">登录</option><option value="admin">后台</option><option value="security">安全</option></select></div>
+          <div class="field mon-dt"><label for="f-from">从</label><div class="mon-dt-pair"><input class="input" id="f-from" name="from" type="date"><input class="input" id="f-from-t" name="fromTime" type="time" aria-label="开始时刻（可不填）"></div></div>
+          <div class="field mon-dt"><label for="f-to">到</label><div class="mon-dt-pair"><input class="input" id="f-to" name="to" type="date"><input class="input" id="f-to-t" name="toTime" type="time" aria-label="结束时刻（可不填）"></div></div>
           <label class="check mon-flag"><input type="checkbox" name="flagged"> 只看有提示的</label>
           <div class="mon-filter-actions">
             <button class="btn btn-primary btn-sm" type="submit">筛选</button>
@@ -123,6 +134,16 @@
           </div>
           <ol class="mon-list" id="mon-list"></ol>
           <div class="mon-pager" id="mon-pager"></div>
+        </section>
+
+        <section class="panel admin-block" aria-labelledby="mon-log-title">
+          <div class="admin-block-head">
+            <h2 id="mon-log-title">后台操作记录</h2>
+            <span class="badge badge-cyan" id="mon-log-total">—</span>
+          </div>
+          <p class="hint">站长登录、解锁监控、查看 / 删除访客等操作。按上面的日期筛选。</p>
+          <ol class="mon-loglist" id="mon-log"></ol>
+          <div class="mon-pager" id="mon-log-pager"></div>
         </section>
       </div>
     </div>

@@ -555,7 +555,7 @@
             io.unobserve(el);
           })
         },
-        { rootMargin: '0px 0px -8% 0px', threshold: 0.12 },
+        { rootMargin: '0px 0px -8% 0px', threshold: 0 }, // 0, not a ratio: a section taller than ~8 screens would never reach 12% and stay invisible
       )
     : null;
 

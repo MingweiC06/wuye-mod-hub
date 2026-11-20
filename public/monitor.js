@@ -14,18 +14,45 @@
     probe: '可疑路径探测',
     ip_change: 'IP 变化',
   };
-  const state = { filter: {}, page: 1, until: 0, timer: 0 };
+  const state = { filter: {}, page: 1, until: 0, timer: 0, tz: 'dual', logPage: 1 };
+  const T = window.WYTZ;
 
-  const fmt = (ms, withDate = true) =>
-    new Date(ms).toLocaleString('zh-CN', {
-      timeZone: 'Asia/Shanghai',
-      hour12: false,
-      ...(withDate ? { year: 'numeric', month: '2-digit', day: '2-digit' } : {}),
-      hour: '2-digit',
-      minute: '2-digit',
-      second: withDate ? undefined : '2-digit',
-    });
-  const dayOf = (ms) => new Date(ms).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' });
+  /* ---------------- times ----------------
+   * The API sends ISO 8601 UTC. Every time on this page is that same instant shown in 北京时间 and/or
+   * 美国东部时间 (EST/EDT from the browser's IANA database), according to the saved display mode. */
+  const toMs = (v) => (typeof v === 'number' ? v : Date.parse(v));
+  const zonesShown = () => (state.tz === 'dual' ? ['bj', 'et'] : [state.tz]);
+  const primary = () => (state.tz === 'et' ? 'et' : 'bj');
+  function zoneLine(ms, key) {
+    const z = T.ZONES[key];
+    const t = T.inZone(ms, key);
+    return `<span class="tz-line tz-${key}"><span class="tz-flag" aria-hidden="true">${z.flag}</span><span class="tz-name">${z.short}</span> ${t.date} ${t.time} <span class="tz-abbr">${t.abbr}</span></span>`;
+  }
+  function timesInner(ms, rel) {
+    return zonesShown().map((k) => zoneLine(ms, k)).join('') + (rel ? `<span class="tz-rel" data-rel="${ms}">${T.relative(ms)}</span>` : '');
+  }
+  /** HTML for one instant; `rel` adds 3分钟前-style text, refreshed every 30 s. */
+  function timeHtml(v, rel = true) {
+    const ms = toMs(v);
+    if (!Number.isFinite(ms) || ms <= 0) return '—';
+    return `<span class="tz" data-at="${ms}" data-r="${rel ? 1 : 0}" title="UTC ${new Date(ms).toISOString()}">${timesInner(ms, rel)}</span>`;
+  }
+  const fmt = (v) => timeHtml(v, false);
+  const dayOf = (v) => {
+    const k = primary();
+    return `${T.ZONES[k].flag} ${T.inZone(toMs(v), k).date}（${T.ZONES[k].name}）`;
+  };
+  function refreshTimes(all) {
+    for (const el of document.querySelectorAll(all ? '.tz[data-at]' : '.tz-rel[data-rel]')) {
+      if (all) el.innerHTML = timesInner(Number(el.dataset.at), el.dataset.r === '1');
+      else el.textContent = T.relative(Number(el.dataset.rel));
+    }
+    if (all) for (const el of document.querySelectorAll('.mon-day[data-at]')) el.textContent = dayOf(Number(el.dataset.at));
+  }
+  setInterval(() => refreshTimes(false), 30_000);
+  function paintMode() {
+    for (const b of document.querySelectorAll('[data-tz-mode]')) b.setAttribute('aria-pressed', String(b.dataset.tzMode === state.tz));
+  }
 
   function show(which) {
     $('mon-boot').hidden = true;
@@ -64,7 +91,7 @@
     try {
       const r = await WY.api('/api/monitor/unlock', { method: 'POST', body: { code: input.value } });
       input.value = '';
-      state.until = r.expiresAt;
+      state.until = Date.parse(r.expiresAt);
       openView();
     } catch (err) {
       $('mon-error').textContent = err.message || '解锁失败';
@@ -98,8 +125,13 @@
     clearInterval(state.timer);
     state.timer = setInterval(tick, 1000);
     tick();
+    try {
+      state.tz = (await api('/api/monitor/prefs')).tzMode || 'dual';
+    } catch {}
+    paintMode();
     loadSummary();
     loadList();
+    loadLog();
   }
 
   /* ---------------- map ---------------- */
@@ -296,13 +328,16 @@
       ? `<div class="mon-obs"><h3>位置观察</h3><ul>${d.observations.map((o) => `<li>${WY.esc(o)}</li>`).join('')}</ul><p class="muted small">这是观察，不是可疑行为的证据：换手机网络、出差、开关 VPN 都会这样。</p></div>`
       : '';
     let lastDay = '';
+    const ipByTag = new Map(d.ips.map((x) => [x.tag, x]));
     const items = d.events
       .map((e) => {
         const day = dayOf(e.at);
-        const head = day !== lastDay ? `<li class="mon-day">${day}</li>` : '';
+        const head = day !== lastDay ? `<li class="mon-day" data-at="${toMs(e.at)}">${day}</li>` : '';
         lastDay = day;
         const flag = e.flag ? `<span class="badge badge-rose">⚠ ${FLAG[e.flag] || e.flag}</span>` : '';
-        return `${head}<li class="mon-ev mon-ev-${e.kind}${e.flag ? ' is-flag' : ''}"><time>${fmt(e.at, false)}</time><span class="mon-kind">${KIND[e.kind] || e.kind}</span><span class="mon-label">${WY.esc(e.label)}</span>${flag}${d.ips.length > 1 && e.ipTag ? `<span class="muted small">${e.ipTag}</span>` : ''}</li>`;
+        const ipx = ipByTag.get(e.ipTag);
+        const where = ipx ? `<span class="mon-ev-ip"><span class="badge badge-cyan">${e.ipTag}</span><span class="mono small">${WY.esc(ipx.ip)}</span>${placeHtml(geoPlace(ipx.geo))}</span>` : '';
+        return `${head}<li class="mon-ev mon-ev-${e.kind}${e.flag ? ' is-flag' : ''}"><div class="mon-ev-time">${timeHtml(e.at, false)}</div><div class="mon-ev-body"><span class="mon-kind">${KIND[e.kind] || e.kind}</span><span class="mon-label">${WY.esc(e.label)}</span>${flag}<span class="badge badge-muted" title="间隔超过 30 分钟算新的一次访问">第 ${e.session} 次访问</span>${where}</div></li>`;
       })
       .join('');
     const rel = (d.related || [])
@@ -312,7 +347,7 @@
     return `<div class="mon-tl-ips"><h3>IP 与位置记录</h3><p class="muted small">位置是根据 IP 估算的大致城市，不是真实住址；点一条 IP 看详细信息。</p><ul>${ips}</ul></div>${obs}${relBox}
       <p class="muted small mon-ua">浏览器标识：<span class="mono">${WY.esc(d.userAgent || '—')}</span></p>
       <ol class="mon-events">${items || '<li class="empty">没有活动记录。</li>'}</ol>
-      <div class="mon-tl-foot"><span class="muted small">只显示网站实际记录的事件（最近 300 条）。不记录任何表单内容。</span><button class="btn btn-danger btn-sm" type="button" data-delete="${id}">删除此访客的全部记录</button></div>`;
+      <div class="mon-tl-foot"><span class="muted small">只显示网站实际记录的事件（最近 300 条${state.filter.from || state.filter.to || state.filter.kind ? '，已按上面的筛选条件过滤' : ''}），共 ${d.sessions || 0} 次访问。不记录任何表单内容。</span><button class="btn btn-danger btn-sm" type="button" data-delete="${id}">删除此访客的全部记录</button></div>`;
   }
 
   async function toggle(row, btn) {
@@ -325,7 +360,9 @@
     if (open || box.dataset.loaded) return;
     box.innerHTML = '<div class="skeleton skeleton-row"></div>';
     try {
-      box.innerHTML = timelineHtml(await api(`/api/monitor/subjects/${row.dataset.id}`), row.dataset.id);
+      const params = new URLSearchParams();
+      for (const k of ['zone', 'from', 'fromTime', 'to', 'toTime', 'kind']) if (state.filter[k]) params.set(k, state.filter[k]);
+      box.innerHTML = timelineHtml(await api(`/api/monitor/subjects/${row.dataset.id}?${params}`), row.dataset.id);
       box.dataset.loaded = '1';
     } catch (e) {
       box.innerHTML = `<p class="empty">${WY.esc(e.message || '加载失败')}</p>`;
@@ -418,15 +455,97 @@
   $('mon-filter').addEventListener('submit', (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
-    state.filter = { q: f.get('q').trim(), ip: f.get('ip').trim(), from: f.get('from'), to: f.get('to'), flagged: f.get('flagged') ? '1' : '' };
+    state.filter = {
+      q: f.get('q').trim(),
+      ip: f.get('ip').trim(),
+      zone: f.get('zone'),
+      from: f.get('from'),
+      fromTime: f.get('fromTime'),
+      to: f.get('to'),
+      toTime: f.get('toTime'),
+      kind: f.get('kind'),
+      flagged: f.get('flagged') ? '1' : '',
+    };
+    if (!state.filter.from && !state.filter.to) state.filter.zone = '';
     state.page = 1;
+    state.logPage = 1;
     loadList();
+    loadLog();
     if (!$('mon-map').hidden) loadMap();
   });
   $('mon-filter').addEventListener('reset', () => {
     state.filter = {};
     state.page = 1;
-    setTimeout(loadList);
+    state.logPage = 1;
+    setTimeout(() => {
+      loadList();
+      loadLog();
+    });
+  });
+
+  /* ---------------- display mode ---------------- */
+  $('mon-tz').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-tz-mode]');
+    if (!b || b.dataset.tzMode === state.tz) return;
+    const before = state.tz;
+    state.tz = b.dataset.tzMode;
+    paintMode();
+    refreshTimes(true);
+    try {
+      await api('/api/monitor/prefs', { method: 'PUT', body: { tzMode: state.tz } });
+    } catch (err) {
+      state.tz = before;
+      paintMode();
+      refreshTimes(true);
+      WY.toast(err.message || '保存失败', 'error');
+    }
+  });
+
+  /* ---------------- admin log ---------------- */
+  const ACTION = {
+    'admin.login': '站长登录',
+    'admin.login.new_device': '站长新设备登录',
+    'admin.login.failed': '站长登录失败',
+    'admin.code.change': '修改管理码',
+    'admin.pattern': '修改图案锁',
+    'admin.device.revoke': '移除登录设备',
+    'admin.export': '导出数据',
+    'settings.update': '修改网站设置',
+    'monitor.unlock': '解锁安全监控',
+    'monitor.unlock.failed': '监控口令错误',
+    'monitor.search.ip': '按 IP 搜索',
+    'monitor.view': '查看访客记录',
+    'monitor.note': '修改访客昵称',
+    'monitor.delete': '删除访客记录',
+    'monitor.prefs': '修改时区显示',
+  };
+  async function loadLog() {
+    const box = $('mon-log');
+    if (!box) return;
+    const params = new URLSearchParams({ page: String(state.logPage) });
+    for (const k of ['zone', 'from', 'fromTime', 'to', 'toTime']) if (state.filter[k]) params.set(k, state.filter[k]);
+    let data;
+    try {
+      data = await api(`/api/monitor/audit?${params}`);
+    } catch (e) {
+      box.innerHTML = `<li class="empty">${WY.esc(e.message || '加载失败')}</li>`;
+      return;
+    }
+    $('mon-log-total').textContent = `${data.total} 条`;
+    box.innerHTML = data.items.length
+      ? data.items.map((a) => `<li class="mon-log-row"><div class="mon-ev-time">${timeHtml(a.at)}</div><div class="mon-ev-body"><b>${WY.esc(ACTION[a.action] || a.action)}</b>${a.detail ? `<span class="muted small mono">${WY.esc(a.detail)}</span>` : ''}</div></li>`).join('')
+      : '<li class="empty">这段时间没有后台操作记录。</li>';
+    const pages = Math.max(1, Math.ceil(data.total / data.pageSize));
+    $('mon-log-pager').innerHTML =
+      pages > 1
+        ? `<button class="btn btn-ghost btn-sm" type="button" data-lpage="${state.logPage - 1}" ${state.logPage <= 1 ? 'disabled' : ''}>上一页</button><span class="muted small">${state.logPage} / ${pages}</span><button class="btn btn-ghost btn-sm" type="button" data-lpage="${state.logPage + 1}" ${state.logPage >= pages ? 'disabled' : ''}>下一页</button>`
+        : '';
+  }
+  $('mon-log-pager').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-lpage]');
+    if (!b || b.disabled) return;
+    state.logPage = Number(b.dataset.lpage);
+    loadLog();
   });
 
   (async function boot() {

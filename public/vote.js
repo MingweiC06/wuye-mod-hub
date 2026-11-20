@@ -18,7 +18,7 @@
   function card(c) {
     return `
       <article class="vb-card${c.voted ? ' is-voted' : ''}" data-id="${c.id}">
-        <div class="vb-art">${art(c)}${c.game ? `<span class="vb-game">${WY.esc(c.game)}</span>` : ''}${WY.newBadge(c.statusAt, 'on-art')}</div>
+        <div class="vb-art">${art(c)}${c.game ? `<span class="vb-game">${WY.esc(c.game)}</span>` : ''}${tagBadge(c)}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           ${c.description ? `<p data-raw>${WY.esc(c.description)}</p>` : ''}
@@ -140,7 +140,7 @@
     const watch = done && c.video ? `https://www.douyin.com/video/${encodeURIComponent(c.video)}` : '';
     return `
       <article class="vb-mini${done ? ' is-done' : ''}${watch ? ' has-video' : ''}${state.admin && !done ? ' is-draggable' : ''}" data-id="${c.id}">
-        <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}${WY.newBadge(c.statusAt, 'on-art')}</div>
+        <div class="vb-art">${art(c)}${done ? '<span class="vb-stamp">已完成</span>' : ''}${tagBadge(c)}</div>
         <div class="vb-body">
           <h3>${WY.esc(c.title)}</h3>
           <span class="vb-sub">${WY.esc(c.game || '')}${done && !c.votes ? '' : `${c.game ? ' · ' : ''}<b class="vb-mn">${c.votes}</b> 票${done ? '' : `<button class="vb-pen" type="button" data-pen="${c.id}" aria-label="改票数" title="改票数">✎</button>`}`}<button class="vb-pen vb-del" type="button" data-del="${c.id}" aria-label="删除" title="删除这张卡片">🗑</button></span>${c.mentions ? `<em class="vb-cm">评论区 ${c.mentions} 次</em>` : ''}
@@ -257,6 +257,10 @@
   }
 
   /* ---------- admin: drag cards between 备选区 (planned) and 制作中 (building) ---------- */
+  // Card label: the 站长's pick wins; otherwise 新加入 shows for 7 days.
+  const tagBadge = (c) => (c.tag === 'none' ? '' : c.tag ? `<span class="new-badge on-art tag-${c.tag === '新加入' ? 'new' : 'pick'}">${WY.esc(c.tag)}</span>` : WY.newBadge(c.statusAt, 'on-art'));
+  const TAGS = ['', '新加入', '热门', '推荐', '即将完成', '限时', 'none'];
+  const TAG_LABEL = (t) => (t === '' ? '自动（7天内显示新加入）' : t === 'none' ? '不显示' : t);
   const COLS = { building: 'vb-building', planned: 'vb-accepted' };
 
   async function checkAdmin() {
@@ -271,7 +275,7 @@
     loadCuts();
     if (state.data) paint();
     const head = $('vb-building-wrap').querySelector('.vb-split');
-    head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖到另一边，即可在「备选区」和「制作中」之间移动；下方投票区的卡片也可以拖到「备选区」，「备选区」的卡片也能拖回投票区。</p>');
+    head.insertAdjacentHTML('beforebegin', '<p class="vb-admin-hint">站长模式：按住卡片拖动 —— 投票区 → 备选区 ⇄ 制作中，备选区也能拖回投票区。拖动时能放的地方会亮起金色虚线框，卡片下方会提示「松手放到…」。</p>');
     head.insertAdjacentHTML('beforebegin', '<div class="vb-add-wrap"><button class="vb-add" type="button" data-add-card><span aria-hidden="true">＋</span> 添加卡片</button></div>');
     document.querySelector('[data-add-card]').addEventListener('click', () => addCard());
     for (const status of Object.keys(COLS)) $(COLS[status]).dataset.dropStatus = status;
@@ -432,6 +436,7 @@
           <label><span>机器人票</span><input class="input" type="number" step="1" value="${info.bot}" data-bot></label>
           <div><span>显示总票数</span><b data-total>${info.total}</b></div>
         </div>
+        <div class="vb-tag-edit"><span>卡片标签</span><div class="vb-tag-opts" role="radiogroup">${TAGS.map((t) => `<button type="button" class="vb-tag-opt${t === info.tag ? ' is-on' : ''}" data-tag="${t}" role="radio" aria-checked="${t === info.tag}">${TAG_LABEL(t)}</button>`).join('')}</div></div>
         <label class="vb-note-edit"><span>站长备注 <small>（金色显示在副标题下面，所有人可见；留空就不显示）</small></span><textarea class="input" rows="2" maxlength="300" data-note placeholder="例如：下个月开做！">${WY.esc(info.note)}</textarea></label>
         <p class="muted dialog-text">真实票是粉丝投的（含评论区），只能往下改，不能超过原来的 ${info.original}；改低后会显示成红色，只有你能看到。机器人票可加可减，总票数不会低于 0。</p>`,
       footer: '<button class="btn btn-ghost vb-back-wish" type="button" data-back>↩ 退回许愿池</button><button class="btn btn-ghost" type="button" data-cancel>取消</button><button class="btn btn-primary" type="button" data-ok>保存</button>',
@@ -451,6 +456,16 @@
     });
     const input = dlg.body.querySelector('[data-bot]');
     const noteIn = dlg.body.querySelector('[data-note]');
+    let tag = info.tag;
+    dlg.body.querySelector('.vb-tag-opts').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tag]');
+      if (!b) return;
+      tag = b.dataset.tag;
+      for (const o of dlg.body.querySelectorAll('.vb-tag-opt')) {
+        o.classList.toggle('is-on', o === b);
+        o.setAttribute('aria-checked', String(o === b));
+      }
+    });
     const realIn = dlg.body.querySelector('[data-real]');
     const total = dlg.body.querySelector('[data-total]');
     const refresh = () => {
@@ -481,10 +496,11 @@
       dlg.close();
       const votesChanged = n !== info.bot || real !== info.real;
       const noteChanged = note !== info.note;
-      if (!votesChanged && !noteChanged) return;
+      const tagChanged = tag !== info.tag;
+      if (!votesChanged && !noteChanged && !tagChanged) return;
       try {
         if (votesChanged) await WY.api(`/api/admin/ideas/${id}/votes`, { method: 'PUT', body: { real, bot: n } });
-        if (noteChanged) await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { officialReply: note } });
+        if (noteChanged || tagChanged) await WY.api(`/api/admin/ideas/${id}`, { method: 'PATCH', body: { ...(noteChanged && { officialReply: note }), ...(tagChanged && { tag }) } });
         WY.toast(`「${info.title}」已更新`, 'success');
         cards.delete(id);
         await load();
@@ -544,6 +560,9 @@
     let dx = 0;
     let dy = 0;
     let scrollRaf = 0;
+    let tip = null;
+    // Voting cards can only go to 备选区, and only 备选区 cards can go back to voting.
+    const canDrop = (z) => z !== from && (from !== 'open' || z === 'planned') && (z !== 'open' || from === 'planned');
 
     // Holding the card near the top or bottom edge scrolls the page, so far-apart sections are reachable.
     const autoScroll = () => {
@@ -584,9 +603,18 @@
         clone.style.width = `${box.width}px`;
         clone.style.left = `${box.left}px`;
         clone.style.top = `${box.top}px`;
+        tip = document.createElement('span');
+        tip.className = 'vb-drop-tip';
+        clone.appendChild(tip);
         document.body.appendChild(clone);
         el.classList.add('is-dragging');
         document.body.classList.add('vb-dragging');
+        // Light up every place this card may land, dim the rest.
+        for (const z of ['open', ...Object.keys(COLS)]) {
+          const ze = zoneEl(z);
+          ze.dataset.dropLabel = z === from ? '原位置' : canDrop(z) ? `可以放到：${ZONE_NAME[z]}` : '不能放这里';
+          ze.classList.add(z === from ? 'is-drop-home' : canDrop(z) ? 'is-drop-ok' : 'is-drop-no');
+        }
       }
       ev.preventDefault();
       track();
@@ -597,9 +625,9 @@
     const track = () => {
       clone.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${Math.max(-4, Math.min(4, dx / 60))}deg) scale(1.03)`;
       const z = zoneAt(lastX, lastY);
-      // Voting cards can only go to 备选区.
-      // and only 备选区 cards can go back to voting.
-      const target = z && z !== from && (from !== 'open' || z === 'planned') && (z !== 'open' || from === 'planned') ? z : null;
+      const target = z && canDrop(z) ? z : null;
+      tip.textContent = target ? `✓ 松手放到「${ZONE_NAME[target]}」` : '✕ 松手取消，卡片回原位';
+      tip.classList.toggle('is-ok', !!target);
       if (target !== over) {
         if (over) zoneEl(over).classList.remove('is-drop-over');
         over = target;
@@ -613,7 +641,8 @@
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
       document.body.classList.remove('vb-dragging');
-      if (over) zoneEl(over).classList.remove('is-drop-over');
+      for (const z of ['open', ...Object.keys(COLS)]) zoneEl(z).classList.remove('is-drop-over', 'is-drop-ok', 'is-drop-no', 'is-drop-home');
+      if (tip) tip.remove();
       if (!clone) return;
       if (over) moveCard(Number(el.dataset.id), from, over, clone);
       else settleBack(el, clone);
@@ -624,6 +653,7 @@
     window.addEventListener('pointercancel', onUp);
   }
 
+  const ZONE_NAME = { open: '投票区', planned: '备选区', building: '制作中' };
   const zoneEl = (status) => (status === 'open' ? $('vb-grid') : $(COLS[status]).parentElement);
 
   function settleBack(el, clone) {

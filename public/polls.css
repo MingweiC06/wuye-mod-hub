@@ -398,3 +398,26 @@ body.vb-dragging { cursor: grabbing; user-select: none; }
 .vb-del { border-color: rgba(255, 107, 107, .4); color: #ff8a8a; }
 .vb-del:hover, .vb-del:focus-visible { background: rgba(255, 107, 107, .14); border-color: #ff6b6b; }
 .vb-back-wish { margin-right: auto; }
+
+/* ---- drag cues: where can I drop? ---- */
+body.vb-dragging .is-drop-ok, body.vb-dragging .is-drop-no, body.vb-dragging .is-drop-home { position: relative; border-radius: 12px; transition: opacity .2s ease, box-shadow .2s ease, background-color .2s ease; }
+body.vb-dragging .is-drop-ok { outline: 2px dashed rgba(232, 196, 106, .7); outline-offset: 6px; background: rgba(232, 196, 106, .04); }
+body.vb-dragging .is-drop-no { opacity: .35; }
+body.vb-dragging .is-drop-ok::after, body.vb-dragging .is-drop-no::after, body.vb-dragging .is-drop-home::after {
+  content: attr(data-drop-label); position: absolute; top: -14px; left: 50%; translate: -50% 0; z-index: 5; padding: 3px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; white-space: nowrap; pointer-events: none; background: #1a1428; color: #e8c46a; border: 1px solid rgba(232, 196, 106, .6); }
+body.vb-dragging .is-drop-no::after, body.vb-dragging .is-drop-home::after { color: #a89a7e; border-color: rgba(255, 255, 255, .18); }
+body.vb-dragging .is-drop-ok.is-drop-over { outline: 3px solid #f3d996; background: rgba(232, 196, 106, .12); box-shadow: 0 0 30px -4px rgba(243, 200, 110, .6); }
+body.vb-dragging .is-drop-ok.is-drop-over::after { background: linear-gradient(135deg, #fff1c8, #d9a441); color: #1a1206; border-color: transparent; }
+.vb-drop-tip { position: absolute; left: 50%; bottom: -16px; translate: -50% 0; z-index: 3; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap;
+  background: #2a1a20; color: #f0b8b8; border: 1px solid rgba(240, 150, 150, .5); box-shadow: 0 6px 16px rgba(0, 0, 0, .5); }
+.vb-drop-tip.is-ok { background: linear-gradient(135deg, #fff1c8, #d9a441); color: #1a1206; border-color: transparent; }
+
+/* ---- 卡片标签 picker ---- */
+.vb-tag-edit { display: grid; gap: 8px; margin: 14px 0 4px; }
+.vb-tag-edit > span { font-size: 13px; font-weight: 700; color: #e8c46a; }
+.vb-tag-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.vb-tag-opt { padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(232, 196, 106, .3); background: transparent; color: #d9cfbd; font-size: 13px; cursor: pointer; }
+.vb-tag-opt:hover { border-color: rgba(232, 196, 106, .7); }
+.vb-tag-opt.is-on { background: linear-gradient(135deg, #fff1c8, #d9a441); color: #1a1206; border-color: transparent; font-weight: 700; }
+.new-badge.tag-pick { background: linear-gradient(135deg, #ffd0e6, #ff7aa8 50%, #c2366d); color: #fff; box-shadow: 0 0 12px rgba(255, 122, 168, .55); }

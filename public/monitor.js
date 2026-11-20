@@ -217,13 +217,39 @@
     const k = W / view.w;
     for (const c of svg.querySelectorAll('.mon-dot')) c.setAttribute('r', (Number(c.dataset.r) / Math.sqrt(k)).toFixed(2));
   }
+  // Smoothly move the view to a target (ease-out, ~380 ms). A new zoom mid-animation starts from where it is.
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let anim = 0;
+  const target = { x: 0, y: 0, w: W };
+  function animateTo(nx, ny, nw) {
+    target.x = nx;
+    target.y = ny;
+    target.w = nw;
+    cancelAnimationFrame(anim);
+    if (REDUCED) {
+      Object.assign(view, target);
+      applyView();
+      return;
+    }
+    const from = { ...view };
+    const t0 = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / 380);
+      const e = 1 - Math.pow(1 - t, 3);
+      view.x = from.x + (target.x - from.x) * e;
+      view.y = from.y + (target.y - from.y) * e;
+      view.w = from.w + (target.w - from.w) * e;
+      applyView();
+      if (t < 1) anim = requestAnimationFrame(step);
+      else anim = 0;
+    };
+    anim = requestAnimationFrame(step);
+  }
   function zoomAt(factor, cx, cy) {
-    // cx, cy: map coordinates that stay under the cursor
-    const nw = Math.min(W, Math.max(W / 40, view.w / factor));
-    view.x = cx - ((cx - view.x) * nw) / view.w;
-    view.y = cy - ((cy - view.y) * nw) / view.w;
-    view.w = nw;
-    applyView();
+    // cx, cy: map coordinates that stay under the cursor. Chained zooms build on the pending target.
+    const base = anim ? target : view;
+    const nw = Math.min(W, Math.max(W / 40, base.w / factor));
+    animateTo(cx - ((cx - base.x) * nw) / base.w, cy - ((cy - base.y) * nw) / base.w, nw);
   }
   function toMap(svg, clientX, clientY) {
     const r = svg.getBoundingClientRect();
@@ -236,10 +262,7 @@
     const ys = pts.map((p) => p[1]);
     const pad = 30;
     const w = Math.max(Math.max(...xs) - Math.min(...xs) + pad * 2, ((Math.max(...ys) - Math.min(...ys) + pad * 2) * W) / H, W / 12);
-    view.w = w;
-    view.x = (Math.min(...xs) + Math.max(...xs)) / 2 - w / 2;
-    view.y = (Math.min(...ys) + Math.max(...ys)) / 2 - (w * H) / W / 2;
-    applyView();
+    animateTo((Math.min(...xs) + Math.max(...xs)) / 2 - w / 2, (Math.min(...ys) + Math.max(...ys)) / 2 - (w * H) / W / 2, Math.min(W, w));
   }
   $('mon-map').addEventListener('wheel', (e) => {
     const svg = e.target.closest('#mon-svg');
@@ -252,6 +275,8 @@
   $('mon-map').addEventListener('pointerdown', (e) => {
     const svg = e.target.closest('#mon-svg');
     if (!svg || e.target.closest('[data-pt]')) return;
+    cancelAnimationFrame(anim);
+    anim = 0;
     drag = { id: e.pointerId, x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false };
     svg.setPointerCapture(e.pointerId);
     svg.classList.add('is-drag');
@@ -293,12 +318,7 @@
       if (z.dataset.zoom === 'in') zoomAt(1.6, ...c);
       else if (z.dataset.zoom === 'out') zoomAt(1 / 1.6, ...c);
       else if (z.dataset.zoom === 'fit') fitPoints();
-      else {
-        view.x = 0;
-        view.y = 0;
-        view.w = W;
-        applyView();
-      }
+      else animateTo(0, 0, W);
       return;
     }
     const d = e.target.closest('[data-pt]');

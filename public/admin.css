@@ -965,3 +965,6 @@
 .mon-goto { margin-left: 0; font-weight: 700; }
 .mon-shared:hover, .mon-goto:hover, .mon-shared:focus-visible, .mon-goto:focus-visible { background: rgba(232, 196, 106, .14); }
 .mon-ev-click .mon-kind { opacity: .75; }
+
+/* 安全监控 entry in the admin tab bar: a link to its own page, not a panel */
+.tab.tab-link { text-decoration: none; margin-left: auto; color: #e8c46a; }

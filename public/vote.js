@@ -150,21 +150,43 @@
       </article>`;
   }
 
+  // Each part of the page paints on its own: a missing element (e.g. an old cached page) or a bad
+  // field only leaves that part empty instead of stopping everything after it (白块).
+  const part = (name, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') console.warn(`[WY] paint ${name} failed:`, e);
+    }
+  };
+  const setEl = (id, fn) => {
+    const el = $(id);
+    if (el) fn(el);
+  };
+
   function paint() {
-    const d = state.data;
-    paintGrid(false);
-    // Admins always see both columns so a card can be dragged into an empty one.
-    $('vb-building-wrap').hidden = !state.admin && !d.building.length && !d.accepted.length;
-    $('vb-accepted-wrap').hidden = !state.admin && !d.accepted.length;
-    $('vb-accepted').innerHTML = d.accepted.map((c) => mini(c, false, true)).join('');
-    $('vb-building').innerHTML = d.building.map((c) => mini(c, false)).join('');
-    $('vb-done-wrap').hidden = !d.done.length;
-    $('vb-done').innerHTML = d.done.map((c) => mini(c, true)).join('');
-    paintGames();
-    $('vb-count').textContent = d.voting.length;
-    $('vb-votes').textContent = d.voting.reduce((n, c) => n + c.votes, 0);
-    $('vb-voters').textContent = d.voters;
-    markCuts();
+    const d = state.data || {};
+    const voting = d.voting || [];
+    const accepted = d.accepted || [];
+    const building = d.building || [];
+    const done = d.done || [];
+    part('grid', () => paintGrid(false));
+    part('columns', () => {
+      // Admins always see both columns so a card can be dragged into an empty one.
+      setEl('vb-building-wrap', (el) => (el.hidden = !state.admin && !building.length && !accepted.length));
+      setEl('vb-accepted-wrap', (el) => (el.hidden = !state.admin && !accepted.length));
+      setEl('vb-accepted', (el) => (el.innerHTML = accepted.map((c) => mini(c, false, true)).join('')));
+      setEl('vb-building', (el) => (el.innerHTML = building.map((c) => mini(c, false)).join('')));
+      setEl('vb-done-wrap', (el) => (el.hidden = !done.length));
+      setEl('vb-done', (el) => (el.innerHTML = done.map((c) => mini(c, true)).join('')));
+    });
+    part('games', paintGames);
+    part('stats', () => {
+      setEl('vb-count', (el) => (el.textContent = voting.length));
+      setEl('vb-votes', (el) => (el.textContent = voting.reduce((n, c) => n + (Number(c.votes) || 0), 0)));
+      setEl('vb-voters', (el) => (el.textContent = d.voters ?? 0));
+    });
+    part('cuts', markCuts);
   }
 
   // Admin only: vote counts whose real votes were lowered show in red.

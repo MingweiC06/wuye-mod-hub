@@ -97,18 +97,20 @@
     if (!element) return;
     const previous = countdownTimers.get(element);
     if (previous) clearInterval(previous);
+    const stop = () => {
+      clearInterval(countdownTimers.get(element));
+      countdownTimers.delete(element);
+    };
     function tick() {
-      if (!element.isConnected) {
-        clearInterval(countdownTimers.get(element));
-        countdownTimers.delete(element);
-        return;
-      }
+      // Removed from the page, or finished: stop ticking for good.
+      if (!element.isConnected) return stop();
       const info = WY.remaining(endTimestamp);
       element.textContent = info.ended ? options.endedText || '已结束' : info.text;
+      if (info.ended) stop();
     }
+    // Register the timer first, so tick() can always find and clear it.
+    countdownTimers.set(element, setInterval(tick, 30_000));
     tick();
-    const timer = setInterval(tick, 30_000);
-    countdownTimers.set(element, timer);
   };
 
   WY.debounce = function debounce(fn, wait = 250) {

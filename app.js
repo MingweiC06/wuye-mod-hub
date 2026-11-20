@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkAdminSession, ensureAdminCode, getSecret, openDatabase, seedDatabase } from './lib/db.js';
-import { applySecurityHeaders, notFoundPage, sendJson, serveStatic } from './lib/http.js';
+import { applySecurityHeaders, notFoundPage, readJsonBody, sendJson, serveStatic } from './lib/http.js';
 import { handleApi } from './lib/api.js';
 import { migrateExtras, seedExtras } from './lib/extras.js';
 import { migrateMods } from './lib/mods.js';
@@ -16,7 +16,7 @@ import { migrateConsent } from './lib/consent.js';
 import { migrateVisits, recordVisit } from './lib/visits.js';
 import { migrateAdminSecurity } from './lib/admin-security.js';
 import { getLockdown, lockdownRefusal } from './lib/lockdown.js';
-import { createMonitor, loadMonitorKey, migrateMonitor, monitorConfigured, setMonitorCode } from './lib/monitor.js';
+import { createMonitor, loadMonitorKey, migrateMonitor, monitorConfigured, sanitizeClicks, setMonitorCode } from './lib/monitor.js';
 import { handleMonitor } from './lib/monitor-api.js';
 import {
   HttpError,
@@ -111,7 +111,7 @@ export function createApp(options = {}) {
 
     // 安全监控: one record per finished request (route + status only, never bodies).
     const reqCookies = parseCookies(req.headers.cookie);
-    const seen = { vid: /^[a-f0-9]{32}$/.test(reqCookies.wy_vid || '') ? reqCookies.wy_vid : '', voterKey: '' };
+    const seen = { vid: /^[a-f0-9]{32}$/.test(reqCookies.wy_vid || '') ? reqCookies.wy_vid : '', voterKey: '', clicks: [] };
     if (monitor) {
       res.on('finish', () => {
         monitor.record({
@@ -123,6 +123,7 @@ export function createApp(options = {}) {
           status: res.statusCode,
           isApi: pathname.startsWith('/api/'),
           voterKey: seen.voterKey,
+          clicks: seen.clicks,
           isAdmin: () => Boolean(checkAdminSession(db, reqCookies.wy_admin)),
         });
       });
@@ -205,6 +206,15 @@ export function createApp(options = {}) {
         return;
       }
 
+      // In-page click tracker (public/app.js): batches of button / link labels for 安全监控.
+      if (pathname === '/api/t' && ctx.method === 'POST') {
+        const ok = limiter.hit(`t:${seen.vid || ip}`, 30, 60_000).ok;
+        const body = await readJsonBody(req, 8 * 1024).catch(() => null);
+        if (monitor && ok && body) seen.clicks = sanitizeClicks(body);
+        res.writeHead(204, { 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+      }
       if (await handleMonitor(ctx, monitor)) return;
       const handled = await handleApi(ctx);
       if (!handled) {

@@ -29,7 +29,12 @@ const UA = {
 const people = [
   { note: '', ua: UA.iphone, ips: ['203.0.113.24'], events: [
     [-26, 'page', '打开「首页」'], [-25.98, 'page', '打开「许愿池」'], [-25.95, 'action', '提交许愿'], [-25.9, 'page', '打开「投票」'], [-25.88, 'action', '给卡片 #3 投票'],
-    [-2, 'page', '打开「首页」'], [-1.97, 'page', '打开「下载」'], [-1.95, 'action', '粉丝验证'], [-1.93, 'download', '下载模组文件 #2'], [-1.9, 'page', '打开「赞助」'] ] },
+    [-2, 'page', '打开「首页」'], [-1.97, 'page', '打开「下载」'], [-1.95, 'action', '粉丝验证'], [-1.94, 'click', '点击「下载」 · 卡片 #2（下载）'], [-1.93, 'download', '下载模组文件 #2'], [-1.9, 'page', '打开「赞助」'], [-1.89, 'click', '点击「抖音主页」 → www.douyin.com（赞助）'] ] },
+  // Same phone after clearing cookies: same IP + identical browser string → 「可能是同一人」.
+  { note: '', ua: UA.iphone, ips: ['203.0.113.24'], events: [
+    [-0.8, 'page', '打开「投票」'], [-0.79, 'click', '点击「票数最高」（投票）'], [-0.78, 'click', '点击「投一票」 · 卡片 #3（投票）'], [-0.78, 'action', '给卡片 #3 投票'] ] },
+  // Someone else on the same school / mobile network: same IP, different browser.
+  { note: '', ua: UA.android, ips: ['203.0.113.24'], events: [ [-6, 'page', '打开「排行榜」'], [-5.99, 'click', '点击「本周」（排行榜）'] ] },
   { note: '', ua: UA.android, ips: ['198.51.100.7', '198.51.100.88'], events: [
     [-30, 'page', '打开「投票」'], [-29.99, 'action', '给卡片 #1 投票'], [-5, 'security', 'IP 地址变化', 'ip_change', 1], [-5, 'page', '打开「投票」', '', 1], [-4.99, 'action', '取消卡片 #1 的投票', '', 1], [-4.98, 'action', '给卡片 #4 投票', '', 1] ] },
   { note: '可疑：试后台', ua: UA.win, ips: ['192.0.2.55'], events: [

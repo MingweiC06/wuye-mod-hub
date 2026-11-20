@@ -960,3 +960,8 @@
 .mon-note { font-weight: 700; }
 .mon-note.is-empty { font-weight: 400; color: var(--muted-2); font-style: italic; }
 .mon-note-edit { display: inline-block; margin-left: 0; }
+
+.mon-shared, .mon-goto { margin-left: 8px; padding: 0 6px; border: 1px solid rgba(232, 196, 106, .35); background: transparent; color: #e8c46a; font: inherit; font-size: 12px; cursor: pointer; }
+.mon-goto { margin-left: 0; font-weight: 700; }
+.mon-shared:hover, .mon-goto:hover, .mon-shared:focus-visible, .mon-goto:focus-visible { background: rgba(232, 196, 106, .14); }
+.mon-ev-click .mon-kind { opacity: .75; }

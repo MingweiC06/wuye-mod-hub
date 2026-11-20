@@ -5,7 +5,7 @@
   const $ = (id) => document.getElementById(id);
   if (!WY || !$('mon-view')) return;
 
-  const KIND = { page: '页面', action: '操作', download: '下载', login: '登录', admin: '后台', security: '安全' };
+  const KIND = { click: '点击', page: '页面', action: '操作', download: '下载', login: '登录', admin: '后台', security: '安全' };
   const FLAG = {
     login_failed: '登录失败',
     denied: '未授权访问',
@@ -127,7 +127,7 @@
       <div class="mon-row-main">
         <div class="mon-who"><b class="mono">#${u.id}</b><span class="mon-note${u.note ? '' : ' is-empty'}">${u.note ? WY.esc(u.note) : '未命名'}</span><button class="vb-pen mon-note-edit" type="button" data-note="${u.id}" aria-label="给这个访客起昵称" title="起个昵称（只有你能看到）">✎</button>${who}${warn}<span class="muted small">${WY.esc(u.device)}</span></div>
         <dl class="mon-facts">
-          <div><dt>IP</dt><dd class="mono">${WY.esc(u.ip)}${u.ipCount > 1 ? ` <span class="muted small">（共 ${u.ipCount} 个）</span>` : ''}</dd></div>
+          <div><dt>IP</dt><dd class="mono">${WY.esc(u.ip)}${u.ipCount > 1 ? ` <span class="muted small">（共 ${u.ipCount} 个）</span>` : ''}${u.sharedIp ? `<button class="mon-shared" type="button" data-ip="${WY.esc(u.ip)}" title="同一个 IP 可能是学校、公司或同一个手机网络">同 IP 还有 ${u.sharedIp} 位</button>` : ''}</dd></div>
           <div><dt>首次</dt><dd>${fmt(u.firstSeen)}</dd></div>
           <div><dt>最近</dt><dd>${fmt(u.lastSeen)}</dd></div>
           <div><dt>访问</dt><dd>${u.visits} 次 · ${u.events} 条记录</dd></div>
@@ -173,7 +173,11 @@
         return `${head}<li class="mon-ev mon-ev-${e.kind}${e.flag ? ' is-flag' : ''}"><time>${fmt(e.at, false)}</time><span class="mon-kind">${KIND[e.kind] || e.kind}</span><span class="mon-label">${WY.esc(e.label)}</span>${flag}${d.ips.length > 1 && e.ipTag ? `<span class="muted small">${e.ipTag}</span>` : ''}</li>`;
       })
       .join('');
-    return `<div class="mon-tl-ips"><h3>用过的 IP</h3><ul>${ips}</ul></div>
+    const rel = (d.related || [])
+      .map((o) => `<li><button class="mon-goto" type="button" data-goto="${o.id}">#${o.id}${o.note ? ` ${WY.esc(o.note)}` : ''}</button>${o.likelySame ? '<span class="badge badge-gold">可能是同一人</span>' : '<span class="badge badge-muted">同 IP</span>'}${o.name ? `<span class="badge badge-green">${WY.esc(o.name)}</span>` : ''}<span class="muted small">${WY.esc(o.device)} · 最近 ${fmt(o.lastSeen)}</span></li>`)
+      .join('');
+    const relBox = rel ? `<div class="mon-tl-ips"><h3>相关访客</h3><p class="muted small">「可能是同一人」= 同 IP 且浏览器完全相同，或同一个昵称（例如清了 Cookie 又回来）。只是推测。</p><ul>${rel}</ul></div>` : '';
+    return `<div class="mon-tl-ips"><h3>用过的 IP</h3><ul>${ips}</ul></div>${relBox}
       <p class="muted small mon-ua">浏览器标识：<span class="mono">${WY.esc(d.userAgent || '—')}</span></p>
       <ol class="mon-events">${items || '<li class="empty">没有活动记录。</li>'}</ol>
       <div class="mon-tl-foot"><span class="muted small">只显示网站实际记录的事件（最近 300 条）。不记录任何表单内容。</span><button class="btn btn-danger btn-sm" type="button" data-delete="${id}">删除此访客的全部记录</button></div>`;
@@ -200,6 +204,16 @@
     const t = e.target.closest('.mon-toggle');
     if (t) {
       toggle(t.closest('.mon-row'), t);
+      return;
+    }
+    const sh = e.target.closest('[data-ip]');
+    if (sh) {
+      setFilter({ ip: sh.dataset.ip });
+      return;
+    }
+    const g = e.target.closest('[data-goto]');
+    if (g) {
+      setFilter({ q: `#${g.dataset.goto}` });
       return;
     }
     const n = e.target.closest('[data-note]');
@@ -257,6 +271,16 @@
     state.page = Number(b.dataset.page);
     loadList();
   });
+
+  function setFilter(f) {
+    const form = $('mon-filter');
+    form.reset();
+    for (const [k, v] of Object.entries(f)) form.elements[k].value = v;
+    state.filter = f;
+    state.page = 1;
+    loadList();
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   $('mon-filter').addEventListener('submit', (e) => {
     e.preventDefault();

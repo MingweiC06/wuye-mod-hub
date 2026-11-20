@@ -57,6 +57,13 @@ test('monitor: records visits and actions, hides itself from fans, needs both lo
   const wishTitle = '想要一只会飞的龙龙龙';
   assert.equal((await FAN('/api/ideas', { method: 'POST', body: { title: wishTitle, description: '希望能骑着它在天上飞，最好还会喷火。', category: 'mob', crossBorderConsent: true, ageConfirm: true } })).status, 201);
   await FAN('/wp-login.php');
+  // In-page clicks: labels only; junk and unknown pages are dropped.
+  assert.equal((await FAN('/api/t', { method: 'POST', body: { events: [
+    { label: '投一票', page: '/polls', card: 7, at: Date.now() },
+    { label: '抖音主页', page: '/', host: 'www.douyin.com' },
+    { label: 'x', page: '/admin' },
+    { label: '<script>', page: '/nope' },
+  ] } })).status, 204);
   await settle();
 
   // Stored: encrypted IP, labels only, never the content.
@@ -65,6 +72,9 @@ test('monitor: records visits and actions, hides itself from fans, needs both lo
   assert.ok(ev.some((e) => e.label === '打开「许愿池」'));
   assert.ok(ev.some((e) => e.label === '提交许愿'));
   assert.ok(ev.some((e) => e.flag === 'probe'));
+  assert.ok(ev.some((e) => e.kind === 'click' && e.label === '点击「投一票」 · 卡片 #7（投票）'));
+  assert.ok(ev.some((e) => e.label === '点击「抖音主页」 → www.douyin.com（首页）'));
+  assert.equal(ev.filter((e) => e.kind === 'click').length, 2);
   const dump = JSON.stringify(db.prepare('SELECT * FROM monitor_subjects').all()) + JSON.stringify(ev);
   assert.ok(!dump.includes(wishTitle), 'no form content');
   assert.ok(!dump.includes('127.0.0.1'), 'no plaintext IP in the database');
@@ -109,6 +119,14 @@ test('monitor: records visits and actions, hides itself from fans, needs both lo
   assert.equal((await ADMIN('/api/monitor/subjects?ip=bad<ip>')).status, 400);
   assert.ok((await ADMIN('/api/monitor/subjects?flagged=1')).data.total >= 1);
   assert.equal((await ADMIN(`/api/monitor/subjects?q=%23${fan.id}`)).data.total, 1);
+
+  // Same IP + same browser after "clearing cookies" (a fresh client) is suggested as the same person.
+  const FAN2 = client(base, 'fan-device-00002');
+  await FAN2('/ideas');
+  await settle();
+  const again = await ADMIN(`/api/monitor/subjects/${fan.id}`);
+  assert.ok(again.data.related.some((o) => o.likelySame));
+  assert.ok((await ADMIN('/api/monitor/subjects')).data.items.some((u) => u.sharedIp >= 1));
 
   // Private nickname.
   assert.equal((await ADMIN(`/api/monitor/subjects/${fan.id}`, { method: 'PATCH', body: { note: '刷票号A' } })).status, 200);

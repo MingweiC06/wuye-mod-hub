@@ -516,3 +516,61 @@
     WY.mount();
   }
 })();
+
+/* In-page click tracker for the site's private security log (see /privacy, 安全记录).
+   Sends only the clicked button / link label (≤30 chars), the card number and the page — never anything typed.
+   Runs once per tab (app.js is shared across soft page navigation). Admin pages are not tracked. */
+(function () {
+  'use strict';
+  if (window.__wyClicks) return;
+  window.__wyClicks = true;
+  const PAGES = ['/', '/ideas', '/polls', '/leaderboard', '/downloads', '/sponsor', '/rules', '/privacy'];
+  let buf = [];
+  let timer = 0;
+
+  function flush() {
+    clearTimeout(timer);
+    timer = 0;
+    if (!buf.length) return;
+    const events = buf;
+    buf = [];
+    try {
+      fetch('/api/t', {
+        method: 'POST',
+        keepalive: true,
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json', 'x-requested-with': 'XMLHttpRequest' },
+        body: JSON.stringify({ events }),
+      }).catch(() => {});
+    } catch {}
+  }
+
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (!PAGES.includes(location.pathname)) return;
+      const el = e.target.closest && e.target.closest('button, a, [role="tab"], [role="button"], .chip');
+      if (!el || el.closest('input, textarea, select, [contenteditable="true"]')) return;
+      const label = (el.getAttribute('aria-label') || el.textContent || el.getAttribute('title') || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+      if (!label) return;
+      const holder = el.closest('[data-id]');
+      const raw = holder ? holder.dataset.id : el.dataset.vote || el.dataset.pen || el.dataset.del || '';
+      const card = /^\d{1,7}$/.test(raw || '') ? Number(raw) : undefined;
+      let host;
+      if (el.tagName === 'A' && el.href) {
+        try {
+          const u = new URL(el.href, location.href);
+          if (u.host !== location.host) host = u.hostname;
+        } catch {}
+      }
+      buf.push({ label, page: location.pathname, card, host, at: Date.now() });
+      if (buf.length >= 8 || host) flush();
+      else if (!timer) timer = setTimeout(flush, 15000);
+    },
+    true,
+  );
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flush();
+  });
+  window.addEventListener('pagehide', flush);
+})();

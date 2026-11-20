@@ -412,7 +412,7 @@
       const s = await api('/api/monitor/summary');
       $('mon-keep').textContent = s.retentionDays;
       const g = s.geo;
-      $('mon-geo-status').textContent = g && g.city ? `位置数据：DB-IP Lite ${g.cityBuilt} 版（本地数据库，不外传 IP）` : '位置数据：服务器上还没有安装数据库';
+      $('mon-geo-status').textContent = g && g.city ? `位置数据：DB-IP Lite ${WY.esc(g.cityBuilt)} 版（本地数据库，不外传 IP）` : '位置数据：服务器上还没有安装数据库';
       const m = [
         [s.subjects24h, '近 24 小时访客'],
         [s.loginFailed, '登录失败'],
@@ -438,13 +438,13 @@
     const v = (x) => (x == null || x === '' ? NA : WY.esc(String(x)));
     if (!g.found) return `<p class="muted small">${WY.esc(g.note || '没有位置数据')}</p>`;
     const rows = [
-      ['国家 / 地区', `${g.flag ? g.flag + ' ' : ''}${v(g.country)}${g.countryCode ? ` <span class="muted small">${g.countryCode}</span>` : ''}`],
+      ['国家 / 地区', `${g.flag ? g.flag + ' ' : ''}${v(g.country)}${g.countryCode ? ` <span class="muted small">${WY.esc(g.countryCode)}</span>` : ''}`],
       ['省 / 州', v(g.region)],
       ['城市', v(g.city)],
       ['区县', NA],
       ['邮编', NA],
       ['大致坐标', g.lat != null ? `${g.lat}, ${g.lon} <span class="muted small">（城市中心附近，约 10 公里精度，不是住址）</span>` : NA],
-      ['网络运营者 / ASN', g.org || g.asn ? `${v(g.org)}${g.asn ? ` <span class="mono">${g.asn}</span>` : ''}` : NA],
+      ['网络运营者 / ASN', g.org || g.asn ? `${v(g.org)}${g.asn ? ` <span class="mono">${WY.esc(g.asn)}</span>` : ''}` : NA],
       ['ISP', `${NA} <span class="muted small">（以网络运营者为准）</span>`],
       ['连接类型', '<span class="mon-na">未知（数据源不提供）</span>'],
       ['VPN / 代理', '<span class="mon-na">未知（数据源不提供）</span>'],
@@ -502,7 +502,7 @@
   function timelineHtml(d, id) {
     const ips = d.ips
       .map(
-        (x) => `<li class="mon-iph"><details><summary><span class="badge badge-cyan">${x.tag}</span><b class="mono">${WY.esc(x.ip)}</b>${placeHtml(geoPlace(x.geo))}${x.geo && x.geo.org ? `<span class="muted small">${WY.esc(x.geo.org)}</span>` : ''}<span class="muted small">${x.sessions} 次访问 · ${fmt(x.firstSeen)} → ${fmt(x.lastSeen)}</span><span class="mon-more">详细位置 ▾</span></summary>${geoDetails(x.geo)}</details></li>`,
+        (x) => `<li class="mon-iph"><details><summary><span class="badge badge-cyan">${WY.esc(x.tag)}</span><b class="mono">${WY.esc(x.ip)}</b>${placeHtml(geoPlace(x.geo))}${x.geo && x.geo.org ? `<span class="muted small">${WY.esc(x.geo.org)}</span>` : ''}<span class="muted small">${x.sessions} 次访问 · ${fmt(x.firstSeen)} → ${fmt(x.lastSeen)}</span><span class="mon-more">详细位置 ▾</span></summary>${geoDetails(x.geo)}</details></li>`,
       )
       .join('');
     const obs = (d.observations || []).length

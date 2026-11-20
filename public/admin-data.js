@@ -39,7 +39,7 @@
       meta = `解绑 ${item.devices || 0} 台设备 · ${item.sponsorships || 0} 条赞助解除关联 · `;
     } else {
       head = `<b>¥${money(item.amountCents)}</b> <span class="meta">${item.anonymous ? '匿名' : '具名'} · ${WY.esc(item.method || '')} · ${WY.esc(item.status || '')}</span>`;
-      const extra = [item.note ? `备注：${item.note}` : '', item.message ? `留言：${item.message}` : ''].filter(Boolean).join(' · ');
+      const extra = [item.note ? `备注：${WY.esc(item.note)}` : '', item.message ? `留言：${WY.esc(item.message)}` : ''].filter(Boolean).join(' · ');
       if (extra) meta = `${extra} · `;
     }
     return `<div class="board-row" data-id="${WY.esc(String(item.id))}">
